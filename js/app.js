@@ -727,7 +727,67 @@ async function loadStaticData() {
   } catch (err) {
     console.warn('[static] Error cargando datos estáticos:', err);
   }
+  loadMantenimiento();
 }
+
+async function loadMantenimiento() {
+  try {
+    const res = await fetch('data/mantenimiento.json');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.ln_address && !data.btc_address) return;
+
+    const addressesHtml = buildDonarAddresses(data);
+    const msgHtml  = `<p>${esc(data.mensaje || '')}</p>`;
+    const gracHtml = `<p class="donar-gracias">${esc(data.mensaje_gracias || '')}</p>`;
+
+    const block = document.getElementById('donar-block');
+    if (block) {
+      document.getElementById('donar-mensaje').innerHTML   = msgHtml;
+      document.getElementById('donar-addresses').innerHTML = addressesHtml;
+      document.getElementById('donar-gracias').innerHTML   = gracHtml;
+      block.style.display = '';
+    }
+
+    document.getElementById('btn-donar-header')?.style && (document.getElementById('btn-donar-header').style.display = '');
+    document.getElementById('footer-donar-link')?.style && (document.getElementById('footer-donar-link').style.display = '');
+
+    document.getElementById('modal-donar-mensaje').innerHTML   = msgHtml;
+    document.getElementById('modal-donar-addresses').innerHTML = addressesHtml;
+    document.getElementById('modal-donar-gracias').innerHTML   = gracHtml;
+  } catch (err) {
+    console.warn('[mantenimiento] No se pudo cargar:', err);
+  }
+}
+
+function buildDonarAddresses(data) {
+  let html = '';
+  if (data.ln_address) {
+    html += `<div class="donar-row">
+      <span class="donar-label">⚡ Lightning</span>
+      <code class="donar-addr">${esc(data.ln_address)}</code>
+      <button class="btn-copy" onclick="window.copyToClipboard('${esc(data.ln_address)}')">Copiar</button>
+    </div>`;
+  }
+  if (data.btc_address) {
+    html += `<div class="donar-row">
+      <span class="donar-label">₿ Bitcoin</span>
+      <code class="donar-addr">${esc(data.btc_address)}</code>
+      <button class="btn-copy" onclick="window.copyToClipboard('${esc(data.btc_address)}')">Copiar</button>
+    </div>`;
+  }
+  return html;
+}
+
+window.openDonarModal = function() {
+  const overlay = document.getElementById('modal-donar-overlay');
+  if (overlay) { overlay.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+};
+
+window.closeDonarModal = function() {
+  const overlay = document.getElementById('modal-donar-overlay');
+  if (overlay) { overlay.classList.add('hidden'); document.body.style.overflow = ''; }
+};
 
 function staticDisclaimer(label, githubUrl, templateParam) {
   const issueUrl = `${githubUrl}/issues/new?template=${templateParam}`;

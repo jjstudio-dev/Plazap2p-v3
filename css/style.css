@@ -2020,3 +2020,80 @@ footer {
   .conv-currency-info { min-width: 84px; }
   .conv-copy-btn { opacity: 1; }
 }
+
+/* ── Donación ────────────────────────────────────────────────── */
+.btn-donar {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: var(--r-sm);
+  padding: 0.3rem 0.65rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  white-space: nowrap;
+}
+.btn-donar:hover { background: var(--accent); color: #000; }
+
+.about-block--donar { border: 1px solid #f7931a40; background: #f7931a08; }
+.about-block--donar .subsection-title { color: var(--accent); }
+
+.donar-addresses { display: flex; flex-direction: column; gap: 0.7rem; margin: 1rem 0; }
+.donar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 0.6rem 0.8rem;
+}
+.donar-label { font-size: 0.8rem; font-weight: 600; color: var(--t-2); min-width: 7rem; }
+.donar-addr { font-size: 0.75rem; color: var(--t-1); flex: 1; word-break: break-all; font-family: 'Share Tech Mono', monospace; }
+.donar-gracias { font-size: 0.8rem; color: var(--t-3); font-style: italic; margin-top: 0.4rem; }
+
+.btn-copy {
+  background: var(--surface-3, #1e1e2a);
+  border: 1px solid var(--border);
+  color: var(--t-2);
+  border-radius: var(--r-sm);
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+
+.modal-donar-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+.modal-donar-overlay.hidden { display: none; }
+.modal-donar {
+  background: var(--surface-1);
+  border: 1px solid var(--border-act);
+  border-radius: var(--r-md);
+  width: 100%; max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-donar-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.2rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+.modal-donar-title { font-size: 1rem; font-weight: 700; color: var(--accent); }
+.modal-close-btn {
+  background: none; border: none;
+  color: var(--t-3); font-size: 1rem;
+  cursor: pointer; padding: 0.2rem 0.4rem;
+  transition: color 0.15s;
+}
+.modal-close-btn:hover { color: var(--t-1); }
+.modal-donar-body { padding: 1rem 1.2rem 1.2rem; }
+.modal-donar-body p { font-size: 0.85rem; color: var(--t-2); line-height: 1.6; }
