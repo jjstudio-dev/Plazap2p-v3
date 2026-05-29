@@ -40,6 +40,34 @@
       <span class="relay-dot" id="relay-dot"></span>
       <span class="relay-status-text" id="relay-label">conectando...</span>
     </div>
+
+    <!-- Mini converter -->
+    <div id="mini-conv-wrap" class="mini-conv-wrap">
+      <button id="mini-conv-btn" class="mini-conv-btn" title="Conversor rápido BTC/EUR" aria-haspopup="true" aria-expanded="false">
+        <span id="mini-conv-label">₿ · · ·</span>
+      </button>
+      <div id="mini-conv-panel" class="mini-conv-panel" role="dialog" aria-label="Conversor rápido">
+        <div class="mc-row">
+          <span class="mc-label">₿ BTC</span>
+          <input id="mc-btc" class="mc-input" type="number" value="1" min="0" step="0.00000001" autocomplete="off" inputmode="decimal" placeholder="0.00000000">
+        </div>
+        <div class="mc-row">
+          <span class="mc-label">⚡ sats</span>
+          <input id="mc-sats" class="mc-input" type="number" min="0" step="1" autocomplete="off" inputmode="numeric" placeholder="100000000">
+        </div>
+        <div class="mc-sep"></div>
+        <div class="mc-row">
+          <span class="mc-label">🇪🇺 EUR</span>
+          <input id="mc-eur" class="mc-input" type="number" min="0" step="any" autocomplete="off" inputmode="decimal" placeholder="—">
+        </div>
+        <div class="mc-row">
+          <span class="mc-label">🇺🇸 USD</span>
+          <input id="mc-usd" class="mc-input" type="number" min="0" step="any" autocomplete="off" inputmode="decimal" placeholder="—">
+        </div>
+        <div class="mc-footer">mempool.space · en vivo</div>
+      </div>
+    </div>
+
     <button class="btn-donar" id="btn-donar-header" onclick="window.openDonarModal?.()" title="Apoyar el proyecto" style="display:none">♥</button>
     <a href="https://github.com/jjstudio-dev/plazap2p" target="_blank" rel="noopener" class="header-github">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
@@ -172,10 +200,13 @@
         <option value="newest">↓ Más reciente</option>
         <option value="oldest">↑ Más antiguo</option>
       </select>
+      <select id="location-select" class="sort-select" aria-label="Filtrar por zona">
+        <option value="all">📍 Todas las zonas</option>
+      </select>
     </div>
 
     <div class="filters-bar">
-      <button class="filter-btn active" data-filter="all">Todos</button>
+      <button class="filter-btn active" data-filter="all">General</button>
       <button class="filter-btn" data-filter="venta">Venta</button>
       <button class="filter-btn" data-filter="compra">Compra</button>
       <button class="filter-btn" data-filter="servicio">Servicio</button>
@@ -467,21 +498,35 @@
       <div class="step">
         <div class="step-num">03</div>
         <div class="step-content">
-          <h3>Añade el tag de la comunidad</h3>
-          <p>Sea cual sea el cliente o tipo de contenido, añade siempre este tag para que aparezca aquí:</p>
+          <h3>Añade los tags de la comunidad</h3>
+          <p>Usa el tag base para aparecer en PlazaP2P. Añade un sub-tag para ir directo a la sección correcta:</p>
           <div class="tags-example">
             <div class="tag-row">
               <code class="tag-code">#plazap2p</code>
-              <span class="tag-desc">— tag de la comunidad, obligatorio</span>
+              <span class="tag-desc">— tag base · aparece en General (todo)</span>
             </div>
-            <div class="tag-row">
-              <span class="tag-desc">Para anuncios también:</span>
-              <code class="tag-code">#venta</code> <span class="tag-sep">/</span>
-              <code class="tag-code">#compra</code> <span class="tag-sep">/</span>
-              <code class="tag-code">#servicio</code> <span class="tag-sep">/</span>
-              <code class="tag-code">#trueque</code>
+            <div class="tag-row tag-row--sub">
+              <code class="tag-code tag-code--sub">#plazap2p-venta</code>
+              <span class="tag-desc">— va directo al filtro <strong>Venta</strong></span>
+            </div>
+            <div class="tag-row tag-row--sub">
+              <code class="tag-code tag-code--sub">#plazap2p-compra</code>
+              <span class="tag-desc">— va directo al filtro <strong>Compra</strong></span>
+            </div>
+            <div class="tag-row tag-row--sub">
+              <code class="tag-code tag-code--sub">#plazap2p-servicio</code>
+              <span class="tag-desc">— va directo al filtro <strong>Servicio</strong></span>
+            </div>
+            <div class="tag-row tag-row--sub">
+              <code class="tag-code tag-code--sub">#plazap2p-trueque</code>
+              <span class="tag-desc">— va directo al filtro <strong>Trueque</strong></span>
+            </div>
+            <div class="tag-row tag-row--sub">
+              <code class="tag-code tag-code--sub">#plazap2p-evento</code>
+              <span class="tag-desc">— aparece en el tab <strong>Eventos</strong></span>
             </div>
           </div>
+          <p class="tags-note">El sub-tag ya implica el base — no hace falta repetir <code>#plazap2p</code> si usas un sub-tag, aunque puedes hacerlo.</p>
         </div>
       </div>
       <div class="step">
@@ -500,6 +545,88 @@
         Tu identidad, contenido y contacto permanecen en el ecosistema Nostr, fuera de esta interfaz.
       </div>
     </div>
+
+    <!-- Glosario de tags -->
+    <div class="glossary-block">
+      <h2 class="glossary-title">📖 Glosario de tags admitidos</h2>
+      <p class="glossary-intro">Referencia rápida de todos los tags que PlazaP2P reconoce. El sub-tag ya implica el tag base — no hace falta repetir ambos.</p>
+
+      <div class="glossary-table">
+        <div class="glossary-row glossary-header">
+          <span>Tag</span>
+          <span>Dónde aparece</span>
+          <span>Tipo</span>
+        </div>
+        <div class="glossary-row">
+          <code>#plazap2p</code>
+          <span>General — visible en todos los filtros</span>
+          <span class="glossary-badge glossary-badge--base">Base</span>
+        </div>
+        <div class="glossary-row">
+          <code>#plazap2p-venta</code>
+          <span>Mercado · filtro <strong>Venta</strong></span>
+          <span class="glossary-badge glossary-badge--venta">Sub-tag</span>
+        </div>
+        <div class="glossary-row">
+          <code>#plazap2p-compra</code>
+          <span>Mercado · filtro <strong>Compra</strong></span>
+          <span class="glossary-badge glossary-badge--compra">Sub-tag</span>
+        </div>
+        <div class="glossary-row">
+          <code>#plazap2p-servicio</code>
+          <span>Mercado · filtro <strong>Servicio</strong></span>
+          <span class="glossary-badge glossary-badge--servicio">Sub-tag</span>
+        </div>
+        <div class="glossary-row">
+          <code>#plazap2p-trueque</code>
+          <span>Mercado · filtro <strong>Trueque</strong></span>
+          <span class="glossary-badge glossary-badge--trueque">Sub-tag</span>
+        </div>
+        <div class="glossary-row">
+          <code>#plazap2p-evento</code>
+          <span>Tab <strong>Eventos</strong></span>
+          <span class="glossary-badge glossary-badge--evento">Sub-tag</span>
+        </div>
+      </div>
+
+      <p class="glossary-note">¿Sin sub-tag? Tu publicación aparece en <strong>General</strong> — no se pierde nada.</p>
+    </div>
+
+    <!-- Proponer relay -->
+    <div class="relay-propose-block">
+      <h2>🔗 ¿Tienes un relay? Proponlo</h2>
+      <p>Si gestionas un relay Bitcoin-friendly hispanohablante, proponlo para que la comunidad pueda conectarse y publicar anuncios en PlazaP2P a través de él.</p>
+
+      <form id="relay-propose-form" class="relay-propose-form" novalidate>
+        <div class="form-field">
+          <label for="rp-url">URL del relay <span class="required">*</span></label>
+          <input id="rp-url" type="text" placeholder="wss://relay.ejemplo.com" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="form-field">
+          <label for="rp-name">Nombre / descripción corta</label>
+          <input id="rp-name" type="text" placeholder="Mi Relay Bitcoin España">
+        </div>
+        <div class="form-field">
+          <label for="rp-region">Región / País</label>
+          <input id="rp-region" type="text" placeholder="España · Europa · Global">
+        </div>
+        <div class="form-field">
+          <label for="rp-npub">Tu npub de Nostr <span class="optional">opcional — para contactarte</span></label>
+          <input id="rp-npub" type="text" placeholder="npub1..." autocomplete="off" spellcheck="false">
+        </div>
+        <div class="form-field">
+          <label for="rp-notes">Notas adicionales <span class="optional">opcional</span></label>
+          <textarea id="rp-notes" rows="3" placeholder="Política de acceso, tipo de relay (público / privado / pago), características especiales..."></textarea>
+        </div>
+        <button type="submit" class="btn-primary">
+          📬 Enviar propuesta via GitHub Issue
+        </button>
+      </form>
+      <p class="relay-propose-note">
+        Se abrirá un Issue en GitHub con los datos pre-rellenados. Necesitas cuenta en GitHub para enviarlo. Revisamos todas las propuestas antes de añadir el relay a la lista.
+      </p>
+    </div>
+
   </section>
 
   <!-- Relays tab -->
@@ -705,9 +832,12 @@
 <!-- ESM module — app.js imports nostr.js and relay-pool.js -->
 <script type="module" src="js/app.js"></script>
 <script type="module">
-  import { initBtcStats }   from './js/btc-stats.js';
-  import { initPriceChart } from './js/btc-chart.js';
-  import { initConverter }  from './js/converter.js';
+  import { initBtcStats }      from './js/btc-stats.js';
+  import { initPriceChart }    from './js/btc-chart.js';
+  import { initConverter }     from './js/converter.js';
+  import { initMiniConverter } from './js/mini-converter.js';
+
+  initMiniConverter();
 
   initBtcStats();
 
@@ -735,6 +865,34 @@
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
+
+  document.getElementById('relay-propose-form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const url = document.getElementById('rp-url')?.value.trim();
+    if (!url) {
+      document.getElementById('rp-url')?.focus();
+      return;
+    }
+    const name    = document.getElementById('rp-name')?.value.trim()  || '—';
+    const region  = document.getElementById('rp-region')?.value.trim() || '—';
+    const npub    = document.getElementById('rp-npub')?.value.trim()  || '—';
+    const notes   = document.getElementById('rp-notes')?.value.trim() || 'Sin notas adicionales.';
+
+    const title = encodeURIComponent('[Relay] ' + url);
+    const body  = encodeURIComponent(
+'## Propuesta de Relay\n\n' +
+'**URL:** ' + url + '\n' +
+'**Nombre:** ' + name + '\n' +
+'**Región:** ' + region + '\n' +
+'**npub:** ' + npub + '\n\n' +
+'### Notas\n' + notes + '\n\n' +
+'---\n*Propuesto desde PlazaP2P v3*'
+    );
+    window.open(
+      'https://github.com/jjstudio-dev/plazap2p/issues/new?title=' + title + '&body=' + body + '&labels=relay',
+      '_blank', 'noopener,noreferrer'
+    );
+  });
 </script>
 </body>
 </html>

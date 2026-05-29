@@ -13,7 +13,8 @@ let pool          = null;
 let isInitialLoad = true;
 let lastUpdated   = null;
 let activeTab     = 'mercado';
-let activeFilter  = 'all';
+let activeFilter   = 'all';
+let activeLocation = 'all';
 let searchQuery   = '';
 let sortPrefs     = {};  // { [channelId]: 'newest' | 'oldest' }
 
@@ -271,7 +272,7 @@ function parseGeneric(event) {
 // ── Rendering ──────────────────────────────────────────────────
 const CAT_COLORS = {
   venta: '#00d4ff', compra: '#30d158', servicio: '#bf5af2',
-  trueque: '#ffd60a', otro: '#86868b'
+  trueque: '#ffd60a', general: '#86868b', otro: '#86868b'
 };
 
 function renderActiveChannel() {
@@ -290,8 +291,15 @@ function renderActiveChannel() {
     sort === 'oldest' ? a.publishedAt - b.publishedAt : b.publishedAt - a.publishedAt
   );
 
+  // Populate location dropdown from all items before applying filters
+  if (activeTab === 'mercado') updateLocationSelect(items);
+
   if (activeTab === 'mercado' && activeFilter !== 'all') {
     items = items.filter(l => l.category === activeFilter);
+  }
+
+  if (activeTab === 'mercado' && activeLocation !== 'all') {
+    items = items.filter(l => l.location === activeLocation);
   }
 
   const q = searchQuery.trim().toLowerCase();
@@ -302,7 +310,14 @@ function renderActiveChannel() {
     });
   }
 
-  if (items.length === 0) return;
+  if (items.length === 0) {
+    grid.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🔍</div>
+      <p class="empty-title">Sin resultados</p>
+      <p class="empty-sub">Prueba con otro filtro o zona.</p>
+    </div>`;
+    return;
+  }
 
   const lim = limits[activeTab];
   grid.innerHTML = items.slice(0, lim).map(renderCard).join('');
@@ -511,6 +526,21 @@ function initFilters() {
       renderActiveChannel();
     });
   });
+
+  document.getElementById('location-select')?.addEventListener('change', e => {
+    activeLocation = e.target.value;
+    limits['mercado'] = PAGE_SIZE;
+    renderActiveChannel();
+  });
+}
+
+function updateLocationSelect(items) {
+  const select = document.getElementById('location-select');
+  if (!select) return;
+  const current   = select.value;
+  const locations = [...new Set(items.map(i => i.location).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  select.innerHTML = `<option value="all">📍 Todas las zonas</option>` +
+    locations.map(l => `<option value="${esc(l)}"${l === current ? ' selected' : ''}>${esc(l)}</option>`).join('');
 }
 
 // ── UI init ────────────────────────────────────────────────────
@@ -695,10 +725,17 @@ function cityOnly(raw) {
 }
 
 function detectCategory(tTags) {
+  // Sub-tags tienen prioridad — el tag define la categoría
+  if (tTags.includes('plazap2p-venta'))    return 'venta';
+  if (tTags.includes('plazap2p-compra'))   return 'compra';
+  if (tTags.includes('plazap2p-servicio')) return 'servicio';
+  if (tTags.includes('plazap2p-trueque'))  return 'trueque';
+  // Compatibilidad: tags de categoría sueltos (NIP-99 legacy)
   for (const cat of ['venta', 'compra', 'servicio', 'trueque']) {
     if (tTags.includes(cat)) return cat;
   }
-  return 'otro';
+  // Sin sub-tag → General (aparece en "General" y en todos los demás)
+  return 'general';
 }
 
 function detectPayment(tTags) {
@@ -712,7 +749,7 @@ function detectPayment(tTags) {
 
 // ── Static data (GitHub JSON) ──────────────────────────────────
 async function loadStaticData() {
-  const GITHUB_URL = 'https://github.com/jjstudio-dev/plazap2p';
+  const GITHUB_URL = 'https://github.com/jjstudio-dev/Plazap2p-v3';
   try {
     const [eventos, comunidades, herramientas, multimedia] = await Promise.all([
       fetch('data/eventos.json').then(r => r.ok ? r.json() : []).catch(() => []),

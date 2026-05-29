@@ -1,6 +1,6 @@
 {
   "_setup": "Rellena ln_address y/o btc_address para activar el bloque de donación. Si ambos están vacíos, el bloque no se muestra.",
-  "ln_address":  "",
+  "ln_address":  "wildbobcat25@primal.net",
   "btc_address": "",
   "mensaje":     "PlazaP2P es un proyecto open source, gratuito y sin publicidad. Si te resulta útil, puedes apoyar su mantenimiento con una donación voluntaria en Bitcoin o Lightning Network.",
   "mensaje_gracias": "Ninguna cantidad es obligatoria. El proyecto seguirá siendo libre siempre."

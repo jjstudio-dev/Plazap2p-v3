@@ -1,10 +1,11 @@
 {
   "_setup": "PASOS PARA PRODUCCIÓN: 1) Crear keypair Nostr (Alby/nos2x/nak). 2) Publicar kind:0 perfil en los relays. 3) Copiar pubkey en hex a maintainer_pubkey. 4) Opcional: publicar kind:30003 NIP-51 list con anuncios curados y poner su naddr en curated_list_naddr. Sin curated_list_naddr la app muestra todos los kind:30402 con #plazap2p (modo fallback).",
 
-  "maintainer_pubkey":   "",
+  "maintainer_pubkey":   "e67420a604251e691eeb5584879b67ae4fe475749b9d25b8edf29d8b95cfbd46",
+  "maintainer_npub":     "npub1ue6zpfsyy50xj8ht2kzg0xm84e87gat5nwwjtw8d72wch9w0h4rq8jrjvr",
   "curated_list_naddr":  "",
 
-  "community_tags": ["plazap2p", "PlazaP2P"],
+  "community_tags": ["plazap2p", "PlazaP2P", "plazap2p-venta", "plazap2p-compra", "plazap2p-servicio", "plazap2p-trueque", "plazap2p-evento"],
   "relays": [
     "wss://nos.lol",
     "wss://relay.primal.net",
