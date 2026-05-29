@@ -1,0 +1,47 @@
+[
+  {
+    "id": "med-001",
+    "nombre": "Lunaticoin",
+    "tipo": "youtube",
+    "descripcion": "Canal de YouTube en español dedicado a Bitcoin, Nostr y soberanía digital. Análisis profundos, entrevistas y tutoriales de alta calidad.",
+    "link": "https://www.youtube.com/@lunaticoin",
+    "idioma": "es",
+    "aprobado": true
+  },
+  {
+    "id": "med-002",
+    "nombre": "El Podcast de Bitcoin",
+    "tipo": "podcast",
+    "descripcion": "Podcast semanal en español sobre Bitcoin, macroeconomía austriaca y soberanía financiera. Uno de los más veteranos en el ecosistema hispanohablante.",
+    "link": "https://elpodcastdebitcoin.com",
+    "idioma": "es",
+    "aprobado": true
+  },
+  {
+    "id": "med-003",
+    "nombre": "Satoshi en Venezuela",
+    "tipo": "youtube",
+    "descripcion": "Canal sobre Bitcoin y herramientas P2P enfocado en Latinoamérica. Casos de uso reales, remesas y adopción popular.",
+    "link": "https://www.youtube.com/@satoshienvenezuela",
+    "idioma": "es",
+    "aprobado": true
+  },
+  {
+    "id": "med-004",
+    "nombre": "Bitcoin Magazine España",
+    "tipo": "newsletter",
+    "descripcion": "Newsletter en español con las noticias más relevantes del ecosistema Bitcoin. Análisis de red, eventos y novedades de la industria.",
+    "link": "https://bitcoinmagazine.com/es",
+    "idioma": "es",
+    "aprobado": true
+  },
+  {
+    "id": "med-005",
+    "nombre": "Bit Bravo",
+    "tipo": "podcast",
+    "descripcion": "Podcast técnico en español sobre Bitcoin y Lightning Network. Entrevistas a desarrolladores, operadores de nodos y emprendedores del ecosistema.",
+    "link": "https://bitbravo.com",
+    "idioma": "es",
+    "aprobado": true
+  }
+]

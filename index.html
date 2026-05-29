@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PlazaP2P — Comunidad Nostr</title>
+  <meta name="description" content="Reflejo comunitario de eventos públicos en Nostr. Bitcoin, economía circular, actividad P2P. Sin registro, sin intermediarios." />
+  <meta property="og:title" content="PlazaP2P — Ventana Comunitaria Nostr" />
+  <meta property="og:description" content="Reflejo comunitario de contenido público en Nostr. Bitcoin, economía circular, actividad P2P." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://jjstudio-dev.github.io/plazap2p/" />
+  <meta property="og:image" content="https://jjstudio-dev.github.io/plazap2p/icons/icon-512.svg" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="PlazaP2P — Ventana Comunitaria Nostr" />
+  <meta name="twitter:description" content="Reflejo comunitario de contenido público en Nostr. Bitcoin, economía circular, actividad P2P." />
+  <link rel="canonical" href="https://jjstudio-dev.github.io/plazap2p/" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800&family=Inter:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#f7931a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="PlazaP2P" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+</head>
+<body>
+
+<!-- ── Header ───────────────────────────────────────────────── -->
+<header>
+  <div class="header-inner">
+    <div class="logo-block">
+      <span class="logo-title">Plaza<span class="accent">P2P</span></span>
+      <span class="logo-tag">v3 · nostr</span>
+    </div>
+    <div class="relay-status-badge">
+      <span class="relay-dot" id="relay-dot"></span>
+      <span class="relay-status-text" id="relay-label">conectando...</span>
+    </div>
+    <a href="https://github.com/jjstudio-dev/plazap2p" target="_blank" rel="noopener" class="header-github">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+      GitHub
+    </a>
+  </div>
+</header>
+
+<!-- ── Hero ─────────────────────────────────────────────────── -->
+<section class="hero-wrap">
+  <div class="hero-glow"></div>
+  <div class="hero">
+    <p class="hero-eyebrow">Comunidad · Bitcoin · Nostr · Sin Intermediarios</p>
+    <h1 class="hero-title">
+      <span class="hero-lead">Ventana Comunitaria Nostr</span>
+      <span class="hero-main">Plaza<span class="accent">P2P</span></span>
+    </h1>
+    <p class="hero-sub">
+      Eventos públicos de la comunidad Nostr sobre Bitcoin, economía circular y actividad P2P.
+      Sin registro, sin intermediarios, sin censura.
+    </p>
+    <div class="hero-counter-wrap">
+      <div class="hero-counter">
+        <span class="counter-num" id="listing-count">--</span>
+        <span class="counter-label">publicaciones en la red</span>
+      </div>
+      <span class="counter-updated" id="counter-updated"></span>
+    </div>
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="switchTab('mercado');document.querySelector('.main-nav').scrollIntoView({behavior:'smooth'})">
+        🛒 Ver Mercado
+      </button>
+      <button class="btn-secondary" onclick="switchTab('publicar')">
+        📢 Cómo Aparecer
+      </button>
+      <button class="btn-ghost" onclick="switchTab('nostr')">
+        ⚡ ¿Qué es Nostr?
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ── BTC Stats Bar ─────────────────────────────────────────── -->
+<section class="btc-stats-bar btc-stats-loading" id="btc-stats-bar">
+  <div class="btc-stats-inner">
+
+    <div class="btc-stat">
+      <span class="btc-stat-icon">📦</span>
+      <div class="btc-stat-body">
+        <span class="btc-stat-value" id="stat-block-val">—</span>
+        <span class="btc-stat-label">Bloque actual</span>
+      </div>
+    </div>
+
+    <div class="btc-stat">
+      <span class="btc-stat-icon">₿</span>
+      <div class="btc-stat-body">
+        <span class="btc-stat-value" id="stat-price-val">—</span>
+        <span class="btc-stat-label">Precio USD</span>
+      </div>
+    </div>
+
+    <div class="btc-stat">
+      <span class="btc-stat-icon">⚡</span>
+      <div class="btc-stat-body">
+        <span class="btc-stat-value" id="stat-hashrate-val">—</span>
+        <span class="btc-stat-label">Hash total</span>
+      </div>
+    </div>
+
+    <div class="btc-stat">
+      <span class="btc-stat-icon">🎯</span>
+      <div class="btc-stat-body">
+        <span class="btc-stat-value" id="stat-difficulty-val">—</span>
+        <span class="btc-stat-label">Dificultad</span>
+      </div>
+    </div>
+
+    <div class="btc-stat">
+      <span class="btc-stat-icon">💸</span>
+      <div class="btc-stat-body">
+        <span class="btc-stat-value" id="stat-fees-val">—</span>
+        <span class="btc-stat-label">Fee rápido</span>
+      </div>
+    </div>
+
+    <div class="btc-stat">
+      <span class="btc-stat-icon">⏳</span>
+      <div class="btc-stat-body">
+        <span class="btc-stat-value" id="stat-mempool-val">—</span>
+        <span class="btc-stat-label">Mempool</span>
+      </div>
+    </div>
+
+  </div>
+  <div class="btc-stats-footer">
+    <span id="btc-stats-updated" class="btc-stats-timestamp">Cargando...</span>
+    <a href="https://mempool.space" target="_blank" rel="noopener noreferrer" class="btc-stats-source">mempool.space ↗</a>
+  </div>
+</section>
+
+<!-- ── Nav tabs ──────────────────────────────────────────────── -->
+<nav class="main-nav" role="tablist" aria-label="Secciones de PlazaP2P">
+  <div class="nav-inner">
+    <button class="nav-tab active" role="tab" aria-selected="true"  aria-controls="tab-mercado"     data-tab="mercado">🛒 Mercado <span class="tab-count" id="tab-count-mercado"></span></button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-feed"          data-tab="feed">💬 Feed <span class="tab-count" id="tab-count-feed"></span></button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-articulos"     data-tab="articulos">📄 Artículos <span class="tab-count" id="tab-count-articulos"></span></button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-eventos"       data-tab="eventos">📅 Eventos</button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-comunidades"   data-tab="comunidades">🏘 Comunidades</button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-herramientas"  data-tab="herramientas">🔧 Herramientas</button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-multimedia"    data-tab="multimedia">🎙 Multimedia</button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-bitcoin"       data-tab="bitcoin">₿ Bitcoin</button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-nostr"         data-tab="nostr">⚡ Nostr</button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-publicar"      data-tab="publicar">📢 Publicar</button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-relays"        data-tab="relays">🔗 Relays</button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-acerca"        data-tab="acerca">📋 Acerca</button>
+  </div>
+</nav>
+
+<!-- ── Main ──────────────────────────────────────────────────── -->
+<main class="container">
+
+  <!-- Mercado tab (kind:30402) -->
+  <section id="tab-mercado" class="section-panel active">
+    <div class="section-header">
+      <span class="section-title"><span class="icon">🛒</span> Vista pública Nostr</span>
+      <span class="section-hint">kind:30402 · NIP-99 · eventos detectados en relays</span>
+      <input type="search" class="tab-search" placeholder="Buscar…" aria-label="Buscar en mercado" />
+      <select class="sort-select" data-channel="mercado" aria-label="Ordenar por">
+        <option value="newest">↓ Más reciente</option>
+        <option value="oldest">↑ Más antiguo</option>
+      </select>
+    </div>
+
+    <div class="filters-bar">
+      <button class="filter-btn active" data-filter="all">Todos</button>
+      <button class="filter-btn" data-filter="venta">Venta</button>
+      <button class="filter-btn" data-filter="compra">Compra</button>
+      <button class="filter-btn" data-filter="servicio">Servicio</button>
+      <button class="filter-btn" data-filter="trueque">Trueque</button>
+    </div>
+
+    <div id="channel-mercado" class="listings-grid" role="list"></div>
+
+    <div class="section-footer">
+      <p class="section-footer-note">
+        Eventos públicos detectados en relays Nostr.
+        La interacción ocurre fuera de PlazaP2P, desde clientes y herramientas Nostr.
+      </p>
+    </div>
+  </section>
+
+  <!-- Feed tab (kind:1) -->
+  <section id="tab-feed" class="section-panel">
+    <div class="section-header">
+      <span class="section-title"><span class="icon">💬</span> Feed de la comunidad</span>
+      <span class="section-hint">kind:1 · posts · tiempo real</span>
+      <input type="search" class="tab-search" placeholder="Buscar…" aria-label="Buscar en feed" />
+      <select class="sort-select" data-channel="feed" aria-label="Ordenar por">
+        <option value="newest">↓ Más reciente</option>
+        <option value="oldest">↑ Más antiguo</option>
+      </select>
+    </div>
+
+    <div id="channel-feed" class="listings-grid" role="list"></div>
+
+    <div class="section-footer">
+      <p class="section-footer-note">
+        Posts publicados en Nostr con <code>#plazap2p</code>.
+        Haz clic para ver el post completo en Nostr.
+      </p>
+    </div>
+  </section>
+
+  <!-- Artículos tab (kind:30023) -->
+  <section id="tab-articulos" class="section-panel">
+    <div class="section-header">
+      <span class="section-title"><span class="icon">📄</span> Artículos</span>
+      <span class="section-hint">kind:30023 · NIP-23 · tiempo real</span>
+      <input type="search" class="tab-search" placeholder="Buscar…" aria-label="Buscar en artículos" />
+      <select class="sort-select" data-channel="articulos" aria-label="Ordenar por">
+        <option value="newest">↓ Más reciente</option>
+        <option value="oldest">↑ Más antiguo</option>
+      </select>
+    </div>
+
+    <div id="channel-articulos" class="listings-grid" role="list"></div>
+
+    <div class="section-footer">
+      <p class="section-footer-note">
+        Artículos publicados con <code>#plazap2p</code> en YakiHonne, Habla.news u otros clientes.
+      </p>
+    </div>
+  </section>
+
+  <!-- Eventos tab (JSON estático + GitHub Issues) -->
+  <section id="tab-eventos" class="section-panel">
+    <div class="section-header">
+      <span class="section-title"><span class="icon">📅</span> Eventos</span>
+      <span class="section-hint">directorio curado · contribuciones via GitHub</span>
+    </div>
+    <div id="channel-eventos" class="listings-grid" role="list"></div>
+    <div class="section-footer" id="eventos-footer"></div>
+  </section>
+
+  <!-- Comunidades tab (JSON estático + GitHub Issues) -->
+  <section id="tab-comunidades" class="section-panel">
+    <div class="section-header">
+      <span class="section-title"><span class="icon">🏘</span> Comunidades</span>
+      <span class="section-hint">directorio curado · contribuciones via GitHub</span>
+    </div>
+    <div id="channel-comunidades" class="listings-grid" role="list"></div>
+    <div class="section-footer" id="comunidades-footer"></div>
+  </section>
+
+  <!-- Herramientas tab (JSON estático + GitHub Issues) -->
+  <section id="tab-herramientas" class="section-panel">
+    <div class="section-header">
+      <span class="section-title"><span class="icon">🔧</span> Herramientas</span>
+      <span class="section-hint">directorio curado · P2P · Lightning · Nostr · Privacidad</span>
+    </div>
+    <div id="channel-herramientas" class="herramientas-container" role="list"></div>
+    <div class="section-footer" id="herramientas-footer"></div>
+  </section>
+
+  <!-- Multimedia tab (JSON estático + GitHub Issues) -->
+  <section id="tab-multimedia" class="section-panel">
+    <div class="section-header">
+      <span class="section-title"><span class="icon">🎙</span> Multimedia</span>
+      <span class="section-hint">podcasts · youtube · newsletters · blogs</span>
+    </div>
+    <div id="channel-multimedia" class="listings-grid" role="list"></div>
+    <div class="section-footer" id="multimedia-footer"></div>
+  </section>
+
+  <!-- Bitcoin tab: chart + converter -->
+  <section id="tab-bitcoin" class="section-panel">
+    <div class="section-header">
+      <span class="section-title"><span class="icon">₿</span> Bitcoin</span>
+      <span class="section-hint">mempool.space · coingecko · yadio.io</span>
+    </div>
+
+    <!-- Price chart -->
+    <div class="chart-wrap">
+      <div class="chart-header">
+        <div class="chart-header-left">
+          <div class="chart-price-row">
+            <span class="chart-label">BTC / USD</span>
+            <span id="chart-current-price" class="chart-price">—</span>
+            <span id="chart-pct-change" class="chart-pct">—</span>
+          </div>
+          <div class="chart-hl-row">
+            <span class="chart-hl-item chart-hl-high">
+              <span class="chart-hl-dot" style="background:#30d158"></span>
+              <span class="chart-hl-lbl">30d Alto</span>
+              <span id="chart-high" class="chart-hl-val">—</span>
+            </span>
+            <span class="chart-hl-item chart-hl-low">
+              <span class="chart-hl-dot" style="background:#ff453a"></span>
+              <span class="chart-hl-lbl">30d Bajo</span>
+              <span id="chart-low" class="chart-hl-val">—</span>
+            </span>
+          </div>
+        </div>
+        <span class="chart-source-badge">CoinGecko · Kraken</span>
+      </div>
+      <div id="btc-price-chart" class="chart-container">
+        <div class="chart-loading">Cargando gráfica…</div>
+      </div>
+    </div>
+
+    <!-- Converter -->
+    <div class="converter-wrap">
+      <div id="btc-converter"></div>
+    </div>
+  </section>
+
+  <!-- Nostr knowledge tab -->
+  <section id="tab-nostr" class="section-panel">
+    <div class="section-header">
+      <span class="section-title"><span class="icon">⚡</span> ¿Qué es Nostr?</span>
+    </div>
+
+    <div class="knowledge-intro">
+      <p>Nostr es un protocolo abierto y descentralizado de comunicación. No hay empresa detrás, no hay servidores centrales, no puede ser censurado. PlazaP2P V3 usa Nostr como capa de datos — los anuncios viven en la red, no en nuestros servidores.</p>
+    </div>
+
+    <div class="knowledge-grid">
+      <div class="knowledge-card">
+        <div class="knowledge-icon">🔑</div>
+        <h3>Tu identidad es tu clave</h3>
+        <p>Cada usuario tiene un par de claves criptográficas. Tu clave privada (nsec) firma los mensajes. Tu clave pública (npub) es tu identidad visible. Sin contraseñas, sin email, sin KYC.</p>
+      </div>
+      <div class="knowledge-card">
+        <div class="knowledge-icon">📡</div>
+        <h3>Relays: los servidores de la red</h3>
+        <p>Los relays son servidores simples que almacenan y reenvían eventos Nostr. Puedes conectarte a múltiples relays. Si uno cae, los demás siguen funcionando. Tu información existe en todos.</p>
+      </div>
+      <div class="knowledge-card">
+        <div class="knowledge-icon">⚡</div>
+        <h3>Bitcoin y Lightning integrados</h3>
+        <p>Los anuncios en PlazaP2P usan Bitcoin como medio de pago. Lightning permite pagos instantáneos y sin comisiones. Cashu añade privacidad adicional. Todo en el mismo ecosistema.</p>
+      </div>
+      <div class="knowledge-card">
+        <div class="knowledge-icon">🌐</div>
+        <h3>Interoperabilidad total</h3>
+        <p>Los anuncios publicados en PlazaP2P son visibles automáticamente en Primal, Amethyst, Damus y cualquier cliente Nostr que soporte NIP-99. Una publicación, toda la red.</p>
+      </div>
+    </div>
+
+    <h2 class="subsection-title">Wallets recomendadas</h2>
+    <p class="subsection-sub">Necesitas una wallet compatible con Nostr (NIP-07) para publicar anuncios y firmar eventos.</p>
+
+    <div class="tools-grid">
+      <a href="https://getalby.com" target="_blank" rel="noopener noreferrer" class="tool-card">
+        <div class="tool-icon">🐝</div>
+        <div class="tool-info">
+          <strong>Alby</strong>
+          <span>Chrome / Firefox · Extensión de navegador con Lightning y Nostr integrados. La opción más completa para escritorio.</span>
+        </div>
+        <span class="tool-arrow">↗</span>
+      </a>
+      <a href="https://github.com/greenart7c3/Amber" target="_blank" rel="noopener noreferrer" class="tool-card">
+        <div class="tool-icon">🟠</div>
+        <div class="tool-info">
+          <strong>Amber</strong>
+          <span>Android · Firmador de Nostr para móvil. Funciona como NIP-55 para otras apps. Tu clave nunca sale del dispositivo.</span>
+        </div>
+        <span class="tool-arrow">↗</span>
+      </a>
+      <a href="https://github.com/fiatjaf/nos2x" target="_blank" rel="noopener noreferrer" class="tool-card">
+        <div class="tool-icon">🔑</div>
+        <div class="tool-info">
+          <strong>nos2x</strong>
+          <span>Chrome · Extensión minimalista para gestionar tu clave Nostr en el navegador. Ligera y de código abierto.</span>
+        </div>
+        <span class="tool-arrow">↗</span>
+      </a>
+    </div>
+
+    <h2 class="subsection-title">Clientes Nostr</h2>
+    <p class="subsection-sub">Usa estos clientes para ver los anuncios completos, contactar vendedores y publicar los tuyos.</p>
+
+    <div class="tools-grid">
+      <a href="https://primal.net" target="_blank" rel="noopener noreferrer" class="tool-card">
+        <div class="tool-icon">🌐</div>
+        <div class="tool-info">
+          <strong>Primal</strong>
+          <span>Web / iOS / Android · Cliente completo con Lightning Zaps, mercado y búsqueda avanzada. Ideal para empezar.</span>
+        </div>
+        <span class="tool-arrow">↗</span>
+      </a>
+      <a href="https://amethyst.social" target="_blank" rel="noopener noreferrer" class="tool-card">
+        <div class="tool-icon">💜</div>
+        <div class="tool-info">
+          <strong>Amethyst</strong>
+          <span>Android · Cliente de referencia para Android. Soporte para todos los NIPs, comunidades, marketplace NIP-99.</span>
+        </div>
+        <span class="tool-arrow">↗</span>
+      </a>
+      <a href="https://damus.io" target="_blank" rel="noopener noreferrer" class="tool-card">
+        <div class="tool-icon">🟣</div>
+        <div class="tool-info">
+          <strong>Damus</strong>
+          <span>iOS · El cliente nativo de iOS más popular. Rápido, con Zaps Lightning y excelente diseño.</span>
+        </div>
+        <span class="tool-arrow">↗</span>
+      </a>
+      <a href="https://snort.social" target="_blank" rel="noopener noreferrer" class="tool-card">
+        <div class="tool-icon">⚡</div>
+        <div class="tool-info">
+          <strong>Snort</strong>
+          <span>Web · Cliente web rápido y moderno. Buena gestión de relays y soporte para NIP-07.</span>
+        </div>
+        <span class="tool-arrow">↗</span>
+      </a>
+      <a href="https://coracle.social" target="_blank" rel="noopener noreferrer" class="tool-card">
+        <div class="tool-icon">🔵</div>
+        <div class="tool-info">
+          <strong>Coracle</strong>
+          <span>Web · Enfocado en privacidad y grupos. Soporte avanzado de relay sets y NIP-29 communities.</span>
+        </div>
+        <span class="tool-arrow">↗</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Publicar tab -->
+  <section id="tab-publicar" class="section-panel">
+    <div class="section-header">
+      <span class="section-title"><span class="icon">📢</span> Cómo aparecer en PlazaP2P</span>
+    </div>
+
+    <div class="steps-container">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <h3>Consigue una identidad Nostr</h3>
+          <p>Instala <a href="https://getalby.com" target="_blank" rel="noopener noreferrer">Alby</a> (escritorio) o <a href="https://github.com/greenart7c3/Amber" target="_blank" rel="noopener noreferrer">Amber</a> (Android). Crea tu keypair — guarda tu <code>nsec</code> en lugar seguro, es tu identidad en toda la red.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <h3>Elige el tipo de contenido y su cliente</h3>
+          <div class="publish-clients-grid">
+            <div class="publish-client-group">
+              <div class="publish-group-label">🛒 Anuncio / Mercado</div>
+              <a href="https://plebeian.market" target="_blank" rel="noopener noreferrer" class="publish-client-link">Plebeian Market ↗</a>
+              <a href="https://shopstr.store" target="_blank" rel="noopener noreferrer" class="publish-client-link">Shopstr ↗</a>
+            </div>
+            <div class="publish-client-group">
+              <div class="publish-group-label">💬 Post / Feed</div>
+              <a href="https://primal.net" target="_blank" rel="noopener noreferrer" class="publish-client-link">Primal ↗</a>
+              <a href="https://amethyst.social" target="_blank" rel="noopener noreferrer" class="publish-client-link">Amethyst ↗</a>
+            </div>
+            <div class="publish-client-group">
+              <div class="publish-group-label">📄 Artículo</div>
+              <a href="https://yakihonne.com" target="_blank" rel="noopener noreferrer" class="publish-client-link">YakiHonne ↗</a>
+              <a href="https://habla.news" target="_blank" rel="noopener noreferrer" class="publish-client-link">Habla.news ↗</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <h3>Añade el tag de la comunidad</h3>
+          <p>Sea cual sea el cliente o tipo de contenido, añade siempre este tag para que aparezca aquí:</p>
+          <div class="tags-example">
+            <div class="tag-row">
+              <code class="tag-code">#plazap2p</code>
+              <span class="tag-desc">— tag de la comunidad, obligatorio</span>
+            </div>
+            <div class="tag-row">
+              <span class="tag-desc">Para anuncios también:</span>
+              <code class="tag-code">#venta</code> <span class="tag-sep">/</span>
+              <code class="tag-code">#compra</code> <span class="tag-sep">/</span>
+              <code class="tag-code">#servicio</code> <span class="tag-sep">/</span>
+              <code class="tag-code">#trueque</code>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <h3>PlazaP2P puede reflejar tu evento</h3>
+          <p>En segundos tu evento se propaga a los relays Nostr. PlazaP2P lo detecta y puede mostrarlo en su vista comunitaria. Sin aprobación, sin moderación, sin esperas. Tu identidad y contenido permanecen en el ecosistema Nostr.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="publish-note">
+      <span class="note-icon">🔒</span>
+      <div>
+        <strong>PlazaP2P no es el lugar donde ocurre la interacción.</strong> Solo muestra una vista resumida de eventos públicos en Nostr.
+        Tu identidad, contenido y contacto permanecen en el ecosistema Nostr, fuera de esta interfaz.
+      </div>
+    </div>
+  </section>
+
+  <!-- Relays tab -->
+  <section id="tab-relays" class="section-panel">
+    <div class="section-header">
+      <span class="section-title"><span class="icon">🔗</span> Relays conectados</span>
+    </div>
+
+    <p class="relays-intro">
+      PlazaP2P conecta a múltiples relays Nostr para garantizar disponibilidad y descentralización.
+      Puedes añadir estos relays a tu cliente Nostr para publicar anuncios en nuestra red.
+    </p>
+
+    <div id="relay-status-list" class="relay-list">
+      <!-- Populated by app.js -->
+    </div>
+
+    <div class="relays-info">
+      <h3>¿Qué es un relay?</h3>
+      <p>Un relay es un servidor que almacena y reenvía eventos Nostr. Son simples y ligeros. Cualquiera puede montar uno. La URL wss:// es el punto de conexión WebSocket.</p>
+
+      <h3>¿Cómo añadir estos relays a mi cliente?</h3>
+      <ol>
+        <li>Abre tu cliente Nostr (Primal, Amethyst, Damus, etc.)</li>
+        <li>Ve a Configuración → Relays</li>
+        <li>Añade las URLs que ves arriba (copia con el botón)</li>
+        <li>Guarda. Tu cliente empezará a sincronizar con estos relays</li>
+      </ol>
+
+      <h3>Red en expansión</h3>
+      <p>La lista de relays se actualiza periódicamente. Si tienes un relay bitcoin-friendly hispanohablante, puedes proponero en el repositorio GitHub del proyecto.</p>
+    </div>
+
+    <div class="relay-terms">
+      <h3>Términos de uso</h3>
+      <ul>
+        <li>PlazaP2P no almacena ni procesa datos personales directamente.</li>
+        <li>Los anuncios son publicados por los usuarios en relays Nostr públicos.</li>
+        <li>El proyecto no es responsable del contenido publicado por terceros.</li>
+        <li>Prohibido publicar contenido ilegal, estafas o engaños.</li>
+        <li>Cada usuario es responsable de verificar la identidad de sus contrapartes.</li>
+        <li>Código abierto bajo licencia CC BY 4.0 — puedes forkear y adaptar.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Acerca tab -->
+  <section id="tab-acerca" class="section-panel">
+    <div class="section-header">
+      <span class="section-title"><span class="icon">📋</span> Acerca de PlazaP2P</span>
+    </div>
+
+    <!-- Qué es -->
+    <div class="about-block">
+      <h2 class="subsection-title">¿Qué es PlazaP2P?</h2>
+      <p>PlazaP2P es una ventana comunitaria hacia Nostr. Su objetivo es facilitar el acceso a contenido público publicado en la red Nostr y acercar su uso a la comunidad hispanohablante interesada en Bitcoin, economía circular, intercambio P2P, aprendizaje y herramientas soberanas.</p>
+      <p>PlazaP2P no es una plataforma centralizada, no es un marketplace custodial y no es un intermediario. Es una interfaz de lectura que conecta con relays públicos de Nostr y muestra una vista resumida de eventos disponibles en esa red.</p>
+      <p>Las publicaciones no se crean en PlazaP2P. Se crean en Nostr, usando clientes externos compatibles. PlazaP2P solo detecta ciertos eventos públicos mediante tags comunitarios y los refleja para que sean más fáciles de descubrir.</p>
+    </div>
+
+    <!-- Qué no es -->
+    <div class="about-block">
+      <h2 class="subsection-title">¿Qué no es PlazaP2P?</h2>
+      <ul class="about-list about-list--negative">
+        <li>No publica contenido en nombre de los usuarios.</li>
+        <li>No almacena anuncios, posts ni artículos como fuente principal.</li>
+        <li>No aprueba, valida, edita ni modera publicaciones.</li>
+        <li>No participa en acuerdos entre usuarios.</li>
+        <li>No custodia fondos, pagos, productos, servicios ni identidades.</li>
+        <li>No verifica vendedores, compradores, empresas, comunidades ni perfiles.</li>
+        <li>No garantiza la veracidad, legalidad, disponibilidad o calidad de ningún contenido reflejado desde Nostr.</li>
+      </ul>
+      <p class="about-note">Todo contenido visible en PlazaP2P pertenece exclusivamente a sus autores y procede de eventos públicos disponibles en relays Nostr.</p>
+    </div>
+
+    <!-- Seguridad P2P -->
+    <div class="about-block">
+      <h2 class="subsection-title">Seguridad P2P</h2>
+      <p>Antes de contactar o hacer cualquier intercambio, revisa con calma.</p>
+      <ul class="about-list about-list--tips">
+        <li><strong>Verifica la identidad:</strong> usa el perfil Nostr, historial, reputación, claves públicas, contactos conocidos o canales externos de confianza de la otra persona.</li>
+        <li><strong>Desconfía de urgencias:</strong> ofertas demasiado buenas, presión para pagar rápido o cambios repentinos de condiciones son señales de alerta.</li>
+        <li><strong>No envíes fondos que no estés dispuesto a perder</strong> si no puedes verificar a la contraparte.</li>
+        <li><strong>No compartas datos personales innecesarios</strong> antes de establecer confianza.</li>
+        <li><strong>Prioriza métodos P2P con buena reputación,</strong> pagos verificables y comunicación clara.</li>
+      </ul>
+      <p class="about-note">PlazaP2P facilita el descubrimiento de contenido, pero la responsabilidad de cualquier interacción es siempre de las personas involucradas.</p>
+    </div>
+
+    <!-- FAQ -->
+    <div class="about-block">
+      <h2 class="subsection-title">Preguntas frecuentes</h2>
+      <div class="faq-list">
+        <div class="faq-item">
+          <h3 class="faq-q">¿Cómo aparezco en PlazaP2P?</h3>
+          <p class="faq-a">Publica desde tu cliente Nostr preferido usando el tag <code>#plazap2p</code>. PlazaP2P no recibe formularios ni crea publicaciones — solo consulta relays públicos y muestra una vista de los eventos compatibles que encuentra.</p>
+        </div>
+        <div class="faq-item">
+          <h3 class="faq-q">¿Por qué no veo mi publicación aquí?</h3>
+          <p class="faq-a">La aparición depende de varios factores: relays usados, disponibilidad de la red, formato del evento y tags incluidos. PlazaP2P no puede garantizar que todo evento publicado en Nostr aparezca siempre ni de forma inmediata.</p>
+        </div>
+        <div class="faq-item">
+          <h3 class="faq-q">¿Necesito registrarme?</h3>
+          <p class="faq-a">No. PlazaP2P no requiere registro, cuenta de usuario, email ni contraseña. Puedes navegar sin identificarte.</p>
+        </div>
+        <div class="faq-item">
+          <h3 class="faq-q">¿Quién es responsable del contenido?</h3>
+          <p class="faq-a">Cada publicación pertenece a su autor y fue difundida voluntariamente a través de relays públicos de Nostr. PlazaP2P no modera ni valida ningún contenido reflejado.</p>
+        </div>
+        <div class="faq-item">
+          <h3 class="faq-q">¿Cómo elimino mi contenido de aquí?</h3>
+          <p class="faq-a">PlazaP2P refleja eventos públicos en tiempo real desde relays Nostr. Si publicas un evento de eliminación (kind:5) desde tu cliente Nostr y los relays lo procesan, dejará de aparecer en la siguiente actualización.</p>
+        </div>
+        <div class="faq-item">
+          <h3 class="faq-q">¿Cómo contribuir al proyecto?</h3>
+          <p class="faq-a">El código es abierto. Puedes proponer mejoras, reportar errores o sugerir relays en el repositorio GitHub del proyecto. El enlace está en el encabezado.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Privacidad -->
+    <div class="about-block">
+      <h2 class="subsection-title">Privacidad</h2>
+      <p>PlazaP2P no requiere registro, cuenta de usuario, email ni contraseña. La web no necesita identificarte para navegar.</p>
+      <p>PlazaP2P muestra contenido público de Nostr. Todo evento reflejado procede de información publicada voluntariamente por sus autores en relays públicos o accesibles. No debes publicar datos sensibles en Nostr si no quieres que puedan ser vistos, copiados, indexados o reflejados por terceros.</p>
+      <p>Nostr es una red abierta: aunque un cliente deje de mostrar un evento, otros relays, clientes o servicios podrían conservarlo o reflejarlo.</p>
+    </div>
+
+    <!-- Relays y disponibilidad -->
+    <div class="about-block">
+      <h2 class="subsection-title">Relays y disponibilidad</h2>
+      <p>PlazaP2P obtiene información desde relays públicos de Nostr. Los relays son servidores independientes que almacenan y retransmiten eventos — no pertenecen necesariamente a PlazaP2P.</p>
+      <p>Si un relay está caído, lento, saturado o elimina contenido, la información mostrada puede variar. La misma publicación puede aparecer, desaparecer o actualizarse dependiendo de los relays consultados. PlazaP2P no controla la disponibilidad global de Nostr ni la persistencia de los eventos en la red.</p>
+    </div>
+
+    <!-- Aviso legal -->
+    <div class="about-block about-block--legal">
+      <h2 class="subsection-title">Aviso de responsabilidad</h2>
+      <p>PlazaP2P actúa únicamente como una interfaz de visualización de contenido público disponible en Nostr. No somos responsables de lo que terceros publiquen en Nostr, ni de las conversaciones, acuerdos, pagos, entregas, servicios o intercambios que puedan surgir entre usuarios fuera de esta web.</p>
+      <p>Cada persona es responsable de verificar la identidad, reputación, condiciones y legitimidad de cualquier contraparte antes de iniciar una interacción, enviar fondos o compartir información personal. PlazaP2P no interviene en disputas, no resuelve conflictos y no ofrece garantías sobre ninguna publicación reflejada.</p>
+      <p>Si detectas contenido sospechoso, ilegal o fraudulento, debes actuar desde los clientes, relays o herramientas de Nostr correspondientes. PlazaP2P puede ajustar sus filtros técnicos, pero no controla la red Nostr.</p>
+      <p class="about-legal-note">PlazaP2P es una herramienta informativa que refleja contenido público disponible en la red Nostr. Las publicaciones pertenecen a sus autores y son difundidas mediante relays independientes. PlazaP2P no es parte de ninguna operación, conversación, compraventa, servicio, pago o acuerdo entre usuarios.</p>
+    </div>
+
+  </section>
+
+</main>
+
+<!-- ── Modal ──────────────────────────────────────────────────── -->
+<div id="listing-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title"></div>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="footer-logo">Plaza<span class="accent">P2P</span></span>
+      <span class="footer-tag">Reflejo comunitario de contenido público en Nostr</span>
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/jjstudio-dev/plazap2p" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="https://njump.me" target="_blank" rel="noopener noreferrer">njump.me</a>
+      <a href="https://nostr.com" target="_blank" rel="noopener noreferrer">nostr.com</a>
+      <a href="#" onclick="window.switchTab?.('acerca');return false;">Aviso legal</a>
+      <a href="#" onclick="window.switchTab?.('acerca');return false;">Privacidad</a>
+    </div>
+    <div class="footer-meta">
+      <span>Contenido reflejado desde relays Nostr públicos</span>
+      <span class="footer-sep">·</span>
+      <span>CC BY 4.0</span>
+      <span class="footer-sep">·</span>
+      <span>Sin cookies · Sin tracking</span>
+    </div>
+  </div>
+</footer>
+
+<!-- Toast notifications -->
+<div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<!-- ESM module — app.js imports nostr.js and relay-pool.js -->
+<script type="module" src="js/app.js"></script>
+<script type="module">
+  import { initBtcStats }   from './js/btc-stats.js';
+  import { initPriceChart } from './js/btc-chart.js';
+  import { initConverter }  from './js/converter.js';
+
+  initBtcStats();
+
+  // Init chart + converter when Bitcoin tab is first opened
+  let bitcoinInited = false;
+  document.querySelector('[data-tab="bitcoin"]')?.addEventListener('click', () => {
+    if (bitcoinInited) return;
+    bitcoinInited = true;
+    initPriceChart();
+    initConverter();
+  });
+
+  // Deep-link: ?tab=mercado or ?tab=bitcoin etc.
+  const tabParam = new URLSearchParams(location.search).get('tab');
+  if (tabParam) {
+    window.switchTab?.(tabParam);
+    if (tabParam === 'bitcoin') {
+      bitcoinInited = true;
+      initPriceChart();
+      initConverter();
+    }
+  }
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+</script>
+</body>
+</html>

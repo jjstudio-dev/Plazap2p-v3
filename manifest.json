@@ -1,0 +1,43 @@
+{
+  "name": "PlazaP2P — Comunidad Nostr",
+  "short_name": "PlazaP2P",
+  "description": "Ventana comunitaria hacia Nostr. Refleja eventos públicos sobre Bitcoin, economía circular y actividad P2P. Sin registro, sin intermediarios.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#07070c",
+  "theme_color": "#f7931a",
+  "lang": "es",
+  "categories": ["finance", "shopping", "social"],
+  "icons": [
+    {
+      "src": "icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Ver Mercado",
+      "short_name": "Mercado",
+      "description": "Eventos P2P en tiempo real desde relays Nostr",
+      "url": "/?tab=mercado",
+      "icons": [{ "src": "icons/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Conversor BTC",
+      "short_name": "Conversor",
+      "description": "Convierte BTC, sats y fiat",
+      "url": "/?tab=bitcoin",
+      "icons": [{ "src": "icons/icon-192.svg", "sizes": "192x192" }]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Preguntas generales
+    url: https://nostr.com
+    about: Para preguntas sobre Nostr y PlazaP2P usa cualquier cliente Nostr con el tag #plazap2p

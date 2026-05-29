@@ -1,0 +1,52 @@
+[
+  {
+    "id": "com-001",
+    "nombre": "Bitcoin Hispano",
+    "plataforma": "Telegram",
+    "link": "https://t.me/BitcoinHispano",
+    "pais": "Global",
+    "descripcion": "Comunidad en español sobre Bitcoin, soberanía financiera y economía circular. Miles de miembros de toda Latinoamérica y España.",
+    "idioma": "es",
+    "aprobado": true
+  },
+  {
+    "id": "com-002",
+    "nombre": "Nostr en Español",
+    "plataforma": "Nostr",
+    "link": "https://primal.net/p/npub1ua7sm06cn6r2uf0hhku2fxvlqm2a9lhzzh9dcwgxdqyxz5ux4vqpq6l9w",
+    "pais": "Global",
+    "descripcion": "Comunidad hispanohablante en Nostr. Recursos, ayuda y conversación sobre el protocolo Nostr en español.",
+    "idioma": "es",
+    "aprobado": true
+  },
+  {
+    "id": "com-003",
+    "nombre": "Lightning Network Español",
+    "plataforma": "Telegram",
+    "link": "https://t.me/lightningnetworkes",
+    "pais": "Global",
+    "descripcion": "Comunidad técnica sobre Lightning Network en español. Nodos, canales, liquidez y desarrollo.",
+    "idioma": "es",
+    "aprobado": true
+  },
+  {
+    "id": "com-004",
+    "nombre": "Bitcoin Argentina",
+    "plataforma": "Telegram",
+    "link": "https://t.me/BitcoinArgentina",
+    "pais": "Argentina",
+    "descripcion": "Comunidad argentina de Bitcoin. Precios, P2P local, novedades regulatorias y eventos presenciales.",
+    "idioma": "es",
+    "aprobado": true
+  },
+  {
+    "id": "com-005",
+    "nombre": "Bitcoin Venezuela",
+    "plataforma": "Telegram",
+    "link": "https://t.me/BitcoinVenezuela",
+    "pais": "Venezuela",
+    "descripcion": "Comunidad venezolana de Bitcoin enfocada en soberanía financiera, remesas y P2P local.",
+    "idioma": "es",
+    "aprobado": true
+  }
+]

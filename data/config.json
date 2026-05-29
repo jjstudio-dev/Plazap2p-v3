@@ -1,0 +1,47 @@
+{
+  "_setup": "PASOS PARA PRODUCCIÓN: 1) Crear keypair Nostr (Alby/nos2x/nak). 2) Publicar kind:0 perfil en los relays. 3) Copiar pubkey en hex a maintainer_pubkey. 4) Opcional: publicar kind:30003 NIP-51 list con anuncios curados y poner su naddr en curated_list_naddr. Sin curated_list_naddr la app muestra todos los kind:30402 con #plazap2p (modo fallback).",
+
+  "maintainer_pubkey":   "",
+  "curated_list_naddr":  "",
+
+  "community_tags": ["plazap2p", "PlazaP2P"],
+  "relays": [
+    "wss://nos.lol",
+    "wss://relay.primal.net",
+    "wss://relay.damus.io",
+    "wss://nostr.bitcoiner.social",
+    "wss://relay.nostr.band"
+  ],
+  "channels": [
+    { "id": "mercado",   "kinds": [30402],        "label": "Mercado",    "icon": "🛒" },
+    { "id": "feed",      "kinds": [1],             "label": "Feed",       "icon": "💬" },
+    { "id": "articulos", "kinds": [30023],         "label": "Artículos",  "icon": "📄" }
+  ],
+  "refresh_interval_ms": 300000,
+  "categories": [
+    { "id": "venta",    "label": "Venta",    "color": "#00d4ff" },
+    { "id": "compra",   "label": "Compra",   "color": "#30d158" },
+    { "id": "servicio", "label": "Servicio", "color": "#bf5af2" },
+    { "id": "trueque",  "label": "Trueque",  "color": "#ffd60a" }
+  ],
+  "publish_clients": [
+    { "id": "plebeian",  "name": "Plebeian Market", "url": "https://plebeian.market", "desc": "Publica anuncios NIP-99 (kind:30402)", "icon": "🛒" },
+    { "id": "shopstr",   "name": "Shopstr",          "url": "https://shopstr.store",   "desc": "Marketplace Nostr con Lightning",     "icon": "⚡" },
+    { "id": "primal",    "name": "Primal",            "url": "https://primal.net",      "desc": "Cliente web y móvil, posts kind:1",   "icon": "🌐" },
+    { "id": "amethyst",  "name": "Amethyst",          "url": "https://amethyst.social", "desc": "Android, todos los NIPs",             "icon": "💜" },
+    { "id": "yakihonne", "name": "YakiHonne",         "url": "https://yakihonne.com",   "desc": "Artículos largos NIP-23 (kind:30023)","icon": "✍️" },
+    { "id": "habla",     "name": "Habla.news",        "url": "https://habla.news",      "desc": "Blog descentralizado sobre Nostr",    "icon": "📰" }
+  ],
+  "nostr_clients": [
+    { "name": "Primal",    "url": "https://primal.net",          "platform": "Web/iOS/Android", "icon": "🌐" },
+    { "name": "Amethyst",  "url": "https://amethyst.social",     "platform": "Android",         "icon": "💜" },
+    { "name": "Damus",     "url": "https://damus.io",            "platform": "iOS",             "icon": "🟣" },
+    { "name": "Snort",     "url": "https://snort.social",        "platform": "Web",             "icon": "⚡" },
+    { "name": "Coracle",   "url": "https://coracle.social",      "platform": "Web",             "icon": "🔵" }
+  ],
+  "wallets": [
+    { "name": "Alby",   "url": "https://getalby.com",                     "platform": "Chrome/Firefox", "icon": "🐝" },
+    { "name": "Amber",  "url": "https://github.com/greenart7c3/Amber",    "platform": "Android",        "icon": "🟠" },
+    { "name": "nos2x",  "url": "https://github.com/fiatjaf/nos2x",        "platform": "Chrome",         "icon": "🔑" }
+  ]
+}

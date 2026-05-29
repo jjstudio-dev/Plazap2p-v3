@@ -1,0 +1,342 @@
+[
+  {
+    "id": "h-001",
+    "nombre": "Bisq",
+    "categoria": "p2p",
+    "descripcion": "Exchange P2P descentralizado para comprar y vender Bitcoin con fiat o cripto sin KYC. Funciona sobre una red peer-to-peer y Tor. El estándar de oro para privacidad en intercambios.",
+    "link": "https://bisq.network",
+    "plataforma": "Desktop",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-002",
+    "nombre": "RoboSats",
+    "categoria": "p2p",
+    "descripcion": "Exchange P2P sobre Lightning Network con avatares desechables y acceso por Tor. Sin registro, sin cuenta, sin datos personales. Intercambios en minutos con mínima huella digital.",
+    "link": "https://learn.robosats.com",
+    "plataforma": "Web · Mobile",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-003",
+    "nombre": "Peach Bitcoin",
+    "categoria": "p2p",
+    "descripcion": "App móvil para comprar y vender Bitcoin P2P con métodos de pago locales. Sin KYC para volúmenes bajos, sin custodia. Especialmente popular en Europa y Latinoamérica.",
+    "link": "https://peachbitcoin.com",
+    "plataforma": "Mobile",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-004",
+    "nombre": "Mostro",
+    "categoria": "p2p",
+    "descripcion": "Exchange P2P nativo de Nostr. Publica y toma órdenes de compra/venta de Bitcoin directamente en la red Nostr. Sin custodio central, sin cuenta. El P2P más soberano.",
+    "link": "https://mostro.network",
+    "plataforma": "Nostr",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-005",
+    "nombre": "HodlHodl",
+    "categoria": "p2p",
+    "descripcion": "Exchange P2P global con escrow multisig entre comprador y vendedor. Sin KYC requerido, sin custodia de fondos. Múltiples métodos de pago y monedas locales.",
+    "link": "https://hodlhodl.com",
+    "plataforma": "Web",
+    "open_source": false,
+    "aprobado": true
+  },
+  {
+    "id": "h-006",
+    "nombre": "Vexl",
+    "categoria": "p2p",
+    "descripcion": "App móvil para intercambiar Bitcoin P2P a través de tu red de contactos y amigos. Sin datos personales, sin KYC, intercambios basados en confianza de red social.",
+    "link": "https://vexl.it",
+    "plataforma": "Mobile",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-007",
+    "nombre": "Haveno",
+    "categoria": "p2p",
+    "descripcion": "Fork de Bisq construido sobre Monero y Tor. Exchange P2P no-custodial con máxima privacidad. Permite intercambiar BTC, XMR y fiat sin ningún dato personal requerido.",
+    "link": "https://haveno.exchange",
+    "plataforma": "Desktop",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-008",
+    "nombre": "Boltz",
+    "categoria": "p2p",
+    "descripcion": "Atomic swaps no-custodial entre Bitcoin on-chain, Lightning Network y Liquid. Sin cuentas, sin KYC, swaps instantáneos. Ideal para mover liquidez entre capas.",
+    "link": "https://boltz.exchange",
+    "plataforma": "Web",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-009",
+    "nombre": "Phoenix Wallet",
+    "categoria": "lightning",
+    "descripcion": "Wallet Lightning mobile no-custodial de ACINQ. Gestión automática de canales, pagos instantáneos y splicing. La forma más sencilla de usar Lightning con soberanía total.",
+    "link": "https://phoenix.acinq.co",
+    "plataforma": "Mobile",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-010",
+    "nombre": "Zeus Wallet",
+    "categoria": "lightning",
+    "descripcion": "Wallet Lightning que se conecta a tu propio nodo (LND, Core Lightning, Eclair) desde el móvil. Control total sobre tus canales y liquidez. Soporte para LNDHUB.",
+    "link": "https://zeusln.app",
+    "plataforma": "Mobile",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-011",
+    "nombre": "Breez",
+    "categoria": "lightning",
+    "descripcion": "Wallet Lightning no-custodial con podcast player integrado y punto de venta. SDK disponible para desarrolladores. Usa Greenlight (CLN en la nube) para gestión de canales.",
+    "link": "https://breez.technology",
+    "plataforma": "Mobile",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-012",
+    "nombre": "Alby Hub",
+    "categoria": "lightning",
+    "descripcion": "Nodo Lightning personal con extensión de navegador NIP-07 para Nostr y wallet Lightning integrada. Conecta tu wallet a cualquier aplicación Nostr o web con zaps.",
+    "link": "https://getalby.com",
+    "plataforma": "Web · Chrome · Firefox",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-013",
+    "nombre": "BTCPay Server",
+    "categoria": "lightning",
+    "descripcion": "Procesador de pagos Bitcoin self-hosted gratuito y open source. Acepta pagos on-chain y Lightning sin comisiones ni intermediarios. Estándar para negocios soberanos.",
+    "link": "https://btcpayserver.org",
+    "plataforma": "Web · Self-hosted",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-014",
+    "nombre": "Sparrow Wallet",
+    "categoria": "wallet",
+    "descripcion": "Wallet Bitcoin de escritorio enfocada en privacidad y control total. Soporta multisig, coinjoin (Whirlpool/JoinMarket), PSBT, hardware wallets y conexión a nodo propio.",
+    "link": "https://sparrowwallet.com",
+    "plataforma": "Desktop",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-015",
+    "nombre": "Electrum",
+    "categoria": "wallet",
+    "descripcion": "La wallet Bitcoin más veterana y confiable. Ligera, rápida, compatible con hardware wallets y multisig. Disponible para escritorio y Android. Referencia desde 2011.",
+    "link": "https://electrum.org",
+    "plataforma": "Desktop · Mobile",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-016",
+    "nombre": "Nunchuk",
+    "categoria": "wallet",
+    "descripcion": "Wallet Bitcoin con foco en multisig colaborativo y herencia digital. Permite firmar transacciones con múltiples dispositivos y configurar planes de herencia seguros.",
+    "link": "https://nunchuk.io",
+    "plataforma": "Desktop · Mobile",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-017",
+    "nombre": "Blue Wallet",
+    "categoria": "wallet",
+    "descripcion": "Wallet Bitcoin y Lightning simple y elegante para móvil. Soporta LNDHUB, modo watch-only, multisig y transacciones por Tor. Ideal para usuarios que empiezan.",
+    "link": "https://bluewallet.io",
+    "plataforma": "Mobile",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-018",
+    "nombre": "Bitcoin Core",
+    "categoria": "node",
+    "descripcion": "La implementación de referencia del protocolo Bitcoin. Corre un nodo completo, valida la cadena de bloques desde el génesis y contribuye a la descentralización de la red.",
+    "link": "https://bitcoincore.org",
+    "plataforma": "Desktop · CLI",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-019",
+    "nombre": "Umbrel",
+    "categoria": "node",
+    "descripcion": "Sistema operativo personal para correr tu propio nodo Bitcoin, Lightning y aplicaciones soberanas desde casa. Instalación en minutos sobre una Raspberry Pi o mini PC.",
+    "link": "https://umbrel.com",
+    "plataforma": "Self-hosted",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-020",
+    "nombre": "Start9",
+    "categoria": "node",
+    "descripcion": "Servidor soberano personal (Embassy OS) para correr Bitcoin, Lightning, Nostr y más de 100 servicios desde casa. Hardware preconfigurado o instalable en cualquier máquina.",
+    "link": "https://start9.com",
+    "plataforma": "Self-hosted",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-021",
+    "nombre": "RaspiBlitz",
+    "categoria": "node",
+    "descripcion": "Nodo Bitcoin y Lightning DIY sobre Raspberry Pi. Proyecto comunitario con toda la flexibilidad para configurar tu propio setup soberano a bajo coste.",
+    "link": "https://raspiblitz.org",
+    "plataforma": "Self-hosted",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-022",
+    "nombre": "Mempool.space",
+    "categoria": "analytics",
+    "descripcion": "El explorador de bloques y mempool más completo. Monitorea transacciones, fees en tiempo real, visualización del pool y estadísticas de la red. Open source y self-hosteable.",
+    "link": "https://mempool.space",
+    "plataforma": "Web",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-023",
+    "nombre": "Clark Moody Dashboard",
+    "categoria": "analytics",
+    "descripcion": "Dashboard con métricas clave de Bitcoin: precio, hashrate, dificultad, fee medio, supply y más, todo en una sola pantalla. Minimalista y actualizado en tiempo real.",
+    "link": "https://bitcoin.clarkmoody.com",
+    "plataforma": "Web",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-024",
+    "nombre": "Bitrefill",
+    "categoria": "utilities",
+    "descripcion": "Compra tarjetas regalo y recarga móviles con Bitcoin y Lightning Network. Más de 5.000 productos en 170+ países sin KYC. La forma más fácil de usar Bitcoin en el día a día.",
+    "link": "https://www.bitrefill.com",
+    "plataforma": "Web",
+    "open_source": false,
+    "aprobado": true
+  },
+  {
+    "id": "h-025",
+    "nombre": "Tor Browser",
+    "categoria": "privacy",
+    "descripcion": "Navegador oficial de la red Tor. Anonimiza el tráfico enrutando por tres nodos, bloquea trackers y fingerprinting. Basado en Firefox con configuración de privacidad máxima.",
+    "link": "https://www.torproject.org",
+    "plataforma": "Desktop · Mobile",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-026",
+    "nombre": "Mullvad VPN",
+    "categoria": "privacy",
+    "descripcion": "VPN de máxima privacidad: sin cuenta, sin email, pago en Bitcoin/Monero o efectivo. Sin logs, código abierto y auditado. Uno de los pocos servicios que no sabe quién eres.",
+    "link": "https://mullvad.net",
+    "plataforma": "Multi-plataforma",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-027",
+    "nombre": "Tails OS",
+    "categoria": "privacy",
+    "descripcion": "Distro Linux live diseñada para anonimato total vía Tor. Arranca desde USB, no deja rastros en el hardware y toda la actividad se borra al apagar.",
+    "link": "https://tails.boum.org",
+    "plataforma": "Live USB",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-028",
+    "nombre": "Bitwarden",
+    "categoria": "privacy",
+    "descripcion": "Gestor de contraseñas open source con sincronización cifrada en la nube. Puede auto-hospedarse con Vaultwarden. Disponible en todas las plataformas, con auditorías regulares.",
+    "link": "https://bitwarden.com",
+    "plataforma": "Multi-plataforma",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-029",
+    "nombre": "Session",
+    "categoria": "privacy",
+    "descripcion": "Mensajería descentralizada sin número de teléfono ni email para registrarse. Sin metadatos, cifrado E2E y red distribuida de nodos. El messenger más privado para uso cotidiano.",
+    "link": "https://getsession.org",
+    "plataforma": "Multi-plataforma",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-030",
+    "nombre": "Nostrcheck.me",
+    "categoria": "nostr",
+    "descripcion": "Servicio de verificación NIP-05 para Nostr. Obtén una identidad verificada (nombre@nostrcheck.me) de forma gratuita o usa tu propio dominio.",
+    "link": "https://nostrcheck.me",
+    "plataforma": "Web",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-031",
+    "nombre": "relay.tools",
+    "categoria": "nostr",
+    "descripcion": "Directorio y panel de control para relays Nostr. Consulta el estado de relays públicos, sus políticas y estadísticas de conectividad.",
+    "link": "https://relay.tools",
+    "plataforma": "Web",
+    "open_source": false,
+    "aprobado": true
+  },
+  {
+    "id": "h-032",
+    "nombre": "Nostrtool",
+    "categoria": "nostr",
+    "descripcion": "Herramienta web para explorar, depurar y publicar eventos Nostr manualmente. Útil para desarrolladores y usuarios avanzados que quieren interactuar directamente con relays.",
+    "link": "https://nostrtool.com",
+    "plataforma": "Web",
+    "open_source": false,
+    "aprobado": true
+  },
+  {
+    "id": "h-033",
+    "nombre": "njump.me",
+    "categoria": "nostr",
+    "descripcion": "Visor web de eventos, perfiles y listas Nostr. Abre cualquier naddr, npub o note1 en el navegador sin necesidad de cliente. Indispensable para compartir contenido Nostr.",
+    "link": "https://njump.me",
+    "plataforma": "Web",
+    "open_source": true,
+    "aprobado": true
+  },
+  {
+    "id": "h-034",
+    "nombre": "Nak",
+    "categoria": "nostr",
+    "descripcion": "Herramienta CLI para interactuar con Nostr desde la terminal. Publica eventos, consulta relays, firma mensajes y gestiona claves sin necesidad de cliente gráfico.",
+    "link": "https://github.com/fiatjaf/nak",
+    "plataforma": "CLI",
+    "open_source": true,
+    "aprobado": true
+  }
+]

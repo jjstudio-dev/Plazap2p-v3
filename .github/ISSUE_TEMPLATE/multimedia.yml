@@ -1,0 +1,71 @@
+name: "🎙 Sugerir Multimedia"
+description: Proponer un podcast, canal de YouTube, newsletter o blog para el directorio
+title: "[MULTIMEDIA] "
+labels: ["multimedia", "pendiente-revision"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por proponer contenido multimedia para PlazaP2P.
+        **PlazaP2P no verifica ni avala los recursos listados.** Cada persona es responsable de evaluar el contenido.
+
+  - type: input
+    id: nombre
+    attributes:
+      label: Nombre del recurso
+      placeholder: "El Podcast de Bitcoin"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tipo
+    attributes:
+      label: Tipo
+      options:
+        - Podcast
+        - Canal YouTube
+        - Newsletter
+        - Blog
+        - Livestream
+        - Otro
+    validations:
+      required: true
+
+  - type: input
+    id: link
+    attributes:
+      label: Link principal
+      placeholder: "https://..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: descripcion
+    attributes:
+      label: Descripción breve
+      placeholder: "¿De qué trata? ¿Con qué frecuencia publica? ¿A quién va dirigido?"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: idioma
+    attributes:
+      label: Idioma principal
+      options:
+        - Español
+        - Inglés
+        - Portugués
+        - Bilingüe
+        - Otro
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirmacion
+    attributes:
+      label: Confirmación
+      options:
+        - label: Este recurso es legítimo y relevante para la comunidad Bitcoin/Nostr/P2P
+          required: true
+        - label: Entiendo que PlazaP2P no verifica ni es responsable del contenido listado
+          required: true
