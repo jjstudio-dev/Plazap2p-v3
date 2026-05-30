@@ -338,5 +338,15 @@
     "plataforma": "CLI",
     "open_source": true,
     "aprobado": true
+  },
+  {
+    "id": "h-035",
+    "nombre": "Freedomia",
+    "categoria": "utilities",
+    "descripcion": "Servicio de tarjeta Visa prepago. Enlace promocional con 2 meses gratis.",
+    "link": "https://www.freedomia.io/a/mgu26u",
+    "plataforma": "Web",
+    "open_source": false,
+    "aprobado": true
   }
 ]

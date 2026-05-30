@@ -6,6 +6,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
+const ASSET_VERSION  = '18';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -18,7 +19,7 @@ let activeLocation = 'all';
 let searchQuery   = '';
 let sortPrefs     = {};  // { [channelId]: 'newest' | 'oldest' }
 
-const STATIC_TABS = new Set(['eventos', 'comunidades', 'herramientas', 'multimedia']);
+const STATIC_TABS = new Set(['comunidades', 'herramientas', 'multimedia']);
 
 const channels   = {};  // { [channelId]: Map<key, parsedItem> }
 const limits     = {};  // { [channelId]: number }
@@ -54,7 +55,7 @@ async function init() {
 
 async function loadConfig() {
   try {
-    const res = await fetch('data/config.json');
+    const res = await fetch(versioned('data/config.json'));
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     config = await res.json();
   } catch (err) {
@@ -65,7 +66,8 @@ async function loadConfig() {
       channels: [
         { id: 'mercado',   kinds: [30402], label: 'Mercado',   icon: '🛒' },
         { id: 'feed',      kinds: [1],     label: 'Feed',      icon: '💬' },
-        { id: 'articulos', kinds: [30023], label: 'Artículos', icon: '📄' }
+        { id: 'articulos', kinds: [30023], label: 'Artículos', icon: '📄' },
+        { id: 'eventos',   kinds: [31922, 31923], label: 'Eventos', icon: '📅' }
       ],
       refresh_interval_ms: 300000,
       categories: [
@@ -198,7 +200,7 @@ function addEvent(channelId, event) {
 }
 
 function eventKey(event) {
-  if ([30402, 30023, 30405].includes(event.kind)) {
+  if ([30402, 30023, 30405, 31922, 31923].includes(event.kind)) {
     return `${event.pubkey}:${getTagValue(event.tags, 'd') || event.id}`;
   }
   return event.id;
@@ -210,6 +212,8 @@ function parseEvent(event) {
     case 1:     return parseFeedPost(event);
     case 30023: return parseArticle(event);
     case 30402: return parseListing(event);
+    case 31922:
+    case 31923: return parseCalendarEvent(event);
     case 30405: return parseGeneric(event);
     default:    return parseGeneric(event);
   }
@@ -258,6 +262,51 @@ function parseArticle(event) {
   };
 }
 
+function parseCalendarEvent(event) {
+  const { tags, pubkey, created_at, kind } = event;
+  const dTag     = getTagValue(tags, 'd') || event.id;
+  const title    = getTagValue(tags, 'title') || getTagValue(tags, 'name') || 'Evento sin título';
+  const summary  = sanitize(getTagValue(tags, 'summary') || event.content || '');
+  const location = getTagValues(tags, 'location').join(' · ');
+  const startRaw = getTagValue(tags, 'start');
+  const endRaw   = getTagValue(tags, 'end');
+  const tzid     = getTagValue(tags, 'start_tzid') || '';
+  const links    = getTagValues(tags, 'r');
+  const start    = parseCalendarDate(kind, startRaw);
+  const end      = parseCalendarDate(kind, endRaw);
+  const naddr    = encodeNaddr({ kind, pubkey, identifier: dTag });
+
+  return {
+    kind,
+    title,
+    summary,
+    location,
+    start,
+    end,
+    tzid,
+    links,
+    naddr,
+    npub: hexToNpub(pubkey),
+    publishedAt: start?.ts || created_at,
+    created_at
+  };
+}
+
+function parseCalendarDate(kind, value) {
+  if (!value) return null;
+  if (kind === 31922) {
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00`) : new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return { ts: Math.floor(date.getTime() / 1000), date };
+  }
+
+  const ts = Number(value);
+  if (!Number.isFinite(ts)) return null;
+  const date = new Date(ts * 1000);
+  if (Number.isNaN(date.getTime())) return null;
+  return { ts, date };
+}
+
 function parseGeneric(event) {
   return {
     kind:        event.kind,
@@ -287,9 +336,14 @@ function renderActiveChannel() {
   document.getElementById('load-more-btn')?.remove();
 
   const sort = sortPrefs[activeTab] || 'newest';
-  let items = [...ch.values()].sort((a, b) =>
-    sort === 'oldest' ? a.publishedAt - b.publishedAt : b.publishedAt - a.publishedAt
-  );
+  let items = [...ch.values()];
+  if (activeTab === 'eventos') {
+    items = sortCalendarEvents(items);
+  } else {
+    items.sort((a, b) =>
+      sort === 'oldest' ? a.publishedAt - b.publishedAt : b.publishedAt - a.publishedAt
+    );
+  }
 
   // Populate location dropdown from all items before applying filters
   if (activeTab === 'mercado') updateLocationSelect(items);
@@ -305,7 +359,7 @@ function renderActiveChannel() {
   const q = searchQuery.trim().toLowerCase();
   if (q) {
     items = items.filter(item => {
-      const text = [item.title, item.summary, item.content].filter(Boolean).join(' ').toLowerCase();
+      const text = [item.title, item.summary, item.content, item.location].filter(Boolean).join(' ').toLowerCase();
       return text.includes(q);
     });
   }
@@ -338,8 +392,21 @@ function renderCard(item) {
     case 30402: return renderListingCard(item);
     case 1:     return renderFeedCard(item);
     case 30023: return renderArticleCard(item);
+    case 31922:
+    case 31923: return renderCalendarEventCard(item);
     default:    return renderGenericCard(item);
   }
+}
+
+function sortCalendarEvents(items) {
+  const now = Math.floor(Date.now() / 1000);
+  const isUpcoming = e => (e.end?.ts || e.start?.ts || e.publishedAt) >= now;
+  const upcoming = items.filter(isUpcoming);
+  const past = items.filter(e => !isUpcoming(e));
+  return [
+    ...upcoming.sort((a, b) => (a.start?.ts || a.publishedAt) - (b.start?.ts || b.publishedAt)),
+    ...past.sort((a, b) => (b.start?.ts || b.publishedAt) - (a.start?.ts || a.publishedAt))
+  ];
 }
 
 function renderListingCard(l) {
@@ -412,6 +479,56 @@ function renderGenericCard(item) {
       <span class="card-nostr-link">Ver en Nostr →</span>
     </div>
   </article>`;
+}
+
+// ── Calendar events ────────────────────────────────────────────
+function renderCalendarEventCard(e) {
+  const njumpUrl = `https://njump.me/${e.naddr}`;
+  const now      = Math.floor(Date.now() / 1000);
+  const startTs  = e.start?.ts || e.publishedAt;
+  const isPast   = (e.end?.ts || startTs) < now;
+  const date     = e.start?.date;
+  const day      = date ? date.toLocaleDateString('es-ES', { day: '2-digit' }) : '??';
+  const month    = date ? date.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase() : '';
+  const dateFmt  = fmtCalendarDate(e);
+  const primaryLink = e.links.find(link => safeUrl(link)) || njumpUrl;
+
+  return `<article class="event-card${isPast ? ' event-past' : ''}" onclick="window.open('${njumpUrl}','_blank','noopener noreferrer')">
+    <div class="event-date-block">
+      <span class="event-date">${day}</span>
+      <span class="event-month">${esc(month)}</span>
+    </div>
+    <div class="event-body">
+      <div class="event-top">
+        <span class="event-type-badge" style="color:#ffd60a;border-color:#ffd60a40">NIP-52</span>
+        ${isPast ? '<span class="event-past-badge">Pasado</span>' : ''}
+      </div>
+      <h3 class="event-title">${esc(e.title)}</h3>
+      ${e.location ? `<div class="event-location">📍 ${esc(e.location)}</div>` : ''}
+      ${dateFmt ? `<div class="event-time">📅 ${dateFmt}</div>` : ''}
+      ${e.summary ? `<p class="event-desc">${e.summary}</p>` : ''}
+      <div class="event-actions">
+        <a href="${safeUrl(primaryLink)}" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-sm" onclick="event.stopPropagation()">Ver evento ↗</a>
+        <a href="${njumpUrl}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm" onclick="event.stopPropagation()">Nostr ↗</a>
+      </div>
+    </div>
+  </article>`;
+}
+
+function fmtCalendarDate(e) {
+  if (!e.start?.date) return '';
+  if (e.kind === 31922) {
+    const opts = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
+    const start = e.start.date.toLocaleDateString('es-ES', opts);
+    if (!e.end?.date) return start;
+    return `${start} → ${e.end.date.toLocaleDateString('es-ES', opts)}`;
+  }
+
+  const opts = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+  const start = e.start.date.toLocaleString('es-ES', opts);
+  if (!e.end?.date) return e.tzid ? `${start} · ${esc(e.tzid)}` : start;
+  const end = e.end.date.toLocaleString('es-ES', opts);
+  return `${start} → ${end}${e.tzid ? ` · ${esc(e.tzid)}` : ''}`;
 }
 
 // ── Skeletons / Empty ──────────────────────────────────────────
@@ -696,9 +813,37 @@ function esc(str) {
 function safeUrl(url) {
   if (!url) return '';
   try {
-    const u = new URL(url);
-    return (u.protocol === 'https:' || u.protocol === 'http:') ? esc(url) : '';
+    url = String(url).trim();
+    if (/^(npub|nprofile|note|nevent|naddr)1/i.test(url)) {
+      url = `https://njump.me/${url}`;
+    }
+    const u = new URL(url, window.location.href);
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return '';
+    if (u.origin === window.location.origin) return esc(u.pathname + u.search + u.hash);
+    return esc(url);
   } catch { return ''; }
+}
+
+function versioned(path) {
+  const sep = path.includes('?') ? '&' : '?';
+  return `${path}${sep}v=${ASSET_VERSION}`;
+}
+
+function langBadge(idiom) {
+  if (!idiom) return '';
+  const flags = {
+    es: '🇪🇸 ES',
+    en: '🇬🇧 EN',
+    ing: '🇬🇧 EN',
+    pt: '🇵🇹 PT',
+    fr: '🇫🇷 FR',
+    de: '🇩🇪 DE',
+    it: '🇮🇹 IT'
+  };
+  return String(idiom).split(/[\/,· ]+/)
+    .filter(Boolean)
+    .map(part => flags[part.toLowerCase()] || part.toUpperCase())
+    .join(' · ');
 }
 
 function fmtAge(ts) {
@@ -751,13 +896,11 @@ function detectPayment(tTags) {
 async function loadStaticData() {
   const GITHUB_URL = 'https://github.com/jjstudio-dev/Plazap2p-v3';
   try {
-    const [eventos, comunidades, herramientas, multimedia] = await Promise.all([
-      fetch('data/eventos.json').then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch('data/comunidades.json').then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch('data/herramientas.json').then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch('data/multimedia.json').then(r => r.ok ? r.json() : []).catch(() => [])
+    const [comunidades, herramientas, multimedia] = await Promise.all([
+      fetch(versioned('data/comunidades.json')).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch(versioned('data/herramientas.json')).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch(versioned('data/multimedia.json')).then(r => r.ok ? r.json() : []).catch(() => [])
     ]);
-    renderEventos(eventos.filter(e => e.aprobado), GITHUB_URL);
     renderComunidades(comunidades.filter(c => c.aprobado), GITHUB_URL);
     renderHerramientas(herramientas.filter(h => h.aprobado), GITHUB_URL);
     renderMultimedia(multimedia.filter(m => m.aprobado), GITHUB_URL);
@@ -769,7 +912,7 @@ async function loadStaticData() {
 
 async function loadMantenimiento() {
   try {
-    const res = await fetch('data/mantenimiento.json');
+    const res = await fetch(versioned('data/mantenimiento.json'));
     if (!res.ok) return;
     const data = await res.json();
     if (!data.ln_address && !data.btc_address) return;
@@ -842,55 +985,6 @@ function staticEmpty(icon, label, githubUrl, templateParam) {
     <p class="empty-sub">Sé el primero en proponer un ${label.slice(0, -1)} para la comunidad.</p>
     <a href="${issueUrl}" target="_blank" rel="noopener noreferrer" class="btn-primary">Sugerir ${label.slice(0, -1)} en GitHub ↗</a>
   </div>`;
-}
-
-// ── Render: Eventos ────────────────────────────────────────────
-function renderEventos(items, githubUrl) {
-  const container = document.getElementById('channel-eventos');
-  if (!container) return;
-
-  const footer = document.getElementById('eventos-footer');
-
-  if (items.length === 0) {
-    container.innerHTML = staticEmpty('📅', 'eventos', githubUrl, 'evento.yml');
-    return;
-  }
-
-  const now = new Date().toISOString().slice(0, 10);
-  const upcoming = items.filter(e => !e.fecha || e.fecha >= now);
-  const past     = items.filter(e => e.fecha && e.fecha < now);
-  const sorted   = [...upcoming.sort((a, b) => (a.fecha || '').localeCompare(b.fecha || '')),
-                    ...past.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))];
-
-  const EVENT_TYPE_COLORS = { Meetup: '#30d158', Taller: '#00d4ff', Conferencia: '#f7931a', Hackathon: '#bf5af2', Online: '#ffd60a', Otro: '#86868b' };
-
-  container.innerHTML = sorted.map(e => {
-    const isPast  = e.fecha && e.fecha < now;
-    const color   = EVENT_TYPE_COLORS[e.tipo] || '#86868b';
-    const fechaFmt = e.fecha ? new Date(e.fecha + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : '';
-    return `<article class="event-card${isPast ? ' event-past' : ''}">
-      <div class="event-date-block">
-        ${e.fecha ? `<span class="event-date">${e.fecha.slice(8, 10)}</span><span class="event-month">${new Date(e.fecha + 'T12:00:00').toLocaleDateString('es-ES', { month: 'short' }).toUpperCase()}</span>` : '<span class="event-date">?</span>'}
-      </div>
-      <div class="event-body">
-        <div class="event-top">
-          <span class="event-type-badge" style="color:${color};border-color:${color}40">${e.tipo || 'Evento'}</span>
-          ${isPast ? '<span class="event-past-badge">Pasado</span>' : ''}
-          ${e.gratuito ? '<span class="event-free-badge">Gratis</span>' : ''}
-        </div>
-        <h3 class="event-title">${esc(e.nombre)}</h3>
-        ${e.ciudad || e.pais ? `<div class="event-location">📍 ${[e.ciudad, e.pais].filter(Boolean).map(esc).join(', ')}</div>` : ''}
-        ${e.hora ? `<div class="event-time">🕐 ${esc(e.hora)}${fechaFmt ? ` · ${fechaFmt}` : ''}</div>` : fechaFmt ? `<div class="event-time">📅 ${fechaFmt}</div>` : ''}
-        <p class="event-desc">${esc(e.descripcion || '')}</p>
-        <div class="event-actions">
-          ${e.link ? `<a href="${safeUrl(e.link)}" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-sm">Ver evento ↗</a>` : ''}
-          ${e.nostr_organizador ? `<a href="https://njump.me/${esc(e.nostr_organizador)}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm">Organizador ↗</a>` : ''}
-        </div>
-      </div>
-    </article>`;
-  }).join('');
-
-  if (footer) footer.innerHTML = staticDisclaimer('evento', githubUrl, 'evento.yml');
 }
 
 // ── Render: Comunidades ────────────────────────────────────────
@@ -990,22 +1084,36 @@ function renderMultimedia(items, githubUrl) {
     return;
   }
 
-  const TYPE_ICONS = { podcast: '🎙', youtube: '▶️', newsletter: '📰', blog: '✍️', livestream: '📺' };
+  const TYPE_ICONS = { perfil: '👤', podcast: '🎙', youtube: '▶', newsletter: '📰', blog: '✍', livestream: '📺', web: '🌐', x: '𝕏', twitter: '𝕏', github: '{}', pdf: 'PDF', nostr: 'N', telegram: 'TG', instagram: 'IG', linkedin: 'in', email: '@' };
+  const TYPE_LABELS = { perfil: 'perfil', podcast: 'podcast', youtube: 'youtube', newsletter: 'newsletter', blog: 'blog', livestream: 'directo', web: 'web', x: 'x', twitter: 'x', github: 'github', pdf: 'pdf', nostr: 'nostr', telegram: 'telegram', instagram: 'instagram', linkedin: 'linkedin', email: 'email' };
 
   container.innerHTML = items.map(m => {
     const icon = TYPE_ICONS[m.tipo] || '🔗';
-    return `<a href="${safeUrl(m.link)}" target="_blank" rel="noopener noreferrer" class="multimedia-card">
-      <div class="multimedia-type-icon">${icon}</div>
+    const links = Array.isArray(m.enlaces) ? m.enlaces : (m.link ? [{ tipo: m.tipo, label: m.tipo || 'Abrir', url: m.link }] : []);
+    const socialLinks = links.map(link => {
+      const type = link.tipo || 'web';
+      const label = link.label || TYPE_LABELS[type] || 'Abrir';
+      return `<a href="${safeUrl(link.url)}" target="_blank" rel="noopener noreferrer" class="multimedia-social-link" aria-label="${esc(label)}" title="${esc(label)}">
+        <span class="multimedia-social-icon">${TYPE_ICONS[type] || '↗'}</span>
+      </a>`;
+    }).join('');
+    const logo = safeUrl(m.logo_url || m.logo || '');
+    const mediaIcon = logo
+      ? `<img src="${logo}" alt="" class="multimedia-logo" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="multimedia-fallback-icon" style="display:none">${icon}</span>`
+      : `<span class="multimedia-fallback-icon">${icon}</span>`;
+
+    return `<article class="multimedia-card">
+      <div class="multimedia-type-icon">${mediaIcon}</div>
       <div class="multimedia-body">
         <div class="multimedia-top">
-          <span class="multimedia-type">${esc(m.tipo || 'recurso')}</span>
-          ${m.idioma ? `<span class="multimedia-lang">${esc(m.idioma.toUpperCase())}</span>` : ''}
+          <span class="multimedia-type">${esc(TYPE_LABELS[m.tipo] || m.tipo || 'recurso')}</span>
+          ${m.idioma ? `<span class="multimedia-lang">${esc(langBadge(m.idioma))}</span>` : ''}
         </div>
         <h3 class="multimedia-name">${esc(m.nombre)}</h3>
         <p class="multimedia-desc">${esc(m.descripcion || '')}</p>
+        ${socialLinks ? `<div class="multimedia-socials">${socialLinks}</div>` : ''}
       </div>
-      <span class="tool-arrow">↗</span>
-    </a>`;
+    </article>`;
   }).join('');
 
   if (footer) footer.innerHTML = staticDisclaimer('recurso', githubUrl, 'multimedia.yml');

@@ -1,8 +1,8 @@
 {
-  "name": "PlazaP2P — Comunidad Nostr",
+  "name": "PlazaP2P — Economía Circular P2P en Nostr",
   "short_name": "PlazaP2P",
-  "description": "Ventana comunitaria hacia Nostr. Refleja eventos públicos sobre Bitcoin, economía circular y actividad P2P. Sin registro, sin intermediarios.",
-  "start_url": "/",
+  "description": "Mercado, comunidad y recursos Bitcoin sobre Nostr. Economía circular P2P, publicaciones abiertas, sin registro y sin intermediarios.",
+  "start_url": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#07070c",
@@ -28,15 +28,15 @@
     {
       "name": "Ver Mercado",
       "short_name": "Mercado",
-      "description": "Eventos P2P en tiempo real desde relays Nostr",
-      "url": "/?tab=mercado",
+      "description": "Mercado P2P con publicaciones abiertas desde Nostr",
+      "url": "./?tab=mercado",
       "icons": [{ "src": "icons/icon-192.svg", "sizes": "192x192" }]
     },
     {
       "name": "Conversor BTC",
       "short_name": "Conversor",
       "description": "Convierte BTC, sats y fiat",
-      "url": "/?tab=bitcoin",
+      "url": "./?tab=bitcoin",
       "icons": [{ "src": "icons/icon-192.svg", "sizes": "192x192" }]
     }
   ]

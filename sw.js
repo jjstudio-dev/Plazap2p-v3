@@ -2,25 +2,28 @@
 // Cache-first para assets estáticos. Network-first para todo lo externo.
 
 // IMPORTANTE: incrementar 'r1' → 'r2' → 'r3'... en cada deploy para forzar actualización de caché
-const CACHE    = 'plazap2p-v3-r3';
+const CACHE    = 'plazap2p-v3-r22';
 const STATICS  = [
-  '/',
-  '/index.html',
-  '/css/style.css',
-  '/js/app.js',
-  '/js/nostr.js',
-  '/js/relay-pool.js',
-  '/js/btc-stats.js',
-  '/js/btc-chart.js',
-  '/js/converter.js',
-  '/data/config.json',
-  '/data/eventos.json',
-  '/data/comunidades.json',
-  '/data/herramientas.json',
-  '/data/multimedia.json',
-  '/manifest.json',
-  '/icons/icon-192.svg',
-  '/icons/icon-512.svg',
+  './',
+  './index.html',
+  './css/style.css',
+  './js/app.js',
+  './js/nostr.js',
+  './js/relay-pool.js',
+  './js/btc-stats.js',
+  './js/btc-chart.js',
+  './js/btc-market.js',
+  './js/converter.js',
+  './js/mini-converter.js',
+  './data/config.json',
+  './data/comunidades.json',
+  './data/herramientas.json',
+  './data/multimedia.json',
+  './docs/bitcoin-whitepaper-es.pdf',
+  './manifest.json',
+  './icons/icon-192.svg',
+  './icons/icon-192.png',
+  './icons/icon-512.svg',
 ];
 
 self.addEventListener('install', e => {
@@ -61,7 +64,7 @@ self.addEventListener('fetch', e => {
           caches.open(CACHE).then(c => c.put(request, res.clone()));
         }
         return res;
-      }).catch(() => caches.match('/index.html'));
+      }).catch(() => caches.match('./index.html'));
     })
   );
 });

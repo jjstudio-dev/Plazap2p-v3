@@ -2,46 +2,266 @@
   {
     "id": "med-001",
     "nombre": "Lunaticoin",
-    "tipo": "youtube",
-    "descripcion": "Canal de YouTube en español dedicado a Bitcoin, Nostr y soberanía digital. Análisis profundos, entrevistas y tutoriales de alta calidad.",
-    "link": "https://www.youtube.com/@lunaticoin",
+    "tipo": "perfil",
+    "descripcion": "Podcast de entrevistas y conversaciones Bitcoin en español. Lunaticoin se presenta como entusiasta Bitcoin que conecta con personas de habla hispana con perfil propio dentro del ecosistema.",
     "idioma": "es",
+    "enlaces": [
+      {
+        "tipo": "youtube",
+        "label": "YouTube",
+        "url": "https://www.youtube.com/@lunaticoin"
+      },
+      {
+        "tipo": "podcast",
+        "label": "Apple Podcasts",
+        "url": "https://podcasts.apple.com/es/podcast/lunaticoin/id1459795209"
+      },
+      {
+        "tipo": "web",
+        "label": "Blog",
+        "url": "https://lunaticoin.blog"
+      },
+      {
+        "tipo": "telegram",
+        "label": "Telegram",
+        "url": "https://t.me/lunaticoinpodcast"
+      },
+      {
+        "tipo": "nostr",
+        "label": "Nostr",
+        "url": "npub1yn3hc8jmpj963h0zw49ullrrkkefn7qxf78mj29u7v2mn3yktuasx3mzt0"
+      }
+    ],
     "aprobado": true
   },
   {
     "id": "med-002",
-    "nombre": "El Podcast de Bitcoin",
-    "tipo": "podcast",
-    "descripcion": "Podcast semanal en español sobre Bitcoin, macroeconomía austriaca y soberanía financiera. Uno de los más veteranos en el ecosistema hispanohablante.",
-    "link": "https://elpodcastdebitcoin.com",
+    "nombre": "AprendeBTC",
+    "tipo": "perfil",
+    "descripcion": "Guía educativa en español para aprender Bitcoin paso a paso, desde la primera compra hasta criptografía avanzada. Organiza el aprendizaje en seis niveles y ofrece un test inicial para orientar el punto de partida.",
     "idioma": "es",
+    "enlaces": [
+      {
+        "tipo": "web",
+        "label": "Web",
+        "url": "https://aprendebtc.com/"
+      }
+    ],
     "aprobado": true
   },
   {
     "id": "med-003",
-    "nombre": "Satoshi en Venezuela",
-    "tipo": "youtube",
-    "descripcion": "Canal sobre Bitcoin y herramientas P2P enfocado en Latinoamérica. Casos de uso reales, remesas y adopción popular.",
-    "link": "https://www.youtube.com/@satoshienvenezuela",
+    "nombre": "Nostr Fácil",
+    "tipo": "perfil",
+    "descripcion": "Guía en español para entender Nostr: un protocolo abierto para redes sociales descentralizadas y resistentes a la censura. Reúne conceptos, clientes, wallets, relays, seguridad, preguntas frecuentes y recursos.",
     "idioma": "es",
+    "enlaces": [
+      {
+        "tipo": "web",
+        "label": "Web",
+        "url": "https://nostrfacil.com/"
+      }
+    ],
     "aprobado": true
   },
   {
     "id": "med-004",
-    "nombre": "Bitcoin Magazine España",
-    "tipo": "newsletter",
-    "descripcion": "Newsletter en español con las noticias más relevantes del ecosistema Bitcoin. Análisis de red, eventos y novedades de la industria.",
-    "link": "https://bitcoinmagazine.com/es",
+    "nombre": "Jose Antonio Bravo Mateu / Negotians",
+    "tipo": "perfil",
+    "descripcion": "Referente economista tributario vinculado a Negotians. Ejerce como asesor fiscal y contable, con experiencia profesional en clientes relacionados con emprendimiento Bitcoin.",
     "idioma": "es",
+    "enlaces": [
+      {
+        "tipo": "youtube",
+        "label": "Jose Antonio Bravo",
+        "url": "https://www.youtube.com/@jabravo"
+      },
+      {
+        "tipo": "web",
+        "label": "Negotians",
+        "url": "https://negotians.net"
+      },
+      {
+        "tipo": "x",
+        "label": "X / Twitter",
+        "url": "https://twitter.com/Negotians_"
+      }
+    ],
     "aprobado": true
   },
   {
     "id": "med-005",
-    "nombre": "Bit Bravo",
-    "tipo": "podcast",
-    "descripcion": "Podcast técnico en español sobre Bitcoin y Lightning Network. Entrevistas a desarrolladores, operadores de nodos y emprendedores del ecosistema.",
-    "link": "https://bitbravo.com",
+    "nombre": "Jose Luis Cava",
+    "tipo": "perfil",
+    "descripcion": "Especulador de bien, analista técnico y autor de 2 best-sellers sobre Sistemas de Especulación. Cuenta con más de 30 años de experiencia en el sistema bancario español, radio, televisión, periódicos y récords de asistencia en conferencias en todo el país.",
     "idioma": "es",
+    "enlaces": [
+      {
+        "tipo": "youtube",
+        "label": "Jose Luis Cava TV",
+        "url": "https://www.youtube.com/@JoseLuisCavatv"
+      },
+      {
+        "tipo": "web",
+        "label": "Web",
+        "url": "https://www.bolsacava.es/"
+      },
+      {
+        "tipo": "x",
+        "label": "X / Twitter",
+        "url": "https://x.com/jluiscava"
+      }
+    ],
+    "aprobado": true
+  },
+  {
+    "id": "med-006",
+    "nombre": "Un Podcast Sobre Bitcoin",
+    "tipo": "perfil",
+    "descripcion": "Podcast diario de Alberto Mera sobre finanzas, economía e inversión, libertad e historia, siempre desde la perspectiva de Bitcoin. El proyecto está activo desde 2018.",
+    "idioma": "es",
+    "enlaces": [
+      {
+        "tipo": "web",
+        "label": "Web",
+        "url": "https://www.unpodcastsobrebitcoin.com/"
+      },
+      {
+        "tipo": "podcast",
+        "label": "Apple Podcasts",
+        "url": "https://podcasts.apple.com/es/podcast/un-podcast-sobre-bitcoin/id1440245280"
+      },
+      {
+        "tipo": "newsletter",
+        "label": "Newsletter",
+        "url": "https://albertomeraupsb.substack.com/"
+      }
+    ],
+    "aprobado": true
+  },
+  {
+    "id": "med-007",
+    "nombre": "BTC en Español",
+    "tipo": "perfil",
+    "descripcion": "Academia y canal educativo de Bitcoin en español. Publica cursos, charlas y vídeos con contenidos simples y de calidad para público hispanohablante.",
+    "idioma": "es",
+    "enlaces": [
+      {
+        "tipo": "youtube",
+        "label": "YouTube",
+        "url": "https://www.youtube.com/@btcenespanol"
+      }
+    ],
+    "aprobado": true
+  },
+  {
+    "id": "med-008",
+    "nombre": "Bitcoin en Español",
+    "tipo": "perfil",
+    "descripcion": "Podcast de Daniel Vargas con noticias, reseñas, análisis y opiniones sobre Bitcoin. Su objetivo es ayudar a entender qué es Bitcoin, cómo utilizarlo y cómo incorporarlo a la vida, el trabajo o un emprendimiento.",
+    "idioma": "es",
+    "enlaces": [
+      {
+        "tipo": "podcast",
+        "label": "Apple Podcasts",
+        "url": "https://podcasts.apple.com/es/podcast/bitcoin-en-espa%C3%B1ol/id1405877457"
+      }
+    ],
+    "aprobado": true
+  },
+  {
+    "id": "med-009",
+    "nombre": "Satoshi Nakamoto Institute",
+    "tipo": "perfil",
+    "descripcion": "Instituto dedicado a preservar y difundir conocimiento sobre Bitcoin. Reúne The Complete Satoshi, una biblioteca de textos sobre criptografía y libertad, artículos, podcasts y recursos históricos.",
+    "idioma": "en",
+    "enlaces": [
+      {
+        "tipo": "web",
+        "label": "Biblioteca",
+        "url": "https://satoshi.nakamotoinstitute.org/"
+      }
+    ],
+    "aprobado": true
+  },
+  {
+    "id": "med-010",
+    "nombre": "Jameson Lopp - Bitcoin Resources",
+    "tipo": "perfil",
+    "descripcion": "Directorio curado de Jameson Lopp con recursos educativos sobre Bitcoin. Agrupa materiales para empezar, elegir wallet, correr un nodo, estudiar seguridad, privacidad, historia, recursos técnicos y herramientas.",
+    "idioma": "en",
+    "enlaces": [
+      {
+        "tipo": "web",
+        "label": "Recursos Bitcoin",
+        "url": "https://www.lopp.net/bitcoin-information.html"
+      }
+    ],
+    "aprobado": true
+  },
+  {
+    "id": "med-011",
+    "nombre": "Bitcoin.org y BIPs",
+    "tipo": "perfil",
+    "descripcion": "Bitcoin.org presenta Bitcoin como una red de pagos innovadora y una nueva clase de dinero. El repositorio BIPs funciona como medio de publicación y archivo de propuestas de mejora para Bitcoin.",
+    "idioma": "es/en",
+    "enlaces": [
+      {
+        "tipo": "web",
+        "label": "Bitcoin.org",
+        "url": "https://bitcoin.org/es/"
+      },
+      {
+        "tipo": "github",
+        "label": "BIPs",
+        "url": "https://github.com/bitcoin/bips"
+      }
+    ],
+    "aprobado": true
+  },
+  {
+    "id": "med-012",
+    "nombre": "Bitcoin Whitepaper ESP",
+    "tipo": "pdf",
+    "descripcion": "Traducción al español del whitepaper de Satoshi Nakamoto, publicado originalmente el 31 de octubre de 2008. Presenta Bitcoin como un sistema de efectivo electrónico peer-to-peer.",
+    "idioma": "es",
+    "enlaces": [
+      {
+        "tipo": "pdf",
+        "label": "PDF",
+        "url": "docs/bitcoin-whitepaper-es.pdf"
+      }
+    ],
+    "aprobado": true
+  },
+  {
+    "id": "med-013",
+    "nombre": "PROMETEA",
+    "tipo": "perfil",
+    "descripcion": "Club de lectura Bitcoin. Reúne recursos, conversaciones y comunidad alrededor del estudio de Bitcoin.",
+    "idioma": "es",
+    "enlaces": [
+      {
+        "tipo": "web",
+        "label": "Web",
+        "url": "https://www.prometeabtc.com"
+      },
+      {
+        "tipo": "telegram",
+        "label": "Telegram",
+        "url": "https://t.me/+wLZbI-QVegdjNTcx"
+      },
+      {
+        "tipo": "x",
+        "label": "X / Twitter",
+        "url": "https://x.com/prometeabtc"
+      },
+      {
+        "tipo": "nostr",
+        "label": "Nostr",
+        "url": "https://snort.social/p/npub1pr0met7zv2ta27ckurslrwesexz0wm4kesz963a0mle2gczlyxrqf8huvr"
+      }
+    ],
     "aprobado": true
   }
 ]

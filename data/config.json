@@ -16,7 +16,8 @@
   "channels": [
     { "id": "mercado",   "kinds": [30402],        "label": "Mercado",    "icon": "🛒" },
     { "id": "feed",      "kinds": [1],             "label": "Feed",       "icon": "💬" },
-    { "id": "articulos", "kinds": [30023],         "label": "Artículos",  "icon": "📄" }
+    { "id": "articulos", "kinds": [30023],         "label": "Artículos",  "icon": "📄" },
+    { "id": "eventos",   "kinds": [31922, 31923],  "label": "Eventos",    "icon": "📅" }
   ],
   "refresh_interval_ms": 300000,
   "categories": [

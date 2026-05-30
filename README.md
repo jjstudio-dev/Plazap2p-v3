@@ -1,8 +1,8 @@
-# PlazaP2P v3 — Ventana Nostr
+# PlazaP2P v3 — Economía Circular P2P en Nostr
 
 **Directorio P2P de Economía Circular Bitcoin — España**
 
-> Páginas amarillas descentralizadas para personas y negocios que practican economía circular con Bitcoin. Sin intermediarios. Sin comisiones. 100% open source.
+> La plaza abierta para mercado, comunidad y recursos Bitcoin. Economía circular P2P sobre Nostr, sin registro, sin intermediarios y 100% open source.
 
 [![GitHub Pages](https://img.shields.io/badge/desplegado-GitHub%20Pages-0a0a0a?style=flat&logo=github)](https://github.com)
 [![Licencia MIT](https://img.shields.io/badge/licencia-MIT-f7931a?style=flat)](LICENSE)
@@ -27,11 +27,11 @@ Porque queríamos construir algo descentralizado, y lo seguíamos construyendo d
 
 **V2** suavizó la fricción: formulario web sin cuenta, Cloudflare en el edge, automatización casi completa. La experiencia mejoró notablemente. Pero cada anuncio seguía pasando por infraestructura que nosotros controlábamos y alojábamos. Si el mantenedor desaparece, el directorio se congela. Habíamos mejorado la UX de un sistema todavía centralizado.
 
-**V3** es la respuesta honesta a esa contradicción.
+**V3** es la respuesta honesta a esa contradicción: PlazaP2P sigue siendo la plaza de la economía circular Bitcoin, pero ahora las publicaciones viven en una red abierta.
 
 ---
 
-Los anuncios no viven aquí. Viven en **Nostr** — un protocolo abierto de eventos firmados criptográficamente que nadie posee, nadie puede censurar y nadie puede apagar. PlazaP2P ya no es un directorio: es una **ventana de solo lectura** hacia ese protocolo.
+Los anuncios no viven aquí. Viven en **Nostr** — un protocolo abierto de eventos firmados criptográficamente que nadie posee, nadie puede censurar y nadie puede apagar. PlazaP2P no intenta ser otra plataforma: es una plaza de lectura y descubrimiento sobre esa red.
 
 Cualquier persona con un cliente Nostr puede publicar con el tag `#plazap2p` y aparecer aquí en segundos. Sin pedir permiso. Sin esperar aprobación. Sin depender de nosotros, ni de ningún otro intermediario.
 
@@ -62,9 +62,9 @@ El repo V1 está archivado como referencia histórica. V2 sigue operativo como d
 
 ## Qué es PlazaP2P v3
 
-PlazaP2P es un **reflejo de solo lectura** de la red Nostr. Muestra en tiempo real anuncios, posts y artículos publicados en relays públicos con el tag `#plazap2p`.
+PlazaP2P es una **plaza abierta de solo lectura** para descubrir mercado, publicaciones y recursos alrededor de Bitcoin. Funciona sobre Nostr y muestra en tiempo real anuncios, posts y artículos publicados en relays públicos con el tag `#plazap2p`.
 
-**No es** una plataforma. No almacena datos. No tiene servidor propio. No requiere cuenta. No aprueba ni rechaza nada.
+**No es** una plataforma centralizada. No custodia fondos. No intermedia acuerdos. No requiere cuenta en PlazaP2P. La publicación ocurre en Nostr; PlazaP2P facilita encontrarla.
 
 ### Qué muestra
 
@@ -73,18 +73,18 @@ PlazaP2P es un **reflejo de solo lectura** de la red Nostr. Muestra en tiempo re
 | Mercado | `kind:30402` (NIP-99) | Anuncios de compra/venta P2P |
 | Feed | `kind:1` | Posts de la comunidad |
 | Artículos | `kind:30023` | Contenido largo |
-| Eventos | JSON local | Meetups curados (propuesta vía Issue) |
+| Eventos | `kind:31922/31923` (NIP-52) | Meetups y actividades de calendario |
 | Comunidades | JSON local | Grupos locales curados |
 | Herramientas | JSON local | Software y servicios Bitcoin |
 | Multimedia | JSON local | Podcasts, vídeos y recursos |
 
-Los tres primeros tabs son **Nostr en tiempo real**. Los cuatro últimos son directorios curados en este repositorio, revisados y actualizados manualmente.
+Mercado, Feed, Artículos y Eventos leen **Nostr en tiempo real**. Comunidades, Herramientas y Multimedia siguen siendo directorios curados en este repositorio, revisados y actualizados manualmente.
 
 ---
 
-## Cómo publicar un anuncio
+## Cómo aparecer en PlazaP2P
 
-No publiques aquí directamente. Usa un cliente Nostr compatible con NIP-99:
+No publiques aquí directamente. Publica desde un cliente Nostr compatible y añade el tag de la comunidad:
 
 | Cliente | Plataforma | Tipo de evento |
 |---|---|---|
@@ -93,8 +93,9 @@ No publiques aquí directamente. Usa un cliente Nostr compatible con NIP-99:
 | [Primal](https://primal.net) | Web / iOS / Android | `kind:1` (posts) |
 | [Amethyst](https://amethyst.social) | Android | Todos los NIPs |
 | [YakiHonne](https://yakihonne.com) | Web | `kind:30023` (artículos) |
+| Cliente compatible NIP-52 | Web / móvil | `kind:31922/31923` (eventos) |
 
-Incluye el tag `#plazap2p` en tu publicación. Aparecerá aquí en segundos, sin que nadie tenga que aprobarlo.
+Incluye el tag `#plazap2p` en tu publicación. Para eventos, añade también `#plazap2p-evento` cuando el cliente lo permita. PlazaP2P podrá mostrarla en segundos, sin formularios, permisos ni aprobación previa.
 
 ---
 
@@ -106,7 +107,7 @@ Relay Nostr (relay.damus.io, nostr.wine, nos.lol...)
 relay-pool.js  →  app.js  →  render en pantalla
 ```
 
-Al cargar la página, `relay-pool.js` abre conexiones WebSocket a los relays configurados en `data/config.json` y suscribe a eventos `kind:30402`, `kind:1` y `kind:30023` con el filtro `#t: ["plazap2p"]`. Los eventos llegan en tiempo real y se renderizan directamente sin pasar por ningún servidor nuestro.
+Al cargar la página, `relay-pool.js` abre conexiones WebSocket a los relays configurados en `data/config.json` y suscribe a eventos `kind:30402`, `kind:1`, `kind:30023`, `kind:31922` y `kind:31923` con los tags comunitarios configurados (`#plazap2p`, `#plazap2p-evento`, etc.). Las publicaciones llegan en tiempo real y se renderizan directamente sin pasar por ningún servidor nuestro.
 
 Si el mantenedor configura una cuenta Nostr madre y publica una lista NIP-51 (`kind:30003`), la app la lee primero y muestra los anuncios curados. Si no, el fallback muestra cualquier evento con el tag — modo totalmente abierto.
 
@@ -132,14 +133,12 @@ plazap2p-v3/
 │   └── converter.js        # Conversor BTC / sats / fiat
 ├── data/
 │   ├── config.json         # Relays, maintainer_pubkey, naddr lista curada
-│   ├── eventos.json
 │   ├── comunidades.json
 │   ├── herramientas.json   # 34+ herramientas Bitcoin
 │   └── multimedia.json
 ├── icons/
 └── .github/
-    └── ISSUE_TEMPLATE/     # 4 plantillas para contribuciones al JSON
-        ├── evento.yml
+    └── ISSUE_TEMPLATE/     # plantillas para contribuciones al JSON
         ├── comunidad.yml
         ├── herramienta.yml
         └── multimedia.yml
@@ -168,14 +167,15 @@ No hay secrets, no hay tokens, no hay KV, no hay Functions. Es HTML estático qu
 
 ## Contribuir contenido estático
 
-Los tabs de Eventos, Comunidades, Herramientas y Multimedia se actualizan mediante **GitHub Issues**. Sin código, sin PRs, solo rellena el formulario:
+Los tabs de Comunidades, Herramientas y Multimedia se actualizan mediante **GitHub Issues**. Sin código, sin PRs, solo rellena el formulario:
 
-- [Proponer un Evento](.github/ISSUE_TEMPLATE/evento.yml)
 - [Proponer una Comunidad](.github/ISSUE_TEMPLATE/comunidad.yml)
 - [Proponer una Herramienta](.github/ISSUE_TEMPLATE/herramienta.yml)
 - [Proponer contenido Multimedia](.github/ISSUE_TEMPLATE/multimedia.yml)
 
-Los JSONs en [`data/`](data/) se actualizan manualmente tras revisar cada propuesta.
+Los eventos ya no requieren iteraciones en el repositorio: publícalos como eventos de calendario Nostr NIP-52 (`kind:31922` o `kind:31923`) con `#plazap2p`.
+
+Los JSONs curados en [`data/`](data/) se actualizan manualmente tras revisar cada propuesta.
 
 ---
 
@@ -190,24 +190,24 @@ Los JSONs en [`data/`](data/) se actualizan manualmente tras revisar cada propue
 
 ## Apoya el proyecto
 
-PlazaP2P no tiene inversores, no tiene modelo de negocio, no tiene publicidad. Existe porque alguien cree que vale la pena tenerlo. Si tú también lo crees, hay varias formas de mantenerlo vivo — elige la que encaje con cómo practicas la economía circular:
+PlazaP2P no tiene inversores, no tiene modelo de negocio y no tiene publicidad. Existe porque alguien cree que vale la pena tener una herramienta abierta para economía circular Bitcoin. Si también te resulta útil, hay varias formas elegantes de sostenerlo:
 
 **Usa y comparte**
-La forma más valiosa de apoyar este proyecto es usarlo: publica tus anuncios con `#plazap2p`, menciona la herramienta en tu comunidad local, recomiéndala a negocios que aceptan Bitcoin. Un directorio vacío no sirve de nada; un directorio que crece solo se retroalimenta.
+La forma más valiosa de apoyar este proyecto es usarlo: publica tus anuncios con `#plazap2p`, menciona la herramienta en tu comunidad local, recomiéndala a negocios que aceptan Bitcoin. Una plaza vacía no sirve de nada; una plaza viva se retroalimenta.
 
 **Contribuye datos**
-Si conoces un evento, una comunidad, una herramienta o un recurso multimedia que debería estar aquí, [abre un Issue](../../issues/new/choose). Es la forma más directa de mejorar el proyecto sin tocar código.
+Si conoces una comunidad, una herramienta o un recurso multimedia que debería estar aquí, [abre un Issue](../../issues/new/choose). Si quieres anunciar un evento, publícalo en Nostr con `#plazap2p-evento` para evitar iteraciones en el repositorio.
 
 **Haz fork y levanta tu instancia**
 Adapta PlazaP2P a tu región, a tu comunidad o a tu caso de uso. El código es MIT — úsalo, modifícalo, mejóralo. Si introduces mejoras interesantes, un PR es bienvenido.
 
-**Zap al mantenedor** ⚡  
-Si PlazaP2P te ha ahorrado tiempo, te ha conectado con alguien o simplemente te parece un proyecto que merece seguir adelante — un zap es la forma más directa de decirlo.
+**Zap al mantenimiento** ⚡  
+Si PlazaP2P te ayuda a encontrar comunidad, mover economía circular o publicar sin intermediarios, puedes apoyar su mantenimiento con Bitcoin o Lightning. El proyecto seguirá siendo abierto y gratuito; tu aporte ayuda a que siga vivo, cuidado y disponible.
 
 > ⚡ `wildbobcat25@primal.net`  
 > Nostr: `npub1ue6zpfsyy50xj8ht2kzg0xm84e87gat5nwwjtw8d72wch9w0h4rq8jrjvr`
 
-*Sin suscripciones, sin mínimos, sin presión. Un sat ya es un voto.*
+*Sin suscripciones, sin mínimos y sin ventajas ocultas. Gracias por apoyar herramientas abiertas, útiles y sin intermediarios.*
 
 ---
 
@@ -217,4 +217,4 @@ MIT — libre para usar, modificar y redistribuir manteniendo el aviso de copyri
 
 ---
 
-*Directorio P2P · Protocolo Nostr · Sin intermediarios · Sin comisiones · Código abierto*
+*Economía circular P2P · Nostr · Sin intermediarios · Sin comisiones · Código abierto*

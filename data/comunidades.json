@@ -1,32 +1,42 @@
 [
   {
     "id": "com-001",
-    "nombre": "Bitcoin Hispano",
+    "nombre": "Valencia Bitcoin Plebs",
     "plataforma": "Telegram",
-    "link": "https://t.me/BitcoinHispano",
-    "pais": "Global",
-    "descripcion": "Comunidad en español sobre Bitcoin, soberanía financiera y economía circular. Miles de miembros de toda Latinoamérica y España.",
-    "idioma": "es",
+    "link": "https://t.me/+s58_1nTCzqplZDhk",
+    "pais": "España",
+    "descripcion": "Grupo Bitcoin only de la comunidad pleb en Valencia.",
+    "idioma": "Español",
     "aprobado": true
   },
   {
     "id": "com-002",
-    "nombre": "Nostr en Español",
-    "plataforma": "Nostr",
-    "link": "https://primal.net/p/npub1ua7sm06cn6r2uf0hhku2fxvlqm2a9lhzzh9dcwgxdqyxz5ux4vqpq6l9w",
-    "pais": "Global",
-    "descripcion": "Comunidad hispanohablante en Nostr. Recursos, ayuda y conversación sobre el protocolo Nostr en español.",
-    "idioma": "es",
+    "nombre": "PROMETEA",
+    "plataforma": "Telegram",
+    "link": "https://t.me/+wLZbI-QVegdjNTcx",
+    "pais": "España",
+    "descripcion": "Grupo de la comunidad PROMETEA, club de lectura Bitcoin.",
+    "idioma": "Español",
     "aprobado": true
   },
   {
     "id": "com-003",
-    "nombre": "Lightning Network Español",
+    "nombre": "Watch Out, Bitcoin!",
     "plataforma": "Telegram",
-    "link": "https://t.me/lightningnetworkes",
+    "link": "https://t.me/WoBitcoin",
+    "pais": "España",
+    "descripcion": "Grupo informativo del evento Watch Out, Bitcoin! para presentarse, comentar asistencia y resolver dudas.",
+    "idioma": "Español",
+    "aprobado": true
+  },
+  {
+    "id": "com-004",
+    "nombre": "Nostr En Español (AYUDA)",
+    "plataforma": "Telegram",
+    "link": "https://t.me/nostrespanol",
     "pais": "Global",
-    "descripcion": "Comunidad técnica sobre Lightning Network en español. Nodos, canales, liquidez y desarrollo.",
-    "idioma": "es",
+    "descripcion": "Grupo de ayuda en español para personas que quieren empezar, resolver dudas o aprender a usar Nostr.",
+    "idioma": "Español",
     "aprobado": true
   }
 ]
