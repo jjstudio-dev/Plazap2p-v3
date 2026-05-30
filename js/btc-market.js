@@ -16,18 +16,20 @@ async function fetchAndRender() {
   const el = document.getElementById('btc-market-data');
   if (!el) return;
 
-  const [fng, cgk, glb, blockH, lightning, hashrate, diffAdj] = await Promise.allSettled([
-    fetch(FNG_URL,                                     { signal: AbortSignal.timeout(8000)  }).then(r => r.json()),
-    fetch(CGK_URL,                                     { signal: AbortSignal.timeout(10000) }).then(r => r.json()),
-    fetch(GLOBAL_URL,                                  { signal: AbortSignal.timeout(8000)  }).then(r => r.json()),
-    fetch(`${MEMPOOL}/blocks/tip/height`,              { signal: AbortSignal.timeout(6000)  }).then(r => r.json()),
-    fetch(`${MEMPOOL}/v1/lightning/statistics/latest`, { signal: AbortSignal.timeout(8000)  }).then(r => r.json()),
-    fetch(`${MEMPOOL}/v1/mining/hashrate/6m`,          { signal: AbortSignal.timeout(8000)  }).then(r => r.json()),
-    fetch(`${MEMPOOL}/v1/difficulty-adjustment`,       { signal: AbortSignal.timeout(6000)  }).then(r => r.json()),
+  const [fng, cgk, glb, prices, blockH, lightning, hashrate, diffAdj] = await Promise.allSettled([
+    fetchJson(FNG_URL,                                     8000),
+    fetchJson(CGK_URL,                                     10000),
+    fetchJson(GLOBAL_URL,                                  8000),
+    fetchJson(`${MEMPOOL}/v1/prices`,                      6000),
+    fetchJson(`${MEMPOOL}/blocks/tip/height`,              6000),
+    fetchJson(`${MEMPOOL}/v1/lightning/statistics/latest`, 8000),
+    fetchJson(`${MEMPOOL}/v1/mining/hashrate/6m`,          8000),
+    fetchJson(`${MEMPOOL}/v1/difficulty-adjustment`,       6000),
   ]);
 
   const fngData   = fng.status      === 'fulfilled' ? fng.value?.data?.[0]                       : null;
-  const mkt       = cgk.status      === 'fulfilled' ? cgk.value?.market_data                      : null;
+  const fallback  = prices.status   === 'fulfilled' ? marketFromMempoolPrices(prices.value)       : null;
+  const mkt       = cgk.status      === 'fulfilled' ? cgk.value?.market_data || fallback          : fallback;
   const sentUp    = cgk.status      === 'fulfilled' ? cgk.value?.sentiment_votes_up_percentage    : null;
   const dominance = glb.status      === 'fulfilled' ? glb.value?.data?.market_cap_percentage?.btc : null;
   const blockNum  = blockH.status   === 'fulfilled' ? blockH.value                                : null;
@@ -36,6 +38,22 @@ async function fetchAndRender() {
   const diff      = diffAdj.status  === 'fulfilled' ? diffAdj.value                               : null;
 
   el.innerHTML = buildHTML(fngData, mkt, sentUp, dominance, blockNum, ln, hrData, diff);
+}
+
+async function fetchJson(url, timeoutMs) {
+  const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+  if (!res.ok) throw new Error(`${url} ${res.status}`);
+  return res.json();
+}
+
+function marketFromMempoolPrices(prices) {
+  if (!prices?.EUR && !prices?.USD) return null;
+  return {
+    current_price: {
+      eur: prices.EUR || null,
+      usd: prices.USD || null
+    }
+  };
 }
 
 // ── Layout ────────────────────────────────────────────────────────────

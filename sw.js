@@ -2,7 +2,7 @@
 // Cache-first para assets estáticos. Network-first para todo lo externo.
 
 // IMPORTANTE: incrementar 'r1' → 'r2' → 'r3'... en cada deploy para forzar actualización de caché
-const CACHE    = 'plazap2p-v3-r22';
+const CACHE    = 'plazap2p-v3-r27';
 const STATICS  = [
   './',
   './index.html',

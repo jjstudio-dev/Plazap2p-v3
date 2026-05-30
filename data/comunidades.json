@@ -1,42 +1,222 @@
-[
-  {
-    "id": "com-001",
-    "nombre": "Valencia Bitcoin Plebs",
-    "plataforma": "Telegram",
-    "link": "https://t.me/+s58_1nTCzqplZDhk",
-    "pais": "España",
-    "descripcion": "Grupo Bitcoin only de la comunidad pleb en Valencia.",
-    "idioma": "Español",
-    "aprobado": true
-  },
-  {
-    "id": "com-002",
-    "nombre": "PROMETEA",
-    "plataforma": "Telegram",
-    "link": "https://t.me/+wLZbI-QVegdjNTcx",
-    "pais": "España",
-    "descripcion": "Grupo de la comunidad PROMETEA, club de lectura Bitcoin.",
-    "idioma": "Español",
-    "aprobado": true
-  },
-  {
-    "id": "com-003",
-    "nombre": "Watch Out, Bitcoin!",
-    "plataforma": "Telegram",
-    "link": "https://t.me/WoBitcoin",
-    "pais": "España",
-    "descripcion": "Grupo informativo del evento Watch Out, Bitcoin! para presentarse, comentar asistencia y resolver dudas.",
-    "idioma": "Español",
-    "aprobado": true
-  },
-  {
-    "id": "com-004",
-    "nombre": "Nostr En Español (AYUDA)",
-    "plataforma": "Telegram",
-    "link": "https://t.me/nostrespanol",
-    "pais": "Global",
-    "descripcion": "Grupo de ayuda en español para personas que quieren empezar, resolver dudas o aprender a usar Nostr.",
-    "idioma": "Español",
-    "aprobado": true
-  }
+﻿[
+    {
+        "id":  "com-001",
+        "nombre":  "Valencia Bitcoin Plebs",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/+s58_1nTCzqplZDhk",
+        "pais":  "España",
+        "descripcion":  "Grupo Bitcoin only de la comunidad pleb en Valencia.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-002",
+        "nombre":  "PROMETEA",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/+wLZbI-QVegdjNTcx",
+        "pais":  "España",
+        "descripcion":  "Grupo de la comunidad PROMETEA, club de lectura Bitcoin.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-003",
+        "nombre":  "Watch Out, Bitcoin!",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/WoBitcoin",
+        "pais":  "España",
+        "descripcion":  "Grupo informativo del evento Watch Out, Bitcoin! para presentarse, comentar asistencia y resolver dudas.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-004",
+        "nombre":  "Nostr En Español (AYUDA)",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/nostrespanol",
+        "pais":  "Global",
+        "descripcion":  "Grupo de ayuda en español para personas que quieren empezar, resolver dudas o aprender a usar Nostr.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-005",
+        "nombre":  "Nostrfacil.com — Comunidad Nostr en Español",
+        "plataforma":  "Nostr",
+        "link":  "https://nostrfacil.com",
+        "pais":  "España",
+        "descripcion":  "Comunidad hispanohablante en torno al protocolo Nostr. Proyecto open source mantenido por Crackloss. La referencia para entender Nostr en español: clientes, wallets, relays, zaps y privacidad.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-006",
+        "nombre":  "Bitcoin Madrid",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/bitcoinmadrid",
+        "pais":  "España",
+        "descripcion":  "Comunidad de bitcoiners en Madrid. Organizamos meetups mensuales, compartimos noticias y debatimos sobre Bitcoin, Lightning y soberanía financiera. Ambiente técnico y filosófico, sin spam.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-007",
+        "nombre":  "AprendeBTC — Comunidad educativa",
+        "plataforma":  "Web",
+        "link":  "https://aprendebtc.com",
+        "pais":  "España",
+        "descripcion":  "Comunidad educativa en torno a la plataforma AprendeBTC. 92 páginas de contenido estructurado en 6 niveles para aprender Bitcoin desde cero hasta nivel avanzado. Gratuito, en español.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-008",
+        "nombre":  "Málaga 2140",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/malaga2140",
+        "pais":  "España",
+        "descripcion":  "Comunidad centrada en Bitcoin y todas sus madrigueras. Punto de encuentro para bitcoiners malagueños con ganas de aprender, colaborar y construir. Meetups regulares sobre privacidad, criptografía y Lightning.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-009",
+        "nombre":  "Barcelona Bitcoin Hub (BBH)",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/BcnBtcHub",
+        "pais":  "España",
+        "descripcion":  "Espacio dedicado a Bitcoin dentro del Barcelona Finance Hub, ubicado en el edificio de la Bolsa de Barcelona. Explora la intersección entre Bitcoin, economía, finanzas y política. Meetups mensuales para profesionales y principiantes.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-010",
+        "nombre":  "Barcelona Bitcoin Only",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/BarcelonaBitcoinOnly",
+        "pais":  "España",
+        "descripcion":  "Comunidad local de Bitcoin y Lightning Network en Barcelona, enfocada en principios Bitcoin-only. Talleres de SeedSigner, debates sobre protocolo, minería y filosofía de libertad.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-011",
+        "nombre":  "Alicante Bitcoin Plebs",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/bitcoinplebsalicante",
+        "pais":  "España",
+        "descripcion":  "Comunidad bitcoiner en Alicante con meetups mensuales. Cubre tecnología, economía, fiscalidad cripto en España, privacidad, Lightning Network y soberanía financiera. Desde 2024 con más de 15 ediciones.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-012",
+        "nombre":  "Bitcoin Canarias",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/btcanarias",
+        "pais":  "España",
+        "descripcion":  "Comunidad canaria que explora seguridad, privacidad, cultura hacker/cypherpunk y últimos desarrollos de Bitcoin. Reuniones estilo socrático cada dos semanas en Talleres Palermo.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-013",
+        "nombre":  "Bitcanario",
+        "plataforma":  "Web",
+        "link":  "https://bitcanario.com",
+        "pais":  "España",
+        "descripcion":  "Organización dirigida por voluntarios que ofrece talleres, reuniones y consultas gratuitas sobre Bitcoin en Canarias. Educación práctica para todos los niveles.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-014",
+        "nombre":  "León Bitcoin 2140",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/+q2SCAxd5USo1OTk0",
+        "pais":  "España",
+        "descripcion":  "Comunidad apasionada de Bitcoin en León que explora dimensiones técnicas, filosóficas, sociales y económicas. Meetups regulares en locales del centro con charlas, documentales y talleres.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-015",
+        "nombre":  "Pontevedra 2140 / Vigo Bitcoin P2P",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/PonteVedra_2140",
+        "pais":  "España",
+        "descripcion":  "Comunidad Bitcoin en Galicia. Organiza el Vigo Bitcoin P2P — encuentros para comprar y vender sats sin KYC. Meetups sobre custodia, Lightning y libertad financiera.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-016",
+        "nombre":  "Tenerife 2140",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/+F-bT0XQ37AAxYzI0",
+        "pais":  "España",
+        "descripcion":  "Espacio abierto para compartir conocimiento sobre Bitcoin y Lightning Network. Reuniones el segundo viernes de cada mes. Organizan el Bitcoin Market Tenerife, un mercado de productos y servicios pagados en Bitcoin.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-017",
+        "nombre":  "Mallorca 21 Bitcoin",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/+k5dWJonrbDA0ZTg0",
+        "pais":  "España",
+        "descripcion":  "Comunidad Bitcoin-only en Mallorca para compartir, aprender y enseñar. Reuniones sociales en ambiente relajado que incluyen cenas, tapas y eventos. Abierta a principiantes y expertos.",
+        "idioma":  "Español / Català",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-018",
+        "nombre":  "Asturias 2140",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/+WZmmcMy5oXcyNzJk",
+        "pais":  "España",
+        "descripcion":  "Comunidad local de Bitcoin en Asturias centrada en aprendizaje mutuo. Debates, aplicaciones prácticas, proyectos y educación para la libertad financiera.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-019",
+        "nombre":  "Alkarria BTC",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/alkarriabtc",
+        "pais":  "España",
+        "descripcion":  "Comunidad Bitcoin-only de Guadalajara y alrededores. Lightning Network, autocustodia y soberanía financiera. Todos bienvenidos.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-020",
+        "nombre":  "Extremadura Bitcoin",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/extremadurabitcoin",
+        "pais":  "España",
+        "descripcion":  "Espacio dedicado al estudio y divulgación de Bitcoin en Extremadura. Nodos, Lightning Network, autocustodia y dinero sólido como estándar monetario.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-021",
+        "nombre":  "Huelva Bitcoin Only",
+        "plataforma":  "Telegram",
+        "link":  "https://t.me/HuelvaBitcoin",
+        "pais":  "España",
+        "descripcion":  "Comunidad Bitcoin-only en Huelva para organizar meetups y compartir conocimiento sobre Bitcoin, Lightning y soberanía financiera.",
+        "idioma":  "Español",
+        "aprobado":  true
+    },
+    {
+        "id":  "com-022",
+        "nombre":  "Girona Bitcoin Only",
+        "plataforma":  "Web",
+        "link":  "https://x.com/GirBitcoinOnly",
+        "pais":  "España",
+        "descripcion":  "Comunidad local de Bitcoin en Girona para conectar y agrupar bitcoiners de la región.",
+        "idioma":  "Español / Català",
+        "aprobado":  true
+    }
 ]

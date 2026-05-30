@@ -6,7 +6,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '18';
+const ASSET_VERSION  = '23';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -364,6 +364,11 @@ function renderActiveChannel() {
     });
   }
 
+  if (activeTab === 'eventos') {
+    renderCalendarEvents(grid, items);
+    return;
+  }
+
   if (items.length === 0) {
     grid.innerHTML = `<div class="empty-state">
       <div class="empty-icon">🔍</div>
@@ -400,13 +405,67 @@ function renderCard(item) {
 
 function sortCalendarEvents(items) {
   const now = Math.floor(Date.now() / 1000);
-  const isUpcoming = e => (e.end?.ts || e.start?.ts || e.publishedAt) >= now;
-  const upcoming = items.filter(isUpcoming);
-  const past = items.filter(e => !isUpcoming(e));
+  const upcoming = items.filter(e => !isCalendarEventPast(e, now));
+  const past = items.filter(e => isCalendarEventPast(e, now));
   return [
     ...upcoming.sort((a, b) => (a.start?.ts || a.publishedAt) - (b.start?.ts || b.publishedAt)),
     ...past.sort((a, b) => (b.start?.ts || b.publishedAt) - (a.start?.ts || a.publishedAt))
   ];
+}
+
+function isCalendarEventPast(e, now = Math.floor(Date.now() / 1000)) {
+  const startTs = e.start?.ts || e.publishedAt;
+  return (e.end?.ts || startTs) < now;
+}
+
+function renderCalendarEvents(grid, items) {
+  if (items.length === 0) {
+    grid.innerHTML = `<div class="event-empty-card">
+      <div class="event-empty-icon">📅</div>
+      <div>
+        <p class="event-empty-title">No hay eventos activos ahora mismo</p>
+        <p class="event-empty-sub">Cuando la comunidad publique eventos NIP-52 en Nostr aparecerán aquí automáticamente.</p>
+      </div>
+    </div>`;
+    return;
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const upcoming = items.filter(e => !isCalendarEventPast(e, now));
+  const past = items.filter(e => isCalendarEventPast(e, now));
+  const lim = limits[activeTab];
+  const visibleUpcoming = upcoming.slice(0, lim);
+  const remainingLimit = Math.max(0, lim - visibleUpcoming.length);
+  const visiblePast = past.slice(0, remainingLimit);
+  const html = [];
+
+  if (upcoming.length === 0 && past.length > 0) {
+    html.push(`<div class="event-archive-note">
+      <span class="event-archive-kicker">Archivo</span>
+      <strong>No hay eventos activos ahora mismo</strong>
+      <span>Te dejamos los últimos eventos publicados para referencia, sin mezclarlos con próximos encuentros.</span>
+    </div>`);
+  }
+
+  if (visibleUpcoming.length) html.push(...visibleUpcoming.map(renderCalendarEventCard));
+  if (visiblePast.length) {
+    if (upcoming.length > 0) {
+      html.push(`<div class="event-archive-divider"><span>Eventos anteriores</span></div>`);
+    }
+    html.push(...visiblePast.map(renderCalendarEventCard));
+  }
+
+  grid.innerHTML = html.join('');
+
+  if (items.length > lim) {
+    const remaining = items.length - lim;
+    const btn = document.createElement('button');
+    btn.id = 'load-more-btn';
+    btn.className = 'btn-load-more';
+    btn.textContent = `Ver más · ${remaining} restante${remaining !== 1 ? 's' : ''}`;
+    btn.onclick = () => { limits[activeTab] += PAGE_SIZE; renderActiveChannel(); };
+    grid.after(btn);
+  }
 }
 
 function renderListingCard(l) {
@@ -563,6 +622,10 @@ function showNoRelays(channelId) {
 function showEmpty(channelId) {
   const grid = document.getElementById(`channel-${channelId}`);
   if (!grid) return;
+  if (channelId === 'eventos') {
+    renderCalendarEvents(grid, []);
+    return;
+  }
   const ch   = config.channels.find(c => c.id === channelId);
   const tag  = (config.community_tags || ['plazap2p'])[0];
   grid.innerHTML = `<div class="empty-state">
@@ -666,6 +729,7 @@ function initUI() {
   initFilters();
   initSort();
   initSearch();
+  initTabFromUrl();
 }
 
 function initSearch() {
@@ -702,7 +766,15 @@ function initTabs() {
   });
 }
 
-window.switchTab = function(tab) {
+function initTabFromUrl() {
+  const tab = new URLSearchParams(window.location.search).get('tab');
+  const validTabs = [...document.querySelectorAll('.nav-tab')].map(btn => btn.dataset.tab);
+  if (tab && validTabs.includes(tab)) {
+    window.switchTab(tab, { syncUrl: false });
+  }
+}
+
+window.switchTab = function(tab, options = {}) {
   activeTab = tab;
   if (!limits[tab]) limits[tab] = PAGE_SIZE;
 
@@ -718,6 +790,11 @@ window.switchTab = function(tab) {
 
   renderActiveChannel();
   if (tab === 'relays') renderRelayStatus();
+  if (options.syncUrl !== false) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tab);
+    window.history.replaceState({}, '', url);
+  }
 };
 
 // ── Badges & counters ──────────────────────────────────────────
@@ -844,6 +921,27 @@ function langBadge(idiom) {
     .filter(Boolean)
     .map(part => flags[part.toLowerCase()] || part.toUpperCase())
     .join(' · ');
+}
+
+function initialsFromName(name) {
+  const clean = String(name || '').replace(/[^\p{L}\p{N}\s]/gu, ' ').trim();
+  if (!clean) return '?';
+  const words = clean.split(/\s+/).filter(Boolean);
+  const first = words[0]?.[0] || '';
+  const second = words.length > 1 ? words[1]?.[0] : words[0]?.[1] || '';
+  return `${first}${second}`.toUpperCase();
+}
+
+function toneFromSeed(seed) {
+  const tones = ['btc', 'cyan', 'green', 'purple', 'yellow'];
+  const str = String(seed || '');
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = ((hash << 5) - hash) + str.charCodeAt(i);
+  return tones[Math.abs(hash) % tones.length];
+}
+
+function mediaImageUrl(item) {
+  return safeUrl(item?.logo_url || item?.logo || item?.imagen || item?.image || item?.avatar || '');
 }
 
 function fmtAge(ts) {
@@ -1002,15 +1100,32 @@ function renderComunidades(items, githubUrl) {
 
   container.innerHTML = items.map(c => {
     const icon = PLAT_ICONS[c.plataforma] || '💬';
-    return `<article class="community-card">
-      <div class="community-top">
-        <span class="community-platform-icon">${icon}</span>
-        <span class="community-platform">${esc(c.plataforma)}</span>
-        ${c.pais ? `<span class="community-country">${esc(c.pais)}</span>` : ''}
+    const logo = mediaImageUrl(c);
+    const initials = initialsFromName(c.nombre);
+    const tone = toneFromSeed(c.nombre || c.id);
+    const avatar = logo
+      ? `<img src="${logo}" alt="" class="directory-avatar-img" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="directory-avatar-fallback" style="display:none">${esc(initials)}</span>`
+      : `<span class="directory-avatar-fallback">${esc(initials)}</span>`;
+
+    return `<article class="community-card directory-card">
+      <div class="directory-accent"></div>
+      <div class="directory-card-body">
+        <div class="directory-head">
+          <div class="directory-avatar directory-avatar-${tone}" aria-hidden="true">${avatar}</div>
+          <div class="directory-meta">
+            <h3 class="community-name">${esc(c.nombre)}</h3>
+            <div class="community-top">
+              <span class="community-platform"><span class="community-platform-icon">${icon}</span>${esc(c.plataforma || 'Comunidad')}</span>
+              ${c.pais ? `<span class="community-country">${esc(c.pais)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <p class="community-desc">${esc(c.descripcion || '')}</p>
+        <div class="directory-footer">
+          ${c.idioma ? `<span class="directory-chip">${esc(langBadge(c.idioma))}</span>` : '<span></span>'}
+          <a href="${safeUrl(c.link)}" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-sm">Unirse ↗</a>
+        </div>
       </div>
-      <h3 class="community-name">${esc(c.nombre)}</h3>
-      <p class="community-desc">${esc(c.descripcion || '')}</p>
-      <a href="${safeUrl(c.link)}" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-sm">Unirse ↗</a>
     </article>`;
   }).join('');
 
@@ -1089,6 +1204,7 @@ function renderMultimedia(items, githubUrl) {
 
   container.innerHTML = items.map(m => {
     const icon = TYPE_ICONS[m.tipo] || '🔗';
+    const typeLabel = TYPE_LABELS[m.tipo] || m.tipo || 'recurso';
     const links = Array.isArray(m.enlaces) ? m.enlaces : (m.link ? [{ tipo: m.tipo, label: m.tipo || 'Abrir', url: m.link }] : []);
     const socialLinks = links.map(link => {
       const type = link.tipo || 'web';
@@ -1097,19 +1213,26 @@ function renderMultimedia(items, githubUrl) {
         <span class="multimedia-social-icon">${TYPE_ICONS[type] || '↗'}</span>
       </a>`;
     }).join('');
-    const logo = safeUrl(m.logo_url || m.logo || '');
+    const logo = mediaImageUrl(m);
+    const initials = initialsFromName(m.nombre);
+    const tone = toneFromSeed(m.nombre || m.id);
     const mediaIcon = logo
-      ? `<img src="${logo}" alt="" class="multimedia-logo" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="multimedia-fallback-icon" style="display:none">${icon}</span>`
-      : `<span class="multimedia-fallback-icon">${icon}</span>`;
+      ? `<img src="${logo}" alt="" class="directory-avatar-img" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="directory-avatar-fallback" style="display:none">${esc(initials)}</span>`
+      : `<span class="directory-avatar-fallback">${esc(initials)}</span>`;
 
-    return `<article class="multimedia-card">
-      <div class="multimedia-type-icon">${mediaIcon}</div>
-      <div class="multimedia-body">
-        <div class="multimedia-top">
-          <span class="multimedia-type">${esc(TYPE_LABELS[m.tipo] || m.tipo || 'recurso')}</span>
-          ${m.idioma ? `<span class="multimedia-lang">${esc(langBadge(m.idioma))}</span>` : ''}
+    return `<article class="multimedia-card directory-card">
+      <div class="directory-accent"></div>
+      <div class="directory-card-body">
+        <div class="directory-head">
+          <div class="directory-avatar directory-avatar-${tone}" aria-hidden="true">${mediaIcon}</div>
+          <div class="directory-meta">
+            <div class="multimedia-top">
+              <span class="multimedia-type">${icon} ${esc(typeLabel)}</span>
+              ${m.idioma ? `<span class="multimedia-lang">${esc(langBadge(m.idioma))}</span>` : ''}
+            </div>
+            <h3 class="multimedia-name">${esc(m.nombre)}</h3>
+          </div>
         </div>
-        <h3 class="multimedia-name">${esc(m.nombre)}</h3>
         <p class="multimedia-desc">${esc(m.descripcion || '')}</p>
         ${socialLinks ? `<div class="multimedia-socials">${socialLinks}</div>` : ''}
       </div>

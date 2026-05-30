@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800&family=Inter:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=18" />
+  <link rel="stylesheet" href="css/style.css?v=23" />
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#f7931a" />
@@ -1046,13 +1046,13 @@
 <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <!-- ESM module — app.js imports nostr.js and relay-pool.js -->
-<script type="module" src="js/app.js?v=18"></script>
+<script type="module" src="js/app.js?v=23"></script>
 <script type="module">
-  import { initBtcStats }      from './js/btc-stats.js?v=18';
-  import { initPriceChart }    from './js/btc-chart.js?v=18';
-  import { initConverter }     from './js/converter.js?v=18';
-  import { initMiniConverter } from './js/mini-converter.js?v=18';
-  import { initBtcMarket }     from './js/btc-market.js?v=18';
+  import { initBtcStats }      from './js/btc-stats.js?v=23';
+  import { initPriceChart }    from './js/btc-chart.js?v=23';
+  import { initConverter }     from './js/converter.js?v=23';
+  import { initMiniConverter } from './js/mini-converter.js?v=23';
+  import { initBtcMarket }     from './js/btc-market.js?v=23';
 
   initMiniConverter();
   initBtcStats();
@@ -1083,7 +1083,7 @@
           .catch(() => {});
       }
     } else {
-      navigator.serviceWorker.register('./sw.js?v=18').catch(() => {});
+      navigator.serviceWorker.register('./sw.js?v=23').catch(() => {});
     }
   }
 
