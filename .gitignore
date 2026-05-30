@@ -17,3 +17,9 @@ npm-debug.log*
 .env
 *.key
 *.pem
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
