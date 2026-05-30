@@ -764,19 +764,19 @@ main.container { padding-top: 36px; padding-bottom: 80px; }
 }
 .tool-card {
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
+  flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  padding: 16px;
+  padding: 20px;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
   text-decoration: none;
+  transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1), border-color 0.22s, box-shadow 0.22s;
 }
 .tool-card:hover {
-  background: var(--surface-2);
-  border-color: rgba(0,212,255,0.22);
+  transform: translateY(-4px);
+  border-color: rgba(232,200,74,0.22);
+  box-shadow: 0 14px 44px rgba(0,0,0,0.48);
 }
 .tool-icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 2px; }
 .tool-info {
@@ -797,7 +797,6 @@ main.container { padding-top: 36px; padding-bottom: 80px; }
   font-size: 0.9rem;
   color: var(--t-3);
   flex-shrink: 0;
-  margin-top: 2px;
   transition: color 0.2s;
 }
 .tool-card:hover .tool-arrow { color: var(--accent); }
@@ -2741,15 +2740,15 @@ footer {
   border-radius: var(--r-md);
   text-decoration: none;
   box-shadow: 0 14px 38px rgba(0,0,0,0.18);
-  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1), border-color 0.22s, background 0.22s, box-shadow 0.22s;
 }
 .directory-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--border-act);
+  transform: translateY(-4px);
+  border-color: rgba(232,200,74,0.22);
   background:
     linear-gradient(145deg, rgba(247,147,26,0.09), rgba(0,212,255,0.035) 48%, rgba(255,255,255,0) 82%),
     var(--surface-2);
-  box-shadow: 0 18px 46px rgba(0,0,0,0.26);
+  box-shadow: 0 14px 44px rgba(0,0,0,0.48);
 }
 .directory-accent {
   height: 3px;
@@ -2886,8 +2885,8 @@ footer {
 }
 .tools-cat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 0.65rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
 }
 .tool-card-mini {
   background: var(--surface);
@@ -2926,6 +2925,96 @@ footer {
   font-size: 0.68rem;
   color: var(--t-3);
   font-family: var(--font-mono);
+}
+
+/* ── Guia-card (patrón V2 — Herramientas, Nostr, directorios) ── */
+.guia-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1), border-color 0.22s, box-shadow 0.22s;
+}
+.guia-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(232,200,74,0.22);
+  box-shadow: 0 14px 44px rgba(0,0,0,0.48);
+}
+.tool-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.tool-logo-wrap {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+}
+.tool-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  display: block;
+}
+.guia-title {
+  font: 600 0.93rem var(--font-body);
+  color: var(--t-1);
+}
+.guia-meta {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.guia-tipo-badge {
+  font: 500 0.62rem var(--font-mono);
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  color: var(--t-2);
+}
+.guia-badge-os {
+  background: rgba(48,209,88,0.08);
+  border-color: rgba(48,209,88,0.25);
+  color: #30d158;
+}
+.guia-desc {
+  font: 400 0.8rem/1.55 var(--font-body);
+  color: var(--t-2);
+  margin-bottom: 12px;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.guia-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: auto;
+}
+.btn-link {
+  font: 600 0.72rem var(--font-mono);
+  color: var(--accent);
+  border: 1px solid rgba(0,212,255,0.3);
+  border-radius: 6px;
+  padding: 5px 12px;
+  text-decoration: none;
+  transition: background 0.2s, border-color 0.2s;
+  letter-spacing: 0.04em;
+}
+.btn-link:hover {
+  background: rgba(0,212,255,0.08);
+  border-color: rgba(0,212,255,0.55);
 }
 
 /* ── Multimedia cards ───────────────────────────────────────── */

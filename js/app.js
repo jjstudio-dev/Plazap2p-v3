@@ -1166,15 +1166,29 @@ function renderHerramientas(items, githubUrl) {
     .filter(cat => grouped[cat]?.length)
     .map(cat => {
       const meta = CAT_META[cat] || { label: cat, icon: '🔧', color: '#86868b' };
-      const tools = grouped[cat].map(h => `
-        <a href="${safeUrl(h.link)}" target="_blank" rel="noopener noreferrer" class="tool-card-mini">
-          <div class="tool-mini-top">
-            <span class="tool-mini-name">${esc(h.nombre)}</span>
-            ${h.open_source ? '<span class="tool-os-badge">OS</span>' : ''}
-          </div>
-          <p class="tool-mini-desc">${esc(h.descripcion || '')}</p>
-          <span class="tool-mini-plat">${esc(h.plataforma || '')}</span>
-        </a>`).join('');
+      const tools = grouped[cat].map(h => {
+        const logoHtml = h.logo
+          ? `<div class="tool-logo-wrap"><img class="tool-logo" src="${esc(h.logo)}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`
+          : '';
+        const osBadge = h.open_source
+          ? `<span class="guia-tipo-badge guia-badge-os">Open Source</span>`
+          : '';
+        return `
+          <div class="guia-card">
+            <div class="tool-header">
+              ${logoHtml}
+              <span class="guia-title">${esc(h.nombre)}</span>
+            </div>
+            <div class="guia-meta">
+              ${h.plataforma ? `<span class="guia-tipo-badge">${esc(h.plataforma)}</span>` : ''}
+              ${osBadge}
+            </div>
+            <p class="guia-desc">${esc(h.descripcion || '')}</p>
+            <div class="guia-footer">
+              <a class="btn-link" href="${safeUrl(h.link)}" target="_blank" rel="noopener noreferrer">ABRIR ▸</a>
+            </div>
+          </div>`;
+      }).join('');
       return `<div class="tools-category">
         <div class="tools-cat-header">
           <span class="tools-cat-icon">${meta.icon}</span>
