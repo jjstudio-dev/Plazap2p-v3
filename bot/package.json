@@ -1,0 +1,20 @@
+{
+  "name": "plazap2p-bot",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Bot de Telegram para PlazaP2P — publica en Nostr y consulta ofertas",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "@grammyjs/conversations": "^1.2.0",
+    "grammy": "^1.30.0",
+    "nostr-tools": "^2.7.0",
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

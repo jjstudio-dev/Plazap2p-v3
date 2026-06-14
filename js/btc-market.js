@@ -138,7 +138,7 @@ function fearGreedCard(fng) {
         <span style="color:#ff9f0a">Miedo</span>
         <span style="color:#ffd60a">Neutral</span>
         <span style="color:#30d158">Codicia</span>
-        <span style="color:#ff9f0a">Codicia<br>extrema</span>
+        <span style="color:#32d74b">Codicia<br>extrema</span>
       </div>
     </div>`;
 }
@@ -395,7 +395,7 @@ function hashrateSection(hrData, diff) {
   if (hashrates.length >= 30) {
     const old = hashrates[hashrates.length - 30].avgHashrate;
     const cur = hashrates[hashrates.length - 1].avgHashrate;
-    hashChange30 = ((cur - old) / old * 100);
+    hashChange30 = old !== 0 ? ((cur - old) / old * 100) : null;
   }
 
   // Next difficulty adjustment data
@@ -599,7 +599,7 @@ function fngColor(val) {
   if (val <= 45) return '#ff9f0a';
   if (val <= 55) return '#ffd60a';
   if (val <= 75) return '#30d158';
-  return '#ff9f0a';
+  return '#32d74b';
 }
 function fearLabel(val) {
   if (val <= 25) return 'Miedo Extremo';

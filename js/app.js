@@ -1,4 +1,4 @@
-import { encodeNaddr, hexToNpub, hexToNote, getTagValue, getTagValues } from './nostr.js';
+import { encodeNaddr, hexToNpub, hexToNote, getTagValue, getTagValues, decodeNpub } from './nostr.js';
 import { RelayPool } from './relay-pool.js';
 
 // ── Constants ──────────────────────────────────────────────────
@@ -6,7 +6,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '23';
+const ASSET_VERSION  = '26';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -19,17 +19,26 @@ let activeLocation = 'all';
 let searchQuery   = '';
 let sortPrefs     = {};  // { [channelId]: 'newest' | 'oldest' }
 
+// Intercambio (Mostro) state
+let intercambioShowAll = false;   // false = community (trusted instances), true = all network
+let intercambioFiat    = 'EUR';   // selected fiat currency filter
+let trustedMostroHexPubkeys = []; // resolved at init from config.intercambio.trustedMostroInstances
+
 const STATIC_TABS = new Set(['comunidades', 'herramientas', 'multimedia']);
+
+let staticEvents = [];  // curated fallback events loaded from data/eventos.json
 
 const channels   = {};  // { [channelId]: Map<key, parsedItem> }
 const limits     = {};  // { [channelId]: number }
 const eoseCounts = {};  // { [channelId]: number } — relays that sent EOSE
 const eoseSettled = {}; // { [channelId]: boolean } — UI already settled
+const eoseRelays  = {}; // { [channelId]: Set<url> } — deduplicar EOSE por relay
 
 // ── Bootstrap ──────────────────────────────────────────────────
 async function init() {
   try {
     await loadConfig();
+    resolveIntercambioConfig();
     for (const ch of config.channels) {
       channels[ch.id]    = new Map();
       limits[ch.id]      = PAGE_SIZE;
@@ -48,6 +57,7 @@ async function init() {
     loadStaticData();
     setTimeout(() => { isInitialLoad = false; }, 6000);
     window._badgeInterval = setInterval(updateAllBadges, 30000);
+    window.addEventListener('pagehide', () => clearInterval(window._badgeInterval), { once: true });
   } catch (err) {
     console.error('PlazaP2P init error:', err);
   }
@@ -98,7 +108,7 @@ function saveToCache() {
       data[id] = [...channels[id].entries()];
     }
     localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
-  } catch {}
+  } catch (e) { console.warn('[cache] saveToCache failed:', e?.message); }
 }
 
 function loadSortPrefs() {
@@ -133,7 +143,7 @@ function subscribeAll() {
   const refreshMs  = config.refresh_interval_ms || 300000;
   const relayCount = config.relays.length;
 
-  function settleChannel(chId, kinds) {
+  function settleChannel(chId, kinds, noTagFilter, specificTag) {
     if (eoseSettled[chId]) return;
     eoseSettled[chId] = true;
     hideSkeletons(chId);
@@ -141,11 +151,16 @@ function subscribeAll() {
       if (pool && pool.connectedCount === 0) showNoRelays(chId);
       else showEmpty(chId);
     }
-    const sinceTs = Math.floor(Date.now() / 1000);
     setTimeout(() => {
       if (!pool) return;
       pool.unsubscribe(chId);
-      pool.subscribe(chId, [{ kinds, '#t': tags, since: sinceTs }], {
+      const sinceTs = Math.floor(Date.now() / 1000);
+      const refreshFilter = specificTag
+        ? { kinds, '#t': [specificTag], since: sinceTs }
+        : noTagFilter
+          ? { kinds, since: sinceTs }
+          : { kinds, '#t': tags, since: sinceTs };
+      pool.subscribe(chId, [refreshFilter], {
         onEvent: (ev) => addEvent(chId, ev),
         onEose:  () => {}
       });
@@ -153,15 +168,25 @@ function subscribeAll() {
   }
 
   for (const ch of config.channels) {
-    const filters = [{ kinds: ch.kinds, '#t': tags, limit: 100 }];
+    const noTagFilter  = ch.noTagFilter === true;
+    const specificTag  = ch.tagFilter || null;   // e.g. "plazap2p-directorio"
+    const filters = noTagFilter
+      ? [{ kinds: ch.kinds, limit: 100 }]
+      : specificTag
+        ? [{ kinds: ch.kinds, '#t': [specificTag], limit: 200 }]
+        : [{ kinds: ch.kinds, '#t': tags, limit: 100 }];
+
     // Fallback: settle after 6s even if some relays never send EOSE
-    setTimeout(() => settleChannel(ch.id, ch.kinds), 6000);
+    setTimeout(() => settleChannel(ch.id, ch.kinds, noTagFilter, specificTag), 6000);
 
     pool.subscribe(ch.id, filters, {
       onEvent: (ev) => addEvent(ch.id, ev),
-      onEose:  () => {
+      onEose:  (url) => {
+        if (!eoseRelays[ch.id]) eoseRelays[ch.id] = new Set();
+        if (eoseRelays[ch.id].has(url)) return; // ignorar EOSE duplicado del mismo relay
+        eoseRelays[ch.id].add(url);
         eoseCounts[ch.id] = (eoseCounts[ch.id] || 0) + 1;
-        if (eoseCounts[ch.id] >= relayCount) settleChannel(ch.id, ch.kinds);
+        if (eoseCounts[ch.id] >= relayCount) settleChannel(ch.id, ch.kinds, noTagFilter, specificTag);
       }
     });
   }
@@ -181,14 +206,21 @@ function addEvent(channelId, event) {
 
     const isReallyNew = !existing;
 
-    if (parsed.status === 'sold' || parsed.status === 'deleted') {
+    // Remove listings that are sold/deleted, or Mostro orders that are no longer pending
+    const statusLower = parsed.status?.toLowerCase() || '';
+    const shouldRemove =
+      statusLower === 'sold' ||
+      statusLower === 'deleted' ||
+      (event.kind === 38383 && statusLower !== 'pending');
+
+    if (shouldRemove) {
       ch.delete(key);
     } else {
       ch.set(key, parsed);
     }
     lastUpdated = new Date();
 
-    if (!isInitialLoad && isReallyNew && parsed.status !== 'sold') {
+    if (!isInitialLoad && isReallyNew && !shouldRemove) {
       const label = config.channels.find(c => c.id === channelId)?.label || channelId;
       showToast(`⚡ Nuevo en ${label}`);
     }
@@ -200,7 +232,7 @@ function addEvent(channelId, event) {
 }
 
 function eventKey(event) {
-  if ([30402, 30023, 30405, 31922, 31923].includes(event.kind)) {
+  if ([30402, 30023, 30405, 31922, 31923, 38383].includes(event.kind)) {
     return `${event.pubkey}:${getTagValue(event.tags, 'd') || event.id}`;
   }
   return event.id;
@@ -214,6 +246,7 @@ function parseEvent(event) {
     case 30402: return parseListing(event);
     case 31922:
     case 31923: return parseCalendarEvent(event);
+    case 38383: return parseOrder(event);
     case 30405: return parseGeneric(event);
     default:    return parseGeneric(event);
   }
@@ -232,7 +265,10 @@ function parseListing(event) {
   const status      = getTagValue(tags, 'status') || 'active';
   const naddr       = encodeNaddr({ kind: 30402, pubkey, identifier: dTag });
   const npub        = hexToNpub(pubkey);
-  return { kind: 30402, title, summary, location, category, payment, publishedAt, status, naddr, npub, created_at };
+  const priceTag    = tags.find(t => t[0] === 'price');
+  const price       = priceTag?.[1] || '';
+  const currency    = priceTag?.[2] || '';
+  return { kind: 30402, title, summary, location, category, payment, price, currency, publishedAt, status, naddr, npub, created_at };
 }
 
 function parseFeedPost(event) {
@@ -307,6 +343,46 @@ function parseCalendarDate(kind, value) {
   return { ts, date };
 }
 
+function parseOrder(event) {
+  const { tags, pubkey, created_at } = event;
+  const orderType  = getTagValue(tags, 'k') || '';         // 'sell' | 'buy'
+  const fiat       = (getTagValue(tags, 'f') || '').toUpperCase();
+  const sats       = parseInt(getTagValue(tags, 'amt') || '0', 10);
+  const fiatAmts   = getTagValues(tags, 'fa');              // [min] or [min, max]
+  const payments   = getTagValues(tags, 'pm').filter(Boolean);
+  const premium    = parseFloat(getTagValue(tags, 'premium') || '0');
+  const status     = getTagValue(tags, 's') || 'pending';
+  const dTag       = getTagValue(tags, 'd') || event.id;
+  const naddr      = encodeNaddr({ kind: 38383, pubkey, identifier: dTag });
+  const fiatMin    = fiatAmts[0] != null ? parseFloat(fiatAmts[0]) : null;
+  const fiatMax    = fiatAmts[1] != null ? parseFloat(fiatAmts[1]) : null;
+
+  // Sanity-check ranges; discard events with impossible values from malicious relays
+  if (!['buy', 'sell'].includes(orderType.toLowerCase())) return null;
+  if (isNaN(sats) || sats < 0 || sats > 21_000_000_000_000) return null;
+  if (fiatMin != null && (isNaN(fiatMin) || fiatMin < 0)) return null;
+  if (fiatMax != null && (isNaN(fiatMax) || fiatMax < 0)) return null;
+  if (fiatMin != null && fiatMax != null && fiatMax < fiatMin) return null;
+  if (isNaN(premium) || premium < -99 || premium > 10000) return null;
+
+  return {
+    kind: 38383,
+    orderType,
+    fiat,
+    sats,
+    fiatMin,
+    fiatMax,
+    payments,
+    premium,
+    status,
+    dTag,
+    botPubkey: pubkey,
+    naddr,
+    publishedAt: created_at,
+    created_at
+  };
+}
+
 function parseGeneric(event) {
   return {
     kind:        event.kind,
@@ -362,6 +438,16 @@ function renderActiveChannel() {
       const text = [item.title, item.summary, item.content, item.location].filter(Boolean).join(' ').toLowerCase();
       return text.includes(q);
     });
+  }
+
+  if (activeTab === 'intercambio') {
+    renderIntercambioOrders(grid);
+    return;
+  }
+
+  if (activeTab === 'directorio') {
+    renderDirectorio(grid, items);
+    return;
   }
 
   if (activeTab === 'eventos') {
@@ -420,13 +506,35 @@ function isCalendarEventPast(e, now = Math.floor(Date.now() / 1000)) {
 
 function renderCalendarEvents(grid, items) {
   if (items.length === 0) {
-    grid.innerHTML = `<div class="event-empty-card">
-      <div class="event-empty-icon">📅</div>
-      <div>
-        <p class="event-empty-title">No hay eventos activos ahora mismo</p>
-        <p class="event-empty-sub">Cuando la comunidad publique eventos NIP-52 en Nostr aparecerán aquí automáticamente.</p>
-      </div>
-    </div>`;
+    if (staticEvents.length > 0) {
+      const now = Math.floor(Date.now() / 1000);
+      const upcoming = staticEvents.filter(e => {
+        const ts = e.start ? Math.floor(new Date(e.start).getTime() / 1000) : Infinity;
+        return ts >= now;
+      }).sort((a, b) => new Date(a.start) - new Date(b.start));
+      const past = staticEvents.filter(e => {
+        const ts = e.start ? Math.floor(new Date(e.start).getTime() / 1000) : 0;
+        return ts < now;
+      }).sort((a, b) => new Date(b.start) - new Date(a.start));
+
+      const html = [
+        `<div class="event-static-notice">
+          <span class="event-static-badge">📌 Curado</span>
+          <span>Próximos eventos de la comunidad — cuando se publiquen en Nostr aparecerán en tiempo real.</span>
+        </div>`,
+        ...upcoming.map(renderStaticEventCard),
+        ...(past.length ? [`<div class="event-archive-divider"><span>Eventos anteriores</span></div>`, ...past.map(renderStaticEventCard)] : [])
+      ];
+      grid.innerHTML = html.join('');
+    } else {
+      grid.innerHTML = `<div class="event-empty-card">
+        <div class="event-empty-icon">📅</div>
+        <div>
+          <p class="event-empty-title">No hay eventos activos ahora mismo</p>
+          <p class="event-empty-sub">Cuando la comunidad publique eventos NIP-52 en Nostr aparecerán aquí automáticamente.</p>
+        </div>
+      </div>`;
+    }
     return;
   }
 
@@ -483,8 +591,53 @@ function renderListingCard(l) {
     <div class="card-payment">⚡ ${payment}</div>
     <div class="card-footer">
       <span class="card-age">${fmtAge(l.publishedAt)}</span>
-      <a href="${njumpUrl}" target="_blank" rel="noopener noreferrer"
-         class="card-nostr-link" onclick="event.stopPropagation()">Ver en Nostr →</a>
+      <div class="card-footer-actions">
+        <button class="card-share-btn" onclick="event.stopPropagation(); copyToClipboard('${njumpUrl}')" title="Copiar enlace">🔗</button>
+        <a href="${njumpUrl}" target="_blank" rel="noopener noreferrer"
+           class="card-nostr-link" onclick="event.stopPropagation()">Ver en Nostr →</a>
+      </div>
+    </div>
+  </article>`;
+}
+
+function renderDirectorio(grid, items) {
+  if (items.length === 0) {
+    grid.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📒</div>
+      <p class="empty-title">El directorio está vacío</p>
+      <p class="empty-sub">Los servicios y establecimientos publicados vía Telegram aparecerán aquí.</p>
+    </div>`;
+    return;
+  }
+
+  const lim = limits['directorio'] ?? PAGE_SIZE;
+  grid.innerHTML = items.slice(0, lim).map(renderDirectorioCard).join('');
+
+  if (items.length > lim) {
+    const remaining = items.length - lim;
+    const btn = document.createElement('button');
+    btn.id        = 'load-more-btn';
+    btn.className = 'btn-load-more';
+    btn.textContent = `Ver más · ${remaining} restante${remaining !== 1 ? 's' : ''}`;
+    btn.onclick = () => { limits['directorio'] += PAGE_SIZE; renderActiveChannel(); };
+    grid.after(btn);
+  }
+}
+
+function renderDirectorioCard(l) {
+  const color    = CAT_COLORS[l.category] || '#bf5af2';
+  const njumpUrl = `https://njump.me/${l.naddr}`;
+  const priceTag = l.price ? `<span class="dir-price">${esc(l.price)} ${esc(l.currency || '')}</span>` : '';
+  return `<article class="dir-card" onclick="window.open('${njumpUrl}','_blank','noopener noreferrer')" style="--card-accent:${color}">
+    <div class="dir-card-header">
+      <div class="card-badge" style="color:${color};border-color:${color}40">${(l.category || 'servicio').toUpperCase()}</div>
+      ${priceTag}
+    </div>
+    <h3 class="dir-card-title">${esc(l.title)}</h3>
+    ${l.location ? `<div class="dir-card-location">📍 ${esc(l.location)}</div>` : ''}
+    ${l.summary  ? `<p class="dir-card-summary">${esc(l.summary.slice(0, 120))}${l.summary.length > 120 ? '…' : ''}</p>` : ''}
+    <div class="dir-card-footer">
+      <span class="dir-nostr-link">Ver en Nostr →</span>
     </div>
   </article>`;
 }
@@ -501,7 +654,10 @@ function renderFeedCard(p) {
     <p class="feed-content">${p.content}</p>
     <div class="card-footer">
       <span class="card-npub">${p.npub.slice(0, 16)}…</span>
-      <span class="card-nostr-link">Ver en Nostr →</span>
+      <div class="card-footer-actions">
+        <button class="card-share-btn" onclick="event.stopPropagation(); copyToClipboard('${njumpUrl}')" title="Copiar enlace">🔗</button>
+        <span class="card-nostr-link">Ver en Nostr →</span>
+      </div>
     </div>
   </article>`;
 }
@@ -520,7 +676,10 @@ function renderArticleCard(a) {
       ${a.summary ? `<p class="article-summary">${a.summary}</p>` : ''}
       <div class="card-footer">
         <span class="card-age">${fmtAge(a.publishedAt)}</span>
-        <span class="card-nostr-link">Leer →</span>
+        <div class="card-footer-actions">
+          <button class="card-share-btn" onclick="event.stopPropagation(); copyToClipboard('${njumpUrl}')" title="Copiar enlace">🔗</button>
+          <span class="card-nostr-link">Leer →</span>
+        </div>
       </div>
     </div>
   </article>`;
@@ -569,7 +728,36 @@ function renderCalendarEventCard(e) {
       <div class="event-actions">
         <a href="${safeUrl(primaryLink)}" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-sm" onclick="event.stopPropagation()">Ver evento ↗</a>
         <a href="${njumpUrl}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm" onclick="event.stopPropagation()">Nostr ↗</a>
+        <button class="card-share-btn" onclick="event.stopPropagation(); copyToClipboard('${njumpUrl}')" title="Copiar enlace">🔗</button>
       </div>
+    </div>
+  </article>`;
+}
+
+function renderStaticEventCard(e) {
+  const now    = Math.floor(Date.now() / 1000);
+  const startD = e.start ? new Date(e.start) : null;
+  const startTs = startD ? Math.floor(startD.getTime() / 1000) : 0;
+  const isPast  = startTs > 0 && startTs < now;
+  const day   = startD ? startD.toLocaleDateString('es-ES', { day: '2-digit' }) : '??';
+  const month = startD ? startD.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase() : '';
+  const primaryLink = (e.links || []).find(l => safeUrl(l)) || '';
+  const recLabel = e.recurrente ? ' <span class="event-recurrent-badge">Recurrente</span>' : '';
+  return `<article class="event-card${isPast ? ' event-past' : ''}">
+    <div class="event-date-block">
+      <span class="event-date">${day}</span>
+      <span class="event-month">${esc(month)}</span>
+    </div>
+    <div class="event-body">
+      <div class="event-top">
+        <span class="event-type-badge" style="color:#f7931a;border-color:#f7931a40">📌 Curado</span>
+        ${isPast ? '<span class="event-past-badge">Pasado</span>' : ''}${recLabel}
+      </div>
+      <h3 class="event-title">${esc(e.title)}</h3>
+      ${e.location ? `<div class="event-location">📍 ${esc(e.location)}</div>` : ''}
+      ${startD ? `<div class="event-time">📅 ${startD.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</div>` : ''}
+      ${e.summary ? `<p class="event-desc">${esc(e.summary)}</p>` : ''}
+      ${primaryLink ? `<div class="event-actions"><a href="${safeUrl(primaryLink)}" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-sm">Ver evento ↗</a></div>` : ''}
     </div>
   </article>`;
 }
@@ -622,6 +810,10 @@ function showNoRelays(channelId) {
 function showEmpty(channelId) {
   const grid = document.getElementById(`channel-${channelId}`);
   if (!grid) return;
+  if (channelId === 'intercambio') {
+    renderIntercambioOrders(grid);
+    return;
+  }
   if (channelId === 'eventos') {
     renderCalendarEvents(grid, []);
     return;
@@ -730,6 +922,7 @@ function initUI() {
   initSort();
   initSearch();
   initTabFromUrl();
+  initNip07Block();
 }
 
 function initSearch() {
@@ -850,13 +1043,13 @@ function renderRelayStatus() {
 }
 
 function relayItemHtml(url, status) {
-  const dot  = status === 'connected' ? '🟢' : status === 'connecting' ? '🟡' : '🔴';
-  const safe = url.replace(/'/g, '');
+  const dot   = status === 'connected' ? '🟢' : status === 'connecting' ? '🟡' : '🔴';
+  const safeWs = url.replace(/['"<>\s]/g, '');
   return `<div class="relay-item">
     <span class="relay-dot-icon">${dot}</span>
-    <span class="relay-url">${url.replace('wss://', '')}</span>
+    <span class="relay-url">${esc(url.replace('wss://', ''))}</span>
     <span class="relay-status-label">${status}</span>
-    <button class="btn-copy" onclick="copyToClipboard('${safe}')">copiar</button>
+    <button class="btn-copy" onclick="copyToClipboard('${safeWs}')">copiar</button>
   </div>`;
 }
 
@@ -904,6 +1097,12 @@ function safeUrl(url) {
 function versioned(path) {
   const sep = path.includes('?') ? '&' : '?';
   return `${path}${sep}v=${ASSET_VERSION}`;
+}
+
+function fetchWithTimeout(url, ms = 8000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(timer));
 }
 
 function langBadge(idiom) {
@@ -973,6 +1172,7 @@ function detectCategory(tTags) {
   if (tTags.includes('plazap2p-compra'))   return 'compra';
   if (tTags.includes('plazap2p-servicio')) return 'servicio';
   if (tTags.includes('plazap2p-trueque'))  return 'trueque';
+  if (tTags.includes('plazap2p-evento'))   return 'evento';
   // Compatibilidad: tags de categoría sueltos (NIP-99 legacy)
   for (const cat of ['venta', 'compra', 'servicio', 'trueque']) {
     if (tTags.includes(cat)) return cat;
@@ -990,18 +1190,130 @@ function detectPayment(tTags) {
   return methods.length ? methods : ['Bitcoin'];
 }
 
+// ── Intercambio (Mostro kind:38383) ───────────────────────────
+
+function resolveIntercambioConfig() {
+  const raw = config.intercambio?.trustedMostroInstances || [];
+  trustedMostroHexPubkeys = raw.map(pk => {
+    if (typeof pk !== 'string') return null;
+    if (pk.startsWith('npub1')) {
+      try { return decodeNpub(pk); } catch { return null; }
+    }
+    return /^[0-9a-f]{64}$/i.test(pk) ? pk.toLowerCase() : null;
+  }).filter(Boolean);
+}
+
+function renderIntercambioOrders(grid) {
+  if (!grid) return;
+  const ch = channels['intercambio'];
+  if (!ch) return;
+
+  let orders = [...ch.values()].sort((a, b) => b.publishedAt - a.publishedAt);
+
+  // Filter by trusted instances (community mode) if list is non-empty
+  const hasTrusted = trustedMostroHexPubkeys.length > 0;
+  if (!intercambioShowAll && hasTrusted) {
+    orders = orders.filter(o => trustedMostroHexPubkeys.includes(o.botPubkey));
+  }
+
+  // Filter by fiat currency (normalizar a mayúsculas en ambos lados)
+  if (intercambioFiat) {
+    const fiatUpper = intercambioFiat.toUpperCase();
+    orders = orders.filter(o => o.fiat?.toUpperCase() === fiatUpper);
+  }
+
+  const buyOrders  = orders.filter(o => o.orderType === 'buy');   // maker wants to buy BTC → taker can sell
+  const sellOrders = orders.filter(o => o.orderType === 'sell');  // maker wants to sell BTC → taker can buy
+
+  const noTrustNote = (!hasTrusted && !intercambioShowAll)
+    ? `<div class="intercambio-no-trust-note">Sin instancias de confianza configuradas — mostrando toda la red. Añade pubkeys de bots Mostro en <code>config.json → intercambio.trustedMostroInstances</code> para filtrar por comunidad.</div>`
+    : '';
+
+  const emptyCol = (label) =>
+    `<div class="intercambio-col-empty">Sin órdenes de ${esc(label)} ahora mismo.</div>`;
+
+  grid.innerHTML = `
+    ${noTrustNote}
+    <div class="intercambio-book-inner">
+      <div class="intercambio-col intercambio-col--buy">
+        <div class="intercambio-col-header">
+          <span class="intercambio-col-title">Comprar BTC</span>
+          <span class="intercambio-col-count">${sellOrders.length} oferta${sellOrders.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="intercambio-col-orders">
+          ${sellOrders.length ? sellOrders.map(o => renderOrderCard(o)).join('') : emptyCol('venta')}
+        </div>
+      </div>
+      <div class="intercambio-col intercambio-col--sell">
+        <div class="intercambio-col-header">
+          <span class="intercambio-col-title">Vender BTC</span>
+          <span class="intercambio-col-count">${buyOrders.length} oferta${buyOrders.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="intercambio-col-orders">
+          ${buyOrders.length ? buyOrders.map(o => renderOrderCard(o)).join('') : emptyCol('compra')}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderOrderCard(o) {
+  const njumpUrl  = `https://njump.me/${o.naddr}`;
+  const isSell    = o.orderType === 'sell';  // maker sells → taker buys
+  const typeLabel = isSell ? 'VENDE BTC' : 'COMPRA BTC';
+  const typeClass = isSell ? 'order-type-badge--sell' : 'order-type-badge--buy';
+  const premiumSign = o.premium > 0 ? `+${o.premium}%` : o.premium < 0 ? `${o.premium}%` : '0%';
+  const premiumClass = o.premium <= 0 ? 'order-premium-badge--negative' : 'order-premium-badge--positive';
+  const satsText  = o.sats > 0 ? `${o.sats.toLocaleString('es-ES')} sats` : 'flexible';
+  let fiatText = '';
+  if (o.fiatMin != null && o.fiatMax != null) {
+    fiatText = `${o.fiatMin.toLocaleString('es-ES')}–${o.fiatMax.toLocaleString('es-ES')} ${esc(o.fiat)}`;
+  } else if (o.fiatMin != null) {
+    fiatText = `${o.fiatMin.toLocaleString('es-ES')} ${esc(o.fiat)}`;
+  }
+  const payText = o.payments.slice(0, 3).map(p => esc(p)).join(' · ') || '—';
+  return `<div class="order-card">
+    <div class="order-card-top">
+      <span class="order-type-badge ${typeClass}">${typeLabel}</span>
+      <span class="order-premium-badge ${premiumClass}">${premiumSign}</span>
+    </div>
+    <div class="order-sats">${satsText}</div>
+    ${fiatText ? `<div class="order-fiat">${fiatText}</div>` : ''}
+    ${payText !== '—' ? `<div class="order-payment">⚡ ${payText}</div>` : ''}
+    <div class="order-card-footer">
+      <span class="order-age">${fmtAge(o.publishedAt)}</span>
+      <a href="${njumpUrl}" target="_blank" rel="noopener noreferrer" class="order-take-btn">Ver oferta →</a>
+    </div>
+  </div>`;
+}
+
+window.setIntercambioMode = function(showAll) {
+  intercambioShowAll = showAll;
+  document.getElementById('btn-inter-comunidad')?.classList.toggle('active', !showAll);
+  document.getElementById('btn-inter-red')?.classList.toggle('active', showAll);
+  if (activeTab === 'intercambio') renderActiveChannel();
+};
+
+window.setIntercambioFiat = function(fiat) {
+  const supported = config?.intercambio?.supportedFiat || [];
+  const norm = fiat ? String(fiat).toUpperCase() : '';
+  intercambioFiat = (supported.length === 0 || supported.includes(norm)) ? norm : '';
+  if (activeTab === 'intercambio') renderActiveChannel();
+};
+
 // ── Static data (GitHub JSON) ──────────────────────────────────
 async function loadStaticData() {
   const GITHUB_URL = 'https://github.com/jjstudio-dev/Plazap2p-v3';
   try {
-    const [comunidades, herramientas, multimedia] = await Promise.all([
-      fetch(versioned('data/comunidades.json')).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch(versioned('data/herramientas.json')).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch(versioned('data/multimedia.json')).then(r => r.ok ? r.json() : []).catch(() => [])
+    const [comunidades, herramientas, multimedia, eventosData] = await Promise.all([
+      fetchWithTimeout(versioned('data/comunidades.json')).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetchWithTimeout(versioned('data/herramientas.json')).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetchWithTimeout(versioned('data/multimedia.json')).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetchWithTimeout(versioned('data/eventos.json')).then(r => r.ok ? r.json() : []).catch(() => [])
     ]);
     renderComunidades(comunidades.filter(c => c.aprobado), GITHUB_URL);
     renderHerramientas(herramientas.filter(h => h.aprobado), GITHUB_URL);
     renderMultimedia(multimedia.filter(m => m.aprobado), GITHUB_URL);
+    staticEvents = eventosData.filter(e => e.aprobado);
   } catch (err) {
     console.warn('[static] Error cargando datos estáticos:', err);
   }
@@ -1010,7 +1322,7 @@ async function loadStaticData() {
 
 async function loadMantenimiento() {
   try {
-    const res = await fetch(versioned('data/mantenimiento.json'));
+    const res = await fetchWithTimeout(versioned('data/mantenimiento.json'));
     if (!res.ok) return;
     const data = await res.json();
     if (!data.ln_address && !data.btc_address) return;
@@ -1041,17 +1353,19 @@ async function loadMantenimiento() {
 function buildDonarAddresses(data) {
   let html = '';
   if (data.ln_address) {
+    const lnSafe = esc(String(data.ln_address).replace(/['\\\s]/g, ''));
     html += `<div class="donar-row">
       <span class="donar-label">⚡ Lightning</span>
       <code class="donar-addr">${esc(data.ln_address)}</code>
-      <button class="btn-copy" onclick="window.copyToClipboard('${esc(data.ln_address)}')">Copiar</button>
+      <button class="btn-copy" onclick="window.copyToClipboard('${lnSafe}')">Copiar</button>
     </div>`;
   }
   if (data.btc_address) {
+    const btcSafe = esc(String(data.btc_address).replace(/['\\\s]/g, ''));
     html += `<div class="donar-row">
       <span class="donar-label">₿ Bitcoin</span>
       <code class="donar-addr">${esc(data.btc_address)}</code>
-      <button class="btn-copy" onclick="window.copyToClipboard('${esc(data.btc_address)}')">Copiar</button>
+      <button class="btn-copy" onclick="window.copyToClipboard('${btcSafe}')">Copiar</button>
     </div>`;
   }
   return html;
@@ -1167,8 +1481,8 @@ function renderHerramientas(items, githubUrl) {
     .map(cat => {
       const meta = CAT_META[cat] || { label: cat, icon: '🔧', color: '#86868b' };
       const tools = grouped[cat].map(h => {
-        const logoHtml = h.logo
-          ? `<div class="tool-logo-wrap"><img class="tool-logo" src="${esc(h.logo)}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`
+        const logoHtml = h.logo && safeUrl(h.logo)
+          ? `<div class="tool-logo-wrap"><img class="tool-logo" src="${safeUrl(h.logo)}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`
           : '';
         const osBadge = h.open_source
           ? `<span class="guia-tipo-badge guia-badge-os">Open Source</span>`
@@ -1255,5 +1569,212 @@ function renderMultimedia(items, githubUrl) {
 
   if (footer) footer.innerHTML = staticDisclaimer('recurso', githubUrl, 'multimedia.yml');
 }
+
+// ── NIP-07 Publish ─────────────────────────────────────────────
+function initNip07Block() {
+  const statusEl = document.getElementById('nip07-status');
+  if (!statusEl) return;
+
+  const nostrAvailable = !!(window.nostr && typeof window.nostr.getPublicKey === 'function');
+  if (!nostrAvailable) {
+    statusEl.className = 'nip07-status nip07-unavailable';
+    statusEl.innerHTML = '⚠ No se detecta extensión Nostr. Instala ' +
+      '<a href="https://getalby.com" target="_blank" rel="noopener">Alby</a> o ' +
+      '<a href="https://github.com/fiatjaf/nos2x" target="_blank" rel="noopener">nos2x</a> ' +
+      'para publicar directamente.';
+    // Re-check every 3 s for 30 s in case the user installs an extension mid-session
+    let checks = 0;
+    const retryCheck = setInterval(() => {
+      if (window.nostr && typeof window.nostr.getPublicKey === 'function') {
+        clearInterval(retryCheck);
+        statusEl.className = 'nip07-status nip07-available';
+        statusEl.textContent = '✓ Extensión Nostr detectada — listo para publicar';
+        return;
+      }
+      if (++checks >= 10) clearInterval(retryCheck);
+    }, 3000);
+  } else {
+    statusEl.className = 'nip07-status nip07-available';
+    statusEl.textContent = '✓ Extensión Nostr detectada — listo para publicar';
+  }
+
+  const setupForm = (formId, submitId, type, defaultLabel) => {
+    const form = document.getElementById(formId);
+    if (!form || form._nip07Ready) return;
+    form._nip07Ready = true;
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const btn = document.getElementById(submitId);
+      if (btn) { btn.disabled = true; btn.textContent = 'Publicando…'; }
+      try {
+        await publishByType(type);
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = defaultLabel; }
+      }
+    });
+  };
+
+  setupForm('nip07-form-evento',   'nip07-submit-evento',   'evento',   '📅 Publicar Evento en Nostr');
+  setupForm('nip07-form-servicio', 'nip07-submit-servicio', 'servicio', '🔧 Publicar Servicio en Nostr');
+}
+
+window.selectPublishType = function(type) {
+  const grid     = document.getElementById('publish-type-grid');
+  const statusEl = document.getElementById('nip07-status');
+  const subforms = document.querySelectorAll('.nip07-subform');
+
+  // Reset all cards active state
+  document.querySelectorAll('.publish-type-card').forEach(c => c.classList.remove('active'));
+
+  if (!type) {
+    // Back to selector
+    if (grid) grid.style.display = '';
+    if (statusEl) statusEl.style.display = 'none';
+    subforms.forEach(f => { f.style.display = 'none'; });
+    return;
+  }
+
+  // Hide selector, show status + chosen panel
+  if (grid) grid.style.display = 'none';
+  if (statusEl) statusEl.style.display = '';
+
+  subforms.forEach(f => { f.style.display = 'none'; });
+
+  if (type === 'ofertas') {
+    const panel = document.getElementById('nip07-panel-ofertas');
+    if (panel) panel.style.display = '';
+    if (statusEl) statusEl.style.display = 'none';
+  } else {
+    const form = document.getElementById(`nip07-form-${type}`);
+    if (form) form.style.display = '';
+    if (!window.nostr && statusEl) statusEl.style.display = '';
+  }
+};
+
+async function publishByType(type) {
+  const get = id => document.getElementById(id)?.value?.trim() ?? '';
+
+  let title, desc, subTag, location, price, currency, contact, extraTags = [];
+
+  if (type === 'evento') {
+    title    = get('ev-title');
+    desc     = get('ev-desc');
+    subTag   = 'plazap2p-evento';
+    location = get('ev-location');
+    price    = get('ev-price');
+    currency = get('ev-currency') || 'EUR';
+    contact  = get('ev-contact');
+    const date = get('ev-date');
+    if (date) {
+      // NIP-52: use `start` tag with UNIX timestamp
+      const ts = Math.floor(new Date(date).getTime() / 1000);
+      if (!isNaN(ts)) extraTags.push(['start', String(ts)]);
+      else extraTags.push(['start', date]);
+    }
+  } else if (type === 'servicio') {
+    title    = get('sv-title');
+    desc     = get('sv-desc');
+    subTag   = 'plazap2p-servicio';
+    price    = get('sv-price');
+    currency = get('sv-currency') || 'EUR';
+    contact  = get('sv-contact');
+    const cat      = get('sv-category');
+    const modalidad = get('sv-modalidad');
+    if (cat)      extraTags.push(['service_type', cat]);
+    if (modalidad) extraTags.push(['modality', modalidad]);
+  } else {
+    return;
+  }
+
+  if (!title || !desc) { showToast('⚠ Rellena al menos el título y la descripción'); return; }
+  if (!pool || pool.connectedCount === 0) { showToast('⚠ Sin conexión a relays'); return; }
+  if (!window.nostr) { showToast('⚠ No se detecta extensión Nostr'); return; }
+
+  try {
+    const pubkey = await window.nostr.getPublicKey();
+    const uid    = `plazap2p-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+    const tags = [
+      ['d', uid],
+      ['title', title],
+      ['summary', desc],
+      ['t', 'plazap2p'],
+      ['t', subTag],
+      ['status', 'active'],
+      ...extraTags,
+    ];
+    if (price)    tags.push(['price', price, currency]);
+    if (location) tags.push(['location', location]);
+    if (contact)  tags.push(['contact', contact]);
+
+    const content = desc;
+
+    const unsigned = {
+      kind: type === 'evento' ? 31922 : 30402,
+      created_at: Math.floor(Date.now() / 1000),
+      tags,
+      content,
+      pubkey,
+    };
+
+    // 30s timeout on signEvent so the UI doesn't freeze if the user closes the popup
+    const signed = await Promise.race([
+      window.nostr.signEvent(unsigned),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('Timeout: no se firmó en 30 s. Vuelve a intentarlo.')), 30000)),
+    ]);
+
+    // Validate the signed event to catch malicious or broken extensions
+    if (!signed?.sig || !/^[0-9a-f]{128}$/i.test(signed.sig))
+      throw new Error('Firma inválida devuelta por la extensión');
+    if (!signed?.id || !/^[0-9a-f]{64}$/i.test(signed.id))
+      throw new Error('ID de evento inválido');
+    if (signed.pubkey !== pubkey)
+      throw new Error('La extensión firmó con una clave diferente');
+
+    const label = type === 'evento' ? 'Evento'  : 'Servicio';
+    const tab   = type === 'evento' ? 'Eventos' : 'Mercado';
+
+    // publishWithFeedback listens for NIP-20 OK messages from each relay
+    const relayResults = await pool.publishWithFeedback(signed, 6000);
+    const okCount = relayResults.filter(r => r.accepted).length;
+    if (relayResults.length === 0) {
+      showToast('⚠ Sin conexión a relays');
+    } else if (okCount === 0) {
+      const firstMsg = relayResults[0]?.message || 'relays rechazaron el evento';
+      showToast(`✗ No publicado: ${firstMsg}`);
+    } else {
+      showToast(`✓ ${label} publicado en ${okCount}/${relayResults.length} relays — aparecerá en ${tab} en breve`);
+    }
+    document.getElementById(`nip07-form-${type}`)?.reset();
+  } catch (err) {
+    console.error('[nip07] Error publicando:', err);
+    showToast('✗ Error al publicar: ' + (err?.message || 'revisa la extensión Nostr'));
+  }
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  FASE 2 DORMIDA — Instancia Mostro propia de la comunidad   ║
+// ╠══════════════════════════════════════════════════════════════╣
+// ║  Para activar esta fase:                                     ║
+// ║  1. Despliega un daemon mostrod en tu servidor               ║
+// ║     (ver https://mostro.network/protocol/)                   ║
+// ║  2. Obtén el pubkey hex del bot (el daemon lo imprime        ║
+// ║     al arrancar o está en su config)                         ║
+// ║  3. Añade ese pubkey a config.json:                          ║
+// ║       intercambio.trustedMostroInstances: ["hex_pubkey"]     ║
+// ║  4. Esto activa automáticamente el filtro de comunidad:      ║
+// ║     en modo "Comunidad", solo se muestran las órdenes de     ║
+// ║     ese bot. En modo "Red completa", se muestran todas.      ║
+// ║                                                              ║
+// ║  El código de filtrado ya está activo en resolveIntercambio  ║
+// ║  Config() y renderIntercambioOrders(). Solo necesitas        ║
+// ║  configurar el pubkey en config.json.                        ║
+// ║                                                              ║
+// ║  Requisitos del servidor:                                     ║
+// ║  - Linux con Rust (cargo) instalado                          ║
+// ║  - Wallet LN (CLN o LND) para gestionar el escrow           ║
+// ║  - Dominio + certificado TLS para el relay propio            ║
+// ║  - ~2GB RAM, 20GB disco                                      ║
+// ╚══════════════════════════════════════════════════════════════╝
 
 init();

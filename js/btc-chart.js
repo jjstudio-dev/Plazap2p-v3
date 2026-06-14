@@ -55,7 +55,7 @@ async function fetchPrices() {
   const r = await fetch(SOURCES.kraken, { signal: AbortSignal.timeout(8000) });
   if (!r.ok) throw new Error(`Kraken ${r.status}`);
   const d = await r.json();
-  const candles = Object.values(d.result).find(Array.isArray)?.slice(-31) || [];
+  const candles = Object.values(d.result || {}).find(Array.isArray)?.slice(-31) || [];
   if (!candles.length) throw new Error('Kraken empty');
   const prices  = candles.map(c => [c[0] * 1000, parseFloat(c[4])]);   // close
   const volumes = candles.map(c => [c[0] * 1000, parseFloat(c[6])]);

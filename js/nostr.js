@@ -84,19 +84,28 @@ export function decodeNaddr(naddr) {
   if (!decoded || decoded.hrp !== 'naddr') throw new Error('Not an naddr');
   const bytes = convertBits(decoded.data, 5, 8, false);
   const tlv = parseTLV(bytes);
+  let identifier = '';
+  try { identifier = tlv[0]?.[0] ? td.decode(new Uint8Array(tlv[0][0])) : ''; }
+  catch { throw new Error('decodeNaddr: invalid UTF-8 in identifier'); }
+  const relays = [];
+  for (const r of (tlv[1] || [])) {
+    try { relays.push(td.decode(new Uint8Array(r))); } catch { /* omitir relay con bytes inválidos */ }
+  }
   return {
-    identifier: tlv[0]?.[0] ? td.decode(new Uint8Array(tlv[0][0])) : '',
+    identifier,
     pubkey: tlv[2]?.[0] ? Array.from(tlv[2][0]).map(b => b.toString(16).padStart(2, '0')).join('') : '',
     kind: tlv[3]?.[0] ? (tlv[3][0][0] << 24 | tlv[3][0][1] << 16 | tlv[3][0][2] << 8 | tlv[3][0][3]) : 0,
-    relays: (tlv[1] || []).map(r => td.decode(new Uint8Array(r)))
+    relays
   };
 }
 
 export function encodeNaddr({ kind, pubkey, identifier, relays = [] }) {
+  if (!pubkey || typeof pubkey !== 'string') throw new Error('encodeNaddr: invalid pubkey');
+  if (!/^[0-9a-f]{64}$/i.test(pubkey)) throw new Error('encodeNaddr: pubkey must be 64 hex chars');
   const tlv = [];
   const idBytes = te.encode(identifier);
   tlv.push(0, idBytes.length, ...idBytes);
-  const pkBytes = pubkey.match(/.{2}/g).map(b => parseInt(b, 16));
+  const pkBytes = (pubkey.match(/.{2}/g) || []).map(b => parseInt(b, 16));
   tlv.push(2, 32, ...pkBytes);
   tlv.push(3, 4, (kind >>> 24) & 0xff, (kind >>> 16) & 0xff, (kind >>> 8) & 0xff, kind & 0xff);
   for (const r of relays) {
@@ -107,12 +116,16 @@ export function encodeNaddr({ kind, pubkey, identifier, relays = [] }) {
 }
 
 export function hexToNpub(hex) {
-  const bytes = hex.match(/.{2}/g).map(b => parseInt(b, 16));
+  if (!hex || typeof hex !== 'string') return '';
+  if (!/^[0-9a-f]{64}$/i.test(hex)) return '';
+  const bytes = (hex.match(/.{2}/g) || []).map(b => parseInt(b, 16));
   return bech32Encode('npub', convertBits(bytes, 8, 5));
 }
 
 export function hexToNote(hex) {
-  const bytes = hex.match(/.{2}/g).map(b => parseInt(b, 16));
+  if (!hex || typeof hex !== 'string') return '';
+  if (!/^[0-9a-f]{64}$/i.test(hex)) return '';
+  const bytes = (hex.match(/.{2}/g) || []).map(b => parseInt(b, 16));
   return bech32Encode('note', convertBits(bytes, 8, 5));
 }
 

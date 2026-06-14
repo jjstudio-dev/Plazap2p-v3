@@ -36,7 +36,7 @@
       "name": "Conversor BTC",
       "short_name": "Conversor",
       "description": "Convierte BTC, sats y fiat",
-      "url": "./?tab=bitcoin",
+      "url": "./?tab=conversor",
       "icons": [{ "src": "icons/icon-192.svg", "sizes": "192x192" }]
     }
   ]

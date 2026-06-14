@@ -29,7 +29,7 @@
       {
         "tipo": "nostr",
         "label": "Nostr",
-        "url": "npub1yn3hc8jmpj963h0zw49ullrrkkefn7qxf78mj29u7v2mn3yktuasx3mzt0"
+        "url": "https://njump.me/npub1yn3hc8jmpj963h0zw49ullrrkkefn7qxf78mj29u7v2mn3yktuasx3mzt0"
       }
     ],
     "aprobado": true
@@ -229,7 +229,7 @@
       {
         "tipo": "pdf",
         "label": "PDF",
-        "url": "docs/bitcoin-whitepaper-es.pdf"
+        "url": "./docs/bitcoin-whitepaper-es.pdf"
       }
     ],
     "aprobado": true

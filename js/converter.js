@@ -44,20 +44,11 @@ async function fetchRates() {
   const el = document.getElementById('btc-converter');
   if (el) el.classList.add('conv-loading');
 
-  let mp;
-  let cg;
-  let yd;
-  try {
-    [mp, cg, yd] = await Promise.allSettled([
-      fetch(MEMPOOL_URL, withTimeout(6000)).then(r => r.json()),
-      fetch(COINGECKO_URL, withTimeout(8000)).then(r => r.json()),
-      fetch(YADIO_URL, withTimeout(8000)).then(r => r.json()),
-    ]);
-  } catch {
-    mp = { status: 'rejected' };
-    cg = { status: 'rejected' };
-    yd = { status: 'rejected' };
-  }
+  const [mp, cg, yd] = await Promise.allSettled([
+    fetch(MEMPOOL_URL, withTimeout(6000)).then(r => r.json()),
+    fetch(COINGECKO_URL, withTimeout(8000)).then(r => r.json()),
+    fetch(YADIO_URL, withTimeout(8000)).then(r => r.json()),
+  ]);
 
   if (mp.status === 'fulfilled') {
     const d = mp.value;

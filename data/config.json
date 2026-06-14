@@ -5,20 +5,31 @@
   "maintainer_npub":     "npub1ue6zpfsyy50xj8ht2kzg0xm84e87gat5nwwjtw8d72wch9w0h4rq8jrjvr",
   "curated_list_naddr":  "",
 
-  "community_tags": ["plazap2p", "PlazaP2P", "plazap2p-venta", "plazap2p-compra", "plazap2p-servicio", "plazap2p-trueque", "plazap2p-evento"],
+  "community_tags": ["plazap2p", "PlazaP2P", "plazap2p-venta", "plazap2p-compra", "plazap2p-servicio", "plazap2p-trueque", "plazap2p-evento", "plazap2p-directorio"],
   "relays": [
     "wss://nos.lol",
     "wss://relay.primal.net",
     "wss://relay.damus.io",
     "wss://nostr.bitcoiner.social",
-    "wss://relay.nostr.band"
+    "wss://relay.nostr.band",
+    "wss://relay.snort.social",
+    "wss://purplepag.es",
+    "wss://nostr.mom"
   ],
   "channels": [
-    { "id": "mercado",   "kinds": [30402],        "label": "Mercado",    "icon": "🛒" },
-    { "id": "feed",      "kinds": [1],             "label": "Feed",       "icon": "💬" },
-    { "id": "articulos", "kinds": [30023],         "label": "Artículos",  "icon": "📄" },
-    { "id": "eventos",   "kinds": [31922, 31923],  "label": "Eventos",    "icon": "📅" }
+    { "id": "mercado",      "kinds": [30402],        "label": "Mercado",      "icon": "🛒" },
+    { "id": "feed",         "kinds": [1],             "label": "Feed",         "icon": "💬" },
+    { "id": "articulos",    "kinds": [30023],         "label": "Artículos",    "icon": "📄" },
+    { "id": "eventos",      "kinds": [31922, 31923],  "label": "Eventos",      "icon": "📅" },
+    { "id": "intercambio",  "kinds": [38383],         "label": "Intercambio",  "icon": "🔄", "noTagFilter": true },
+    { "id": "directorio",   "kinds": [30402],         "label": "Directorio",   "icon": "📒", "tagFilter": "plazap2p-directorio" }
   ],
+  "intercambio": {
+    "_note": "trustedMostroInstances: lista de pubkeys (hex o npub) de instancias Mostro de confianza para la comunidad. Si está vacía, 'modo comunidad' muestra todas las órdenes de la red. Añade aquí los pubkeys de los bots Mostro que uses en la comunidad.",
+    "trustedMostroInstances": [],
+    "defaultFiat": "EUR",
+    "supportedFiat": ["EUR", "USD", "GBP", "VES", "MXN", "ARS", "COP", "PEN", "CLP", "BRL"]
+  },
   "refresh_interval_ms": 300000,
   "categories": [
     { "id": "venta",    "label": "Venta",    "color": "#00d4ff" },

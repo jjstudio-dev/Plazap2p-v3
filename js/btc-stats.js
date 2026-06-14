@@ -15,31 +15,38 @@ export function destroyBtcStats() {
 }
 
 async function fetchAndRender() {
-  try {
-    const [blockHeight, prices, miningInfo, fees, mempool] = await Promise.all([
-      fetch(`${API}/blocks/tip/height`).then(r => r.json()),
-      fetch(`${API}/v1/prices`).then(r => r.json()),
-      fetch(`${API}/v1/mining/hashrate/3d`).then(r => r.json()),
-      fetch(`${API}/v1/fees/recommended`).then(r => r.json()),
-      fetch(`${API}/mempool`).then(r => r.json()),
-    ]);
+  const [r0, r1, r2, r3, r4] = await Promise.allSettled([
+    fetch(`${API}/blocks/tip/height`).then(r => r.json()),
+    fetch(`${API}/v1/prices`).then(r => r.json()),
+    fetch(`${API}/v1/mining/hashrate/3d`).then(r => r.json()),
+    fetch(`${API}/v1/fees/recommended`).then(r => r.json()),
+    fetch(`${API}/mempool`).then(r => r.json()),
+  ]);
 
-    set('stat-block-val',     `#${blockHeight.toLocaleString('es')}`);
-    set('stat-price-val',     `$${prices.USD.toLocaleString('en-US', { maximumFractionDigits: 0 })}`);
-    set('stat-hashrate-val',  fmtHashrate(miningInfo.currentHashrate));
-    set('stat-difficulty-val',fmtDifficulty(miningInfo.currentDifficulty));
-    set('stat-fees-val',      `${fees.fastestFee} sat/vB`);
-    set('stat-mempool-val',   `${mempool.count.toLocaleString('es')} txs`);
+  const val = (res) => res.status === 'fulfilled' ? res.value : null;
+  const blockHeight = val(r0);
+  const prices      = val(r1);
+  const miningInfo  = val(r2);
+  const fees        = val(r3);
+  const mempool     = val(r4);
 
-    const ts = document.getElementById('btc-stats-updated');
-    if (ts) ts.textContent = `Actualizado: ${new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}`;
+  let anyOk = false;
+  if (blockHeight != null)        { set('stat-block-val',      `#${blockHeight.toLocaleString('es')}`); anyOk = true; }
+  if (prices?.USD != null)        { set('stat-price-val',      `$${prices.USD.toLocaleString('en-US', { maximumFractionDigits: 0 })}`); anyOk = true; }
+  if (miningInfo?.currentHashrate != null)   { set('stat-hashrate-val',   fmtHashrate(miningInfo.currentHashrate)); anyOk = true; }
+  if (miningInfo?.currentDifficulty != null) { set('stat-difficulty-val', fmtDifficulty(miningInfo.currentDifficulty)); anyOk = true; }
+  if (fees?.fastestFee != null)   { set('stat-fees-val',       `${fees.fastestFee} sat/vB`); anyOk = true; }
+  if (mempool?.count != null)     { set('stat-mempool-val',    `${mempool.count.toLocaleString('es')} txs`); anyOk = true; }
 
-    document.getElementById('btc-stats-bar')?.classList.remove('btc-stats-loading');
-  } catch (e) {
-    console.warn('[btc-stats] fetch error', e);
-    const ts = document.getElementById('btc-stats-updated');
-    if (ts) ts.textContent = 'Error al cargar datos';
-  }
+  const ts = document.getElementById('btc-stats-updated');
+  if (ts) ts.textContent = anyOk
+    ? `Actualizado: ${new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}`
+    : 'Error al cargar datos';
+
+  if (anyOk) document.getElementById('btc-stats-bar')?.classList.remove('btc-stats-loading');
+
+  const failed = [r0,r1,r2,r3,r4].filter(r => r.status === 'rejected');
+  if (failed.length) console.warn('[btc-stats] partial fetch errors', failed.map(r => r.reason));
 }
 
 function set(id, val) {

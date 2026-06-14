@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800&family=Inter:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=23" />
+  <link rel="stylesheet" href="css/style.css?v=26" />
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#f7931a" />
@@ -42,7 +42,7 @@
     </div>
 
     <!-- Precio BTC + conversor inline barra -->
-    <span id="hc-price" class="hc-price">₿ · · ·</span>
+    <span id="hc-price" class="hc-price" aria-label="Precio de Bitcoin: cargando">₿ · · ·</span>
     <div id="header-conv" class="header-conv">
       <input id="hc-left" class="hc-input" type="number" value="1" min="0" step="0.00000001" autocomplete="off" inputmode="decimal" placeholder="0" aria-label="Cantidad BTC">
       <span id="hc-left-lbl" class="hc-lbl">BTC</span>
@@ -59,7 +59,7 @@
       </select>
     </div>
 
-    <button class="btn-donar" id="btn-donar-header" onclick="window.openDonarModal?.()" title="Apoyar el proyecto">♥</button>
+    <button class="btn-donar" id="btn-donar-header" onclick="window.openDonarModal?.()" title="Apoyar el proyecto" style="display:none">♥</button>
     <a href="https://github.com/jjstudio-dev/Plazap2p-v3" target="_blank" rel="noopener" class="header-github">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
       GitHub
@@ -82,7 +82,7 @@
     </p>
     <div class="hero-counter-wrap">
       <div class="hero-counter">
-        <span class="counter-num" id="listing-count">--</span>
+        <span class="counter-num" id="listing-count" aria-live="polite">--</span>
         <span class="counter-label">publicaciones en la red</span>
       </div>
       <span class="counter-updated" id="counter-updated"></span>
@@ -173,12 +173,17 @@
     <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-feed"          data-tab="feed">💬 Feed <span class="tab-count" id="tab-count-feed"></span></button>
     <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-articulos"     data-tab="articulos">📄 Artículos <span class="tab-count" id="tab-count-articulos"></span></button>
     <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-eventos"       data-tab="eventos">📅 Eventos <span class="tab-count" id="tab-count-eventos"></span></button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-intercambio"  data-tab="intercambio">🔄 Intercambio <span class="tab-count" id="tab-count-intercambio"></span></button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-directorio"   data-tab="directorio">📒 Directorio <span class="tab-count" id="tab-count-directorio"></span></button>
     <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-comunidades"   data-tab="comunidades">🏘 Comunidades</button>
     <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-herramientas"  data-tab="herramientas">🔧 Herramientas</button>
     <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-multimedia"    data-tab="multimedia">🎙 Multimedia</button>
     <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-bitcoin"       data-tab="bitcoin">₿ Bitcoin</button>
     <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-conversor"    data-tab="conversor">💱 Conversor</button>
     <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-nostr"         data-tab="nostr">⚡ Nostr</button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-publicar"      data-tab="publicar">📢 Publicar</button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-relays"        data-tab="relays">🔗 Relays</button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-acerca"        data-tab="acerca">📋 Acerca</button>
   </div>
 </nav>
 
@@ -286,6 +291,68 @@
       <p class="section-footer-note">
         Eventos de calendario publicados en Nostr con <code>#plazap2p</code> o <code>#plazap2p-evento</code>.
         PlazaP2P los muestra sin pasar por Issues ni edición manual del repo.
+      </p>
+    </div>
+  </section>
+
+  <!-- Intercambio tab (Mostro kind:38383 NIP-69) -->
+  <section id="tab-intercambio" class="section-panel">
+    <div class="section-header">
+      <span class="section-title"><span class="icon">🔄</span> Intercambio P2P · Mostro</span>
+      <span class="section-hint">kind:38383 · NIP-69 · tiempo real</span>
+    </div>
+
+    <p class="intercambio-intro">
+      Órdenes activas de compraventa de Bitcoin publicadas en la red <strong>Mostro</strong> — protocolo P2P no-custodial sobre Nostr.
+      Para tomar una orden necesitas la <a href="https://mostro.network" target="_blank" rel="noopener noreferrer">app de Mostro</a> o un cliente compatible (Mostro Web, Mostro Mobile).
+    </p>
+
+    <div class="intercambio-controls-bar">
+      <div class="intercambio-toggle-group">
+        <button class="intercambio-toggle-btn active" id="btn-inter-comunidad" onclick="window.setIntercambioMode(false)">Comunidad</button>
+        <button class="intercambio-toggle-btn" id="btn-inter-red" onclick="window.setIntercambioMode(true)">Red completa</button>
+      </div>
+      <select id="intercambio-fiat-select" class="sort-select" onchange="window.setIntercambioFiat(this.value)" aria-label="Filtrar por moneda fiat">
+        <option value="">Todas las monedas</option>
+        <option value="EUR" selected>EUR — Euro</option>
+        <option value="USD">USD — Dólar</option>
+        <option value="GBP">GBP — Libra</option>
+        <option value="VES">VES — Bolívar</option>
+        <option value="MXN">MXN — Peso MX</option>
+        <option value="ARS">ARS — Peso AR</option>
+        <option value="COP">COP — Peso CO</option>
+        <option value="PEN">PEN — Sol PE</option>
+        <option value="CLP">CLP — Peso CL</option>
+        <option value="BRL">BRL — Real BR</option>
+      </select>
+    </div>
+
+    <div id="channel-intercambio" class="intercambio-book"></div>
+
+    <div class="section-footer">
+      <p class="section-footer-note">
+        Órdenes públicas de Mostro (kind:38383 · NIP-69). PlazaP2P solo las muestra — el intercambio ocurre directamente entre las partes a través de Mostro, fuera de esta interfaz.
+      </p>
+    </div>
+  </section>
+
+  <!-- Directorio tab (kind:30402 con tag plazap2p-directorio — vía bot Telegram) -->
+  <section id="tab-directorio" class="section-panel">
+    <div class="section-header">
+      <span class="section-title"><span class="icon">📒</span> Directorio de Servicios</span>
+      <span class="section-hint">kind:30402 · ofertas fijas · vía Telegram</span>
+    </div>
+    <p class="dir-intro">
+      Servicios y establecimientos locales publicados directamente desde Telegram, sin necesidad de cuenta Nostr.
+      ¿Tienes un negocio? Escríbele al bot <strong>@plazap2pbot</strong> con el nombre, descripción, precio y ciudad.
+    </p>
+    <div class="tab-search-bar">
+      <input type="search" class="tab-search" id="search-directorio" placeholder="Buscar en el directorio…" autocomplete="off">
+    </div>
+    <div id="channel-directorio" class="dir-grid" role="list"></div>
+    <div class="section-footer">
+      <p class="section-footer-note">
+        Anuncios publicados vía bot de Telegram de PlazaP2P. La interacción ocurre directamente con el vendedor fuera de esta interfaz.
       </p>
     </div>
   </section>
@@ -574,7 +641,7 @@
       <div class="community-cta-content">
         <h3>¿Recomiendas un cliente o servicio?</h3>
         <p>La comunidad puede mejorar y ampliar esta guía. Si conoces un cliente, wallet o servicio que debería aparecer aquí, abre un Issue en GitHub con la propuesta — se revisará y se incorporará si encaja con el enfoque del proyecto.</p>
-        <a href="https://github.com/jjstudio-dev/Plazap2p-v3/issues/new?template=sugerencia-cliente.md&title=[Sugerencia+Cliente/Servicio]" target="_blank" rel="noopener noreferrer" class="btn-outline-small">📬 Proponer cliente o servicio</a>
+        <a href="https://github.com/jjstudio-dev/Plazap2p-v3/issues/new?template=sugerencia-cliente.yml&title=[Sugerencia+Cliente/Servicio]" target="_blank" rel="noopener noreferrer" class="btn-outline-small">📬 Proponer cliente o servicio</a>
       </div>
     </div>
   </section>
@@ -588,12 +655,170 @@
     <div class="contribute-intro">
       <p>PlazaP2P es un proyecto comunitario y abierto. Cada sección tiene su propia forma de aportar. <strong>Todos los aportes son bienvenidos</strong> — publicar contenido, mejorar información, proponer recursos, corregir fallos o ampliar la guía.</p>
       <div class="contribute-areas">
+        <a href="#" onclick="document.getElementById('contrib-nip07').scrollIntoView({behavior:'smooth'});return false;" class="contribute-area-pill contribute-area-pill--highlight">⚡ Publicar anuncio aquí mismo</a>
         <a href="#" onclick="document.getElementById('contrib-nostr').scrollIntoView({behavior:'smooth'});return false;" class="contribute-area-pill">🛒💬📄📅 Mercado / Feed / Artículos / Eventos</a>
         <a href="#" onclick="document.getElementById('contrib-multimedia').scrollIntoView({behavior:'smooth'});return false;" class="contribute-area-pill">🎙 Multimedia</a>
         <a href="#" onclick="document.getElementById('contrib-herramientas').scrollIntoView({behavior:'smooth'});return false;" class="contribute-area-pill">🔧 Herramientas</a>
         <a href="#" onclick="document.getElementById('contrib-relay').scrollIntoView({behavior:'smooth'});return false;" class="contribute-area-pill">🔗 Relays</a>
         <a href="#" onclick="document.getElementById('contrib-bugs').scrollIntoView({behavior:'smooth'});return false;" class="contribute-area-pill">🐛 Bugs y mejoras</a>
       </div>
+    </div>
+
+    <!-- Publicar con NIP-07 -->
+    <div id="contrib-nip07" class="nip07-publish-block">
+      <h2 class="contribute-section-title" style="margin-top:0">⚡ Publicar directamente desde PlazaP2P</h2>
+      <p class="contribute-section-sub">Elige qué quieres hacer. Si tienes una extensión Nostr (<a href="https://getalby.com" target="_blank" rel="noopener">Alby</a> o <a href="https://github.com/fiatjaf/nos2x" target="_blank" rel="noopener">nos2x</a>), puedes publicar sin salir de aquí. Tu clave privada nunca sale de la extensión.</p>
+
+      <!-- Selector de tipo -->
+      <div class="publish-type-grid" id="publish-type-grid">
+        <button class="publish-type-card" onclick="window.selectPublishType('evento')" type="button">
+          <span class="publish-type-icon">📅</span>
+          <span class="publish-type-name">Publicar Evento</span>
+          <span class="publish-type-desc">Meetup, conferencia o actividad comunitaria</span>
+        </button>
+        <button class="publish-type-card" onclick="window.selectPublishType('servicio')" type="button">
+          <span class="publish-type-icon">🔧</span>
+          <span class="publish-type-name">Publicar Servicio</span>
+          <span class="publish-type-desc">Oferta profesional o trabajo freelance</span>
+        </button>
+        <button class="publish-type-card publish-type-card--readonly" onclick="window.selectPublishType('ofertas')" type="button">
+          <span class="publish-type-icon">🛒</span>
+          <span class="publish-type-name">Ver Ofertas</span>
+          <span class="publish-type-desc">Consulta anuncios de compra/venta del Mercado</span>
+        </button>
+      </div>
+
+      <!-- Estado extensión Nostr (compartido) -->
+      <div id="nip07-status" class="nip07-status nip07-checking" style="display:none">Comprobando extensión Nostr…</div>
+
+      <!-- Formulario: Evento -->
+      <form id="nip07-form-evento" class="nip07-form relay-propose-form nip07-subform" novalidate style="display:none">
+        <div class="publish-type-back">
+          <button type="button" class="btn-back" onclick="window.selectPublishType(null)">← Volver</button>
+          <span class="publish-type-active-label">📅 Publicar Evento</span>
+        </div>
+        <div class="form-field">
+          <label for="ev-title">Título del evento <span class="required">*</span></label>
+          <input id="ev-title" type="text" placeholder="Ej: Bitcoin Meetup Madrid — Junio 2025" maxlength="120" required autocomplete="off">
+        </div>
+        <div class="form-field">
+          <label for="ev-desc">Descripción <span class="required">*</span></label>
+          <textarea id="ev-desc" rows="4" placeholder="De qué va el evento, quién organiza, qué se va a tratar..." required></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="ev-date">Fecha y hora <span class="optional">opcional</span></label>
+            <input id="ev-date" type="text" placeholder="2025-07-12 · 18:00 CET" autocomplete="off">
+          </div>
+          <div class="form-field">
+            <label for="ev-location">Lugar <span class="optional">opcional</span></label>
+            <input id="ev-location" type="text" placeholder="Madrid · Online · Bar Bitcoin" autocomplete="off">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="ev-price">Entrada <span class="optional">opcional — deja vacío si es gratis</span></label>
+            <input id="ev-price" type="text" placeholder="Gratis · 5" autocomplete="off" inputmode="decimal">
+          </div>
+          <div class="form-field">
+            <label for="ev-currency">Moneda</label>
+            <select id="ev-currency">
+              <option value="EUR">EUR €</option>
+              <option value="SATS">SATS ⚡</option>
+              <option value="USD">USD $</option>
+              <option value="BTC">BTC ₿</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label for="ev-contact">Contacto o URL del evento <span class="optional">opcional</span></label>
+          <input id="ev-contact" type="text" placeholder="https://… · ⚡ tu@wallet.com · @usuario_telegram" autocomplete="off">
+        </div>
+        <div class="nip07-form-footer">
+          <button type="submit" id="nip07-submit-evento" class="btn-primary">📅 Publicar Evento en Nostr</button>
+          <span class="nip07-tags-hint">Se publicará con <code>#plazap2p-evento</code> y aparecerá en el tab Eventos.</span>
+        </div>
+      </form>
+
+      <!-- Formulario: Servicio -->
+      <form id="nip07-form-servicio" class="nip07-form relay-propose-form nip07-subform" novalidate style="display:none">
+        <div class="publish-type-back">
+          <button type="button" class="btn-back" onclick="window.selectPublishType(null)">← Volver</button>
+          <span class="publish-type-active-label">🔧 Publicar Servicio</span>
+        </div>
+        <div class="form-field">
+          <label for="sv-title">Nombre del servicio <span class="required">*</span></label>
+          <input id="sv-title" type="text" placeholder="Ej: Diseño de identidad visual para proyectos Bitcoin" maxlength="120" required autocomplete="off">
+        </div>
+        <div class="form-field">
+          <label for="sv-desc">Descripción <span class="required">*</span></label>
+          <textarea id="sv-desc" rows="4" placeholder="Qué ofreces, experiencia, proceso de trabajo, plazos habituales..." required></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="sv-category">Categoría</label>
+            <select id="sv-category">
+              <option value="consultoria">💡 Consultoría</option>
+              <option value="diseno">🎨 Diseño</option>
+              <option value="desarrollo">💻 Desarrollo</option>
+              <option value="educacion">📚 Educación</option>
+              <option value="marketing">📣 Marketing</option>
+              <option value="otros">🔧 Otros</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="sv-modalidad">Modalidad</label>
+            <select id="sv-modalidad">
+              <option value="remoto">🌐 Remoto</option>
+              <option value="presencial">📍 Presencial</option>
+              <option value="hibrido">🔄 Híbrido</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="sv-price">Precio / Tarifa <span class="optional">opcional</span></label>
+            <input id="sv-price" type="text" placeholder="50/h · desde 200 · presupuesto" autocomplete="off">
+          </div>
+          <div class="form-field">
+            <label for="sv-currency">Moneda</label>
+            <select id="sv-currency">
+              <option value="EUR">EUR €</option>
+              <option value="SATS">SATS ⚡</option>
+              <option value="USD">USD $</option>
+              <option value="BTC">BTC ₿</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label for="sv-contact">Contacto <span class="optional">opcional — Lightning, npub, Telegram…</span></label>
+          <input id="sv-contact" type="text" placeholder="⚡ tu@wallet.com  ·  npub1…  ·  @usuario_telegram" autocomplete="off">
+        </div>
+        <div class="nip07-form-footer">
+          <button type="submit" id="nip07-submit-servicio" class="btn-primary">🔧 Publicar Servicio en Nostr</button>
+          <span class="nip07-tags-hint">Se publicará con <code>#plazap2p-servicio</code> y aparecerá en el Mercado.</span>
+        </div>
+      </form>
+
+      <!-- Panel: Ver Ofertas (solo lectura) -->
+      <div id="nip07-panel-ofertas" class="nip07-subform" style="display:none">
+        <div class="publish-type-back">
+          <button type="button" class="btn-back" onclick="window.selectPublishType(null)">← Volver</button>
+          <span class="publish-type-active-label">🛒 Ver Ofertas</span>
+        </div>
+        <div class="offers-readonly-block">
+          <div class="offers-readonly-icon">🔒</div>
+          <h3>Las ofertas se consultan, no se publican desde aquí</h3>
+          <p>PlazaP2P muestra ofertas de compra/venta publicadas en la red Nostr por sus propios autores. <strong>No actuamos como intermediarios ni verificamos ninguna oferta.</strong> Toda transacción es P2P y ocurre directamente entre las partes — bajo su propia responsabilidad.</p>
+          <p class="offers-readonly-note">Para publicar una oferta de venta o compra, hazlo desde tu cliente Nostr preferido con el tag <code>#plazap2p-venta</code> o <code>#plazap2p-compra</code>.</p>
+          <div class="offers-readonly-actions">
+            <button type="button" class="btn-primary" onclick="window.switchTab('mercado');window.selectPublishType(null)">🛒 Ir al Mercado a ver ofertas</button>
+            <a href="https://plebeian.market" target="_blank" rel="noopener noreferrer" class="btn-outline-small">Publicar en Plebeian ↗</a>
+            <a href="https://shopstr.store" target="_blank" rel="noopener noreferrer" class="btn-outline-small">Publicar en Shopstr ↗</a>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <h2 id="contrib-nostr" class="contribute-section-title">🛒 Mercado · 💬 Feed · 📄 Artículos · 📅 Eventos — Publicar en la red</h2>
@@ -742,7 +967,7 @@
     </div>
 
     <!-- Proponer relay -->
-    <div class="relay-propose-block">
+    <div id="contrib-relay" class="relay-propose-block">
       <h2>🔗 ¿Tienes un relay? Agrégalo mandando un formulario (aportación)</h2>
       <p>Si gestionas un relay Bitcoin-friendly hispanohablante, proponlo para que la comunidad pueda conectarse y publicar anuncios en PlazaP2P a través de él. Rellena el formulario — se abre automáticamente un Issue en GitHub con los datos pre-rellenados.</p>
 
@@ -1001,9 +1226,9 @@
 
 <!-- ── Modal Donación ────────────────────────────────────────── -->
 <div id="modal-donar-overlay" class="modal-donar-overlay hidden" onclick="if(event.target===this)window.closeDonarModal?.()">
-  <div class="modal-donar" role="dialog" aria-modal="true">
+  <div class="modal-donar" role="dialog" aria-modal="true" aria-labelledby="modal-donar-title">
     <div class="modal-donar-header">
-      <span class="modal-donar-title">♥ Apoyar PlazaP2P</span>
+      <span class="modal-donar-title" id="modal-donar-title">♥ Apoyar PlazaP2P</span>
       <button class="modal-close-btn" onclick="window.closeDonarModal?.()">✕</button>
     </div>
     <div class="modal-donar-body">
@@ -1026,6 +1251,7 @@
       <a href="#" onclick="window.switchTab?.('feed');window.scrollTo({top:0,behavior:'smooth'});return false;">💬 Feed</a>
       <a href="#" onclick="window.switchTab?.('articulos');window.scrollTo({top:0,behavior:'smooth'});return false;">📄 Artículos</a>
       <a href="#" onclick="window.switchTab?.('eventos');window.scrollTo({top:0,behavior:'smooth'});return false;">📅 Eventos</a>
+      <a href="#" onclick="window.switchTab?.('intercambio');window.scrollTo({top:0,behavior:'smooth'});return false;">🔄 Intercambio</a>
       <a href="#" onclick="window.switchTab?.('comunidades');window.scrollTo({top:0,behavior:'smooth'});return false;">🏘 Comunidades</a>
       <a href="#" onclick="window.switchTab?.('herramientas');window.scrollTo({top:0,behavior:'smooth'});return false;">🔧 Herramientas</a>
       <a href="#" onclick="window.switchTab?.('multimedia');window.scrollTo({top:0,behavior:'smooth'});return false;">🎙 Multimedia</a>
@@ -1041,7 +1267,7 @@
       <a href="https://nostr.com" target="_blank" rel="noopener noreferrer">nostr.com</a>
       <a href="#" onclick="window.switchTab?.('acerca');return false;">Aviso legal</a>
       <a href="#" onclick="window.switchTab?.('acerca');return false;">Privacidad</a>
-      <a href="#" id="footer-donar-link" onclick="window.openDonarModal?.();return false;">♥ Apoyar</a>
+      <a href="#" id="footer-donar-link" onclick="window.openDonarModal?.();return false;" style="display:none">♥ Apoyar</a>
     </div>
     <div class="footer-meta">
       <span>Publicaciones públicas desde relays Nostr</span>
@@ -1060,23 +1286,19 @@
 <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <!-- ESM module — app.js imports nostr.js and relay-pool.js -->
-<script type="module" src="js/app.js?v=23"></script>
+<script type="module" src="js/app.js?v=26"></script>
 <script type="module">
-  import { initBtcStats }      from './js/btc-stats.js?v=23';
-  import { initPriceChart }    from './js/btc-chart.js?v=23';
-  import { initConverter }     from './js/converter.js?v=23';
-  import { initMiniConverter } from './js/mini-converter.js?v=23';
-  import { initBtcMarket }     from './js/btc-market.js?v=23';
+  import { initBtcStats }      from './js/btc-stats.js?v=26';
+  import { initPriceChart }    from './js/btc-chart.js?v=26';
+  import { initConverter }     from './js/converter.js?v=26';
+  import { initMiniConverter } from './js/mini-converter.js?v=26';
+  import { initBtcMarket }     from './js/btc-market.js?v=26';
 
   initMiniConverter();
   initBtcStats();
   initPriceChart();
   initConverter();
   initBtcMarket();
-
-  // Deep-link: ?tab=mercado or ?tab=bitcoin etc.
-  const tabParam = new URLSearchParams(location.search).get('tab');
-  if (tabParam) window.switchTab?.(tabParam);
 
   // Scroll-to-top visibility
   const scrollTopBtn = document.getElementById('btn-scroll-top');
@@ -1097,17 +1319,26 @@
           .catch(() => {});
       }
     } else {
-      navigator.serviceWorker.register('./sw.js?v=23').catch(() => {});
+      navigator.serviceWorker.register('./sw.js?v=26').catch(() => {});
     }
   }
 
   document.getElementById('relay-propose-form')?.addEventListener('submit', function(e) {
     e.preventDefault();
-    const url = document.getElementById('rp-url')?.value.trim();
+    const urlInput = document.getElementById('rp-url');
+    const url = urlInput?.value.trim();
     if (!url) {
-      document.getElementById('rp-url')?.focus();
+      urlInput?.focus();
       return;
     }
+    if (!/^wss?:\/\/.+\..+/.test(url)) {
+      if (urlInput) {
+        urlInput.setCustomValidity('Introduce una URL válida (ej: wss://relay.ejemplo.com)');
+        urlInput.reportValidity();
+      }
+      return;
+    }
+    if (urlInput) urlInput.setCustomValidity('');
     const name    = document.getElementById('rp-name')?.value.trim()  || '—';
     const region  = document.getElementById('rp-region')?.value.trim() || '—';
     const npub    = document.getElementById('rp-npub')?.value.trim()  || '—';

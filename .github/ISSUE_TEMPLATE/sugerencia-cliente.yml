@@ -1,0 +1,65 @@
+name: "💡 Sugerir Cliente o Servicio Nostr"
+description: Proponer un cliente, wallet o servicio Nostr para incluir en la sección "Red Nostr"
+title: "[CLIENTE/SERVICIO] "
+labels: ["sugerencia", "nostr", "pendiente-revision"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por proponer un cliente o servicio Nostr para PlazaP2P.
+        **PlazaP2P no verifica ni avala los recursos listados.** Cada persona es responsable de evaluar cualquier herramienta antes de usarla.
+
+  - type: input
+    id: nombre
+    attributes:
+      label: Nombre del cliente o servicio
+      placeholder: "Ej: Coracle, Nostrtool, relay.tools..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tipo
+    attributes:
+      label: Tipo
+      options:
+        - Cliente Nostr (web/app)
+        - Wallet / Firmador (NIP-07 / NIP-55)
+        - Servicio / Herramienta Nostr
+        - Relay
+        - Otro
+    validations:
+      required: true
+
+  - type: input
+    id: link
+    attributes:
+      label: URL oficial
+      placeholder: "https://..."
+    validations:
+      required: true
+
+  - type: input
+    id: plataforma
+    attributes:
+      label: Plataforma(s)
+      placeholder: "Web · iOS · Android · Chrome · Firefox"
+    validations:
+      required: true
+
+  - type: textarea
+    id: descripcion
+    attributes:
+      label: Descripción breve (máximo 200 caracteres)
+      placeholder: "¿Qué hace? ¿Por qué encaja en PlazaP2P? ¿Qué lo hace relevante para la comunidad Bitcoin/Nostr?"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirmacion
+    attributes:
+      label: Confirmación
+      options:
+        - label: Este recurso es legítimo y relevante para la comunidad Bitcoin/Nostr
+          required: true
+        - label: Entiendo que PlazaP2P no verifica ni es responsable de los recursos listados
+          required: true

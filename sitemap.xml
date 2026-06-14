@@ -25,4 +25,14 @@
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
+  <url>
+    <loc>https://jjstudio-dev.github.io/Plazap2p-v3/?tab=intercambio</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://jjstudio-dev.github.io/Plazap2p-v3/?tab=directorio</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
 </urlset>

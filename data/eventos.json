@@ -1,0 +1,74 @@
+[
+  {
+    "id": "static-valencia-plebs-2026-07",
+    "title": "Valencia Bitcoin Plebs — Meetup mensual",
+    "summary": "Encuentro mensual de la comunidad Bitcoin de Valencia. Networking, charlas y debate sobre Nostr, Lightning y economía circular P2P.",
+    "location": "Valencia, España",
+    "start": "2026-07-10T19:00:00",
+    "end": "2026-07-10T22:00:00",
+    "links": ["https://t.me/valenciabitcoinplebs"],
+    "tags": ["españa", "valencia", "meetup"],
+    "recurrente": true,
+    "aprobado": true
+  },
+  {
+    "id": "static-madrid-bitcoin-2026-07",
+    "title": "Madrid Bitcoin Meetup",
+    "summary": "Reunión informal de Bitcoiners en Madrid. Sin registro previo, todos los niveles bienvenidos. Preguntas y debates sobre la red.",
+    "location": "Madrid, España",
+    "start": "2026-07-17T19:30:00",
+    "end": "2026-07-17T22:00:00",
+    "links": ["https://t.me/bitcoinmadrid"],
+    "tags": ["españa", "madrid", "meetup"],
+    "recurrente": true,
+    "aprobado": true
+  },
+  {
+    "id": "static-prometea-2026-07",
+    "title": "PROMETEA — Club de lectura Bitcoin",
+    "summary": "Club de lectura enfocado en Bitcoin, economía austriaca y tecnología. Lectura y debate del whitepaper, Saifedean Ammous y más.",
+    "location": "Online (Nostr/Telegram)",
+    "start": "2026-07-22T20:00:00",
+    "end": "2026-07-22T22:00:00",
+    "links": ["https://njump.me/npub1pr0met7zv2ta27ckurslrwesexz0wm4kesz963a0mle2gczlyxrqf8huvr"],
+    "tags": ["españa", "online", "lectura"],
+    "recurrente": true,
+    "aprobado": true
+  },
+  {
+    "id": "static-adopting-bitcoin-2026-11",
+    "title": "Adopting Bitcoin — El Salvador",
+    "summary": "Conferencia internacional de Bitcoin con foco en Lightning Network y adopción en Latinoamérica. Referente anual del ecosistema hispano.",
+    "location": "El Salvador",
+    "start": "2026-11-18T09:00:00",
+    "end": "2026-11-20T18:00:00",
+    "links": ["https://adoptingbitcoin.org"],
+    "tags": ["el-salvador", "conferencia", "lightning", "latam"],
+    "recurrente": true,
+    "aprobado": true
+  },
+  {
+    "id": "static-bitcoin-canarias-2026-08",
+    "title": "Bitcoin Canarias — Encuentro verano",
+    "summary": "Encuentro de la comunidad Bitcoin de Canarias. Debates sobre soberanía financiera, auto-custodia y minería doméstica.",
+    "location": "Canarias, España",
+    "start": "2026-08-14T18:30:00",
+    "end": "2026-08-14T21:30:00",
+    "links": ["https://t.me/bitcoincanarias"],
+    "tags": ["españa", "canarias", "meetup"],
+    "recurrente": false,
+    "aprobado": true
+  },
+  {
+    "id": "static-bitcoin-barcelona-2026-09",
+    "title": "Bitcoin Barcelona — Meetup trimestral",
+    "summary": "Meetup trimestral de la comunidad Bitcoin de Barcelona. Charlas técnicas sobre Nostr, RGB y canal Lightning.",
+    "location": "Barcelona, España",
+    "start": "2026-09-10T19:00:00",
+    "end": "2026-09-10T22:00:00",
+    "links": ["https://t.me/bitcoinbcn"],
+    "tags": ["españa", "barcelona", "meetup"],
+    "recurrente": true,
+    "aprobado": true
+  }
+]

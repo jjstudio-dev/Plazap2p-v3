@@ -2,23 +2,25 @@
 // Cache-first para assets estáticos. Network-first para todo lo externo.
 
 // IMPORTANTE: incrementar 'r1' → 'r2' → 'r3'... en cada deploy para forzar actualización de caché
-const CACHE    = 'plazap2p-v3-r27';
+const CACHE    = 'plazap2p-v3-r32';
 const STATICS  = [
   './',
   './index.html',
-  './css/style.css',
-  './js/app.js',
-  './js/nostr.js',
-  './js/relay-pool.js',
-  './js/btc-stats.js',
-  './js/btc-chart.js',
-  './js/btc-market.js',
-  './js/converter.js',
-  './js/mini-converter.js',
-  './data/config.json',
-  './data/comunidades.json',
-  './data/herramientas.json',
-  './data/multimedia.json',
+  './css/style.css?v=26',
+  './js/app.js?v=26',
+  './js/nostr.js',          // importado por app.js sin versión
+  './js/relay-pool.js',     // importado por app.js sin versión
+  './js/btc-stats.js?v=26',
+  './js/btc-chart.js?v=26',
+  './js/btc-market.js?v=26',
+  './js/converter.js?v=26',
+  './js/mini-converter.js?v=26',
+  './data/config.json?v=26',
+  './data/comunidades.json?v=26',
+  './data/herramientas.json?v=26',
+  './data/multimedia.json?v=26',
+  './data/eventos.json?v=26',
+  './data/mantenimiento.json?v=26',
   './docs/bitcoin-whitepaper-es.pdf',
   './manifest.json',
   './icons/icon-192.svg',
