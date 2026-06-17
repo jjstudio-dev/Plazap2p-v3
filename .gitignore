@@ -17,3 +17,7 @@ npm-debug.log*
 .env
 *.key
 *.pem
+
+# Bot — estado temporal y dependencias
+bot/last_seen.json
+bot/node_modules/

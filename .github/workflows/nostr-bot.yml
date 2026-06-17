@@ -1,0 +1,25 @@
+name: PlazaP2P Bot — Deploy check
+
+on:
+  push:
+    paths:
+      - 'bot/**'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci --omit=dev
+        working-directory: bot
+
+      - name: Syntax check
+        run: node --check src/index.js
+        working-directory: bot
