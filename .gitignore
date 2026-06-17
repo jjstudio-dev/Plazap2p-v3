@@ -21,3 +21,9 @@ npm-debug.log*
 # Bot — estado temporal y dependencias
 bot/last_seen.json
 bot/node_modules/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
