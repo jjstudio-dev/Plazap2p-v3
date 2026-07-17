@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" fill="#07070c" rx="28"/>
+  <rect width="192" height="192" fill="url(#bg)" rx="28"/>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#f7931a" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#07070c" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Bitcoin ₿ symbol -->
+  <text x="96" y="122" font-size="96" text-anchor="middle"
+        fill="#f7931a" font-family="Arial, sans-serif" font-weight="800"
+        style="font-feature-settings:'kern'">₿</text>
+  <!-- PlazaP2P label -->
+  <text x="96" y="166" font-size="18" text-anchor="middle"
+        fill="#f5f5f7" font-family="Arial, sans-serif" font-weight="700"
+        letter-spacing="3">P2P</text>
+</svg>

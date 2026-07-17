@@ -1,0 +1,112 @@
+# CI de la app pura (TST-001): sintaxis, JSON y tests.
+# Un push no puede desplegar si falla una prueba crítica.
+name: App CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Sintaxis de todos los JS
+        run: |
+          set -e
+          for f in js/*.js js/vendor/*.js sw.js; do
+            node --check "$f"
+            echo "OK $f"
+          done
+
+      - name: JSON parseable (data/ y manifest)
+        run: |
+          set -e
+          for f in data/*.json manifest.json; do
+            node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))"
+            echo "OK $f"
+          done
+
+      - name: Tests (node:test)
+        run: node --test "tests/*.test.mjs"
+
+      - name: Sin marcas de conflicto de merge sin resolver
+        run: |
+          set -e
+          if git grep -nE '^(<{7}|={7}|>{7})( |$)' -- '*.js' '*.html' '*.css' '*.json' '*.md'; then
+            echo "::error::quedan marcas de conflicto de merge sin resolver"
+            exit 1
+          fi
+          echo "OK sin marcas de conflicto"
+
+      - name: Enlaces locales de index.html/publicar.html existen
+        run: |
+          node -e "
+            const fs = require('fs');
+            let missing = 0;
+            for (const f of ['index.html', 'publicar.html']) {
+              const html = fs.readFileSync(f, 'utf8');
+              const re = /(?:href|src)=[\"']([^\"'#][^\"']*)[\"']/g;
+              const seen = new Set();
+              let m;
+              while ((m = re.exec(html))) {
+                let url = m[1];
+                if (/^(https?:|mailto:|tel:|data:|javascript:)/.test(url)) continue;
+                url = url.split('?')[0].split('#')[0];
+                if (!url || seen.has(url)) continue;
+                seen.add(url);
+                if (!fs.existsSync(url)) { console.error('MISSING', f, '->', url); missing++; }
+              }
+            }
+            if (missing) process.exit(1);
+            console.log('OK enlaces locales');
+          "
+
+      - name: Recursos de sw.js (STATICS) existen
+        run: |
+          node -e "
+            const fs = require('fs');
+            const sw = fs.readFileSync('sw.js', 'utf8');
+            const block = sw.match(/STATICS\s*=\s*\[([\s\S]*?)\];/)[1];
+            const urls = [...block.matchAll(/'([^']+)'/g)].map(x => x[1]);
+            let missing = 0;
+            for (const u of urls) {
+              const clean = u.replace(/^\.\//, '').split('?')[0];
+              if (!clean) continue;
+              if (!fs.existsSync(clean)) { console.error('MISSING', u); missing++; }
+            }
+            if (missing) process.exit(1);
+            console.log('OK', urls.length, 'recursos de sw.js');
+          "
+
+      - name: Versión de assets consistente (HTML / app.js / sw.js)
+        run: |
+          node -e "
+            const fs = require('fs');
+            const idx  = fs.readFileSync('index.html', 'utf8');
+            const pub  = fs.readFileSync('publicar.html', 'utf8');
+            const appjs = fs.readFileSync('js/app.js', 'utf8');
+            const sw   = fs.readFileSync('sw.js', 'utf8');
+            const vAsset = v => v.match(/ASSET_VERSION\s*=\s*'(\d+)'/)?.[1];
+            const vHtml  = h => [...h.matchAll(/\?v=(\d+)/g)].map(m => m[1]);
+            const versions = new Set([...vHtml(idx), ...vHtml(pub), vAsset(appjs)]);
+            if (versions.size !== 1) {
+              console.error('Versiones inconsistentes:', [...versions]);
+              process.exit(1);
+            }
+            const v = [...versions][0];
+            if (!sw.includes(\`?v=\${v}\`)) {
+              console.error('sw.js STATICS no usa la versión', v);
+              process.exit(1);
+            }
+            console.log('OK versión', v, 'consistente en HTML/app.js/sw.js');
+          "

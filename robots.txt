@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://jjstudio-dev.github.io/Plazap2p-v3/sitemap.xml

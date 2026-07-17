@@ -1,0 +1,220 @@
+// relay-pool.js — WebSocket relay pool for Nostr (NIP-01)
+// Manages connections, subscriptions, and automatic reconnect
+//
+// SEC-001: ningún evento llega a un callback onEvent sin pasar por
+// validateSignedEvent() (estructura + id recalculado + firma Schnorr) y sin
+// encajar en los filtros de su suscripción. Un relay comprometido no puede
+// inventar autores ni colar kinds inesperados.
+
+import { verifyEvent } from './vendor/nostr-crypto.js';
+
+const RECONNECT_BASE_MS = 3000;
+const RECONNECT_MAX_MS  = 60000;
+const MAX_FUTURE_DRIFT_S = 900;   // eventos >15 min en el futuro: rechazados
+
+/**
+ * Valida un evento recibido de un relay: estructura NIP-01, created_at no
+ * futuro y verificación criptográfica (id recalculado + firma Schnorr).
+ *
+ * Sin caché propia por id A PROPÓSITO: una caché por id sería envenenable
+ * (un relay malicioso podría reenviar un id "verificado" con contenido
+ * alterado, o pre-rechazar el id de un evento legítimo). nostr-tools ya
+ * cachea el veredicto POR OBJETO (Symbol interno), que es seguro. Coste:
+ * ~1 ms/evento síncrono; con <100 eventos/carga no necesita worker — no
+ * "optimizar" sin medir primero.
+ *
+ * @param {object} ev — payload EVENT crudo del relay
+ * @returns {boolean}
+ */
+export function validateSignedEvent(ev) {
+  if (!ev || typeof ev !== 'object' || Array.isArray(ev)) return false;
+  if (typeof ev.id !== 'string' || !/^[0-9a-f]{64}$/.test(ev.id)) return false;
+
+  const structureOk =
+    typeof ev.sig === 'string' && /^[0-9a-f]{128}$/.test(ev.sig)
+    && typeof ev.pubkey === 'string' && /^[0-9a-f]{64}$/.test(ev.pubkey)
+    && Number.isInteger(ev.kind) && ev.kind >= 0 && ev.kind <= 65535
+    && Number.isInteger(ev.created_at)
+    && ev.created_at <= Math.floor(Date.now() / 1000) + MAX_FUTURE_DRIFT_S
+    && typeof ev.content === 'string'
+    && Array.isArray(ev.tags)
+    && ev.tags.every(t => Array.isArray(t) && t.every(x => typeof x === 'string'));
+
+  if (!structureOk) return false;
+  try { return verifyEvent(ev) === true; } catch { return false; }
+}
+
+/**
+ * Matching mínimo de filtros NIP-01: kinds, authors e ids cuando el filtro
+ * los declara. Basta con que UN filtro de la suscripción encaje. No cubre
+ * #tags/since/until (deuda documentada) — kinds+authors cierran el vector
+ * principal: inyectar kinds inesperados en callbacks que asumen estructura.
+ */
+export function matchesFilters(ev, filters) {
+  if (!Array.isArray(filters) || filters.length === 0) return true;
+  return filters.some(f => {
+    if (!f || typeof f !== 'object') return false;
+    if (Array.isArray(f.kinds) && !f.kinds.includes(ev.kind)) return false;
+    if (Array.isArray(f.authors) && !f.authors.includes(ev.pubkey)) return false;
+    if (Array.isArray(f.ids) && !f.ids.includes(ev.id)) return false;
+    return true;
+  });
+}
+
+export class RelayPool {
+  #relays = {};
+  #subs = {};
+  #publishCallbacks = new Map(); // eventId → (url, accepted, message) → void
+  #closed = false;
+  #onConnect;
+  #onDisconnect;
+
+  constructor(urls, { onConnect, onDisconnect } = {}) {
+    this.urls = [...new Set(urls)];
+    this.#onConnect = onConnect;
+    this.#onDisconnect = onDisconnect;
+  }
+
+  connect() {
+    this.#closed = false;
+    for (const url of this.urls) this.#connectOne(url);
+  }
+
+  #connectOne(url) {
+    if (this.#closed) return;
+    if (this.#relays[url]?.ws?.readyState === WebSocket.CONNECTING) return;
+    const failCount = this.#relays[url]?.failCount ?? 0;
+    try {
+      this.#relays[url]?.ws?.close(); // evitar WebSocket huérfano al reconectar
+      const ws = new WebSocket(url);
+      this.#relays[url] = { ws, status: 'connecting', failCount };
+
+      ws.onopen = () => {
+        if (this.#relays[url]?.ws !== ws) return;
+        this.#relays[url].status = 'connected';
+        this.#relays[url].failCount = 0;
+        for (const [id, sub] of Object.entries(this.#subs)) {
+          try { ws.send(JSON.stringify(['REQ', id, ...sub.filters])); } catch (e) { console.warn(`[relay] send REQ failed ${url}`, e); }
+        }
+        this.#onConnect?.(url);
+      };
+
+      ws.onmessage = ({ data }) => {
+        if (this.#relays[url]?.ws !== ws) return;
+        if (data.length > 1_000_000) return; // protección DoS — descartar mensajes >1 MB
+        let msg;
+        try { msg = JSON.parse(data); } catch { return; }
+        if (!Array.isArray(msg)) return;
+        const [type, subId, payload] = msg;
+        if (type === 'EVENT' && payload) {
+          const sub = this.#subs[subId];
+          if (!sub) return;
+          // SEC-001: verificar antes de entregar; descartar lo que no encaje
+          // en los filtros de la suscripción (relays que ignoran el REQ).
+          if (!validateSignedEvent(payload)) {
+            console.warn(`[relay] evento inválido descartado (${url})`, payload?.id ?? '(sin id)');
+            return;
+          }
+          if (!matchesFilters(payload, sub.filters)) return;
+          sub.onEvent?.(payload, url);
+        }
+        else if (type === 'EOSE') this.#subs[subId]?.onEose?.(url);
+        else if (type === 'OK') {
+          const [, eventId, accepted, message] = msg;
+          this.#publishCallbacks.get(eventId)?.(url, !!accepted, message || '');
+        }
+        else if (type === 'NOTICE') console.warn(`[relay notice ${url}]`, msg[1]);
+      };
+
+      ws.onerror = () => { console.warn(`[relay] error en ${url}`); ws.close(); };
+
+      ws.onclose = () => {
+        if (this.#relays[url]?.ws !== ws || this.#closed) return;
+        const fails = (this.#relays[url].failCount ?? 0) + 1;
+        this.#relays[url].status = 'disconnected';
+        this.#relays[url].failCount = fails;
+        this.#onDisconnect?.(url);
+        const delay = Math.min(RECONNECT_BASE_MS * Math.pow(2, fails - 1), RECONNECT_MAX_MS);
+        setTimeout(() => { if (this.#relays[url]?.ws === ws && !this.#closed) this.#connectOne(url); }, delay);
+      };
+    } catch (e) {
+      console.error(`[relay] ${url}:`, e);
+    }
+  }
+
+  subscribe(id, filters, { onEvent, onEose } = {}) {
+    this.#subs[id] = { filters, onEvent, onEose };
+    for (const { ws, status } of Object.values(this.#relays)) {
+      if (status === 'connected') {
+        try { ws.send(JSON.stringify(['REQ', id, ...filters])); } catch (e) { console.warn('[relay] subscribe send failed', e); }
+      }
+    }
+  }
+
+  unsubscribe(id) {
+    if (!this.#subs[id]) return;
+    for (const { ws, status } of Object.values(this.#relays)) {
+      if (status === 'connected') {
+        try { ws.send(JSON.stringify(['CLOSE', id])); } catch {}
+      }
+    }
+    delete this.#subs[id];
+  }
+
+  get status() {
+    return Object.entries(this.#relays).map(([url, r]) => ({ url, status: r.status }));
+  }
+
+  get connectedCount() {
+    return Object.values(this.#relays).filter(r => r.status === 'connected').length;
+  }
+
+  publish(event) {
+    const msg = JSON.stringify(['EVENT', event]);
+    for (const relay of Object.values(this.#relays)) {
+      if (relay.status === 'connected') {
+        try { relay.ws.send(msg); } catch {}
+      }
+    }
+  }
+
+  publishWithFeedback(event, timeout = 6000) {
+    const msg     = JSON.stringify(['EVENT', event]);
+    const eventId = event.id;
+    const connected = Object.entries(this.#relays)
+      .filter(([, r]) => r.status === 'connected');
+
+    if (connected.length === 0) return Promise.resolve([]);
+
+    const results = [];
+    let pending = connected.length;
+
+    return new Promise((resolve) => {
+      const finish = () => {
+        this.#publishCallbacks.delete(eventId);
+        resolve(results);
+      };
+      const timer = setTimeout(finish, timeout);
+
+      const seen = new Set();   // un relay podría enviar OK duplicado
+      this.#publishCallbacks.set(eventId, (url, accepted, message) => {
+        if (seen.has(url)) return;
+        seen.add(url);
+        results.push({ url, accepted, message });
+        if (--pending <= 0) { clearTimeout(timer); finish(); }
+      });
+
+      for (const [, relay] of connected) {
+        try { relay.ws.send(msg); }
+        catch { if (--pending <= 0) { clearTimeout(timer); finish(); } }
+      }
+    });
+  }
+
+  close() {
+    this.#closed = true;
+    for (const { ws } of Object.values(this.#relays)) { try { ws.close(); } catch {} }
+    this.#relays = {};
+    this.#subs = {};
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "_setup": "PASOS PARA PRODUCCIÓN: 1) Crear keypair Nostr (Alby/nos2x/nak). 2) Publicar kind:0 perfil en los relays. 3) Copiar pubkey en hex a maintainer_pubkey. 4) Opcional: publicar kind:30003 NIP-51 list con anuncios curados y poner su naddr en curated_list_naddr. Sin curated_list_naddr la app muestra todos los kind:30402 con #plazap2p (modo fallback).",
+
+  "maintainer_pubkey":   "e67420a604251e691eeb5584879b67ae4fe475749b9d25b8edf29d8b95cfbd46",
+  "maintainer_npub":     "npub1ue6zpfsyy50xj8ht2kzg0xm84e87gat5nwwjtw8d72wch9w0h4rq8jrjvr",
+  "curated_list_naddr":  "",
+
+  "community_tags": ["plazap2p", "PlazaP2P", "plazap2p-venta", "plazap2p-compra", "plazap2p-servicio", "plazap2p-trueque", "plazap2p-evento", "plazap2p-directorio"],
+  "relays": [
+    "wss://nos.lol",
+    "wss://relay.primal.net",
+    "wss://relay.damus.io",
+    "wss://nostr.bitcoiner.social",
+    "wss://relay.nostr.band",
+    "wss://relay.snort.social",
+    "wss://purplepag.es",
+    "wss://nostr.mom"
+  ],
+  "channels": [
+    { "id": "mercado",      "kinds": [30402],        "label": "Mercado",      "icon": "🛒" },
+    { "id": "feed",         "kinds": [1],             "label": "Feed",         "icon": "💬" },
+    { "id": "articulos",    "kinds": [30023],         "label": "Artículos",    "icon": "📄" },
+    { "id": "eventos",      "kinds": [31922, 31923],  "label": "Eventos",      "icon": "📅" },
+    { "id": "intercambio",  "kinds": [38383],         "label": "Intercambio",  "icon": "🔄", "noTagFilter": true },
+    { "id": "directorio",   "kinds": [30402],         "label": "Directorio",   "icon": "📒", "tagFilter": "plazap2p-directorio" }
+  ],
+  "intercambio": {
+    "_note": "trustedMostroInstances: lista de pubkeys (hex o npub) de instancias Mostro de confianza para la comunidad. Si está vacía, 'modo comunidad' muestra todas las órdenes de la red. Añade aquí los pubkeys de los bots Mostro que uses en la comunidad.",
+    "trustedMostroInstances": [],
+    "defaultFiat": "EUR",
+    "supportedFiat": ["EUR", "USD", "GBP", "VES", "MXN", "ARS", "COP", "PEN", "CLP", "BRL"]
+  },
+  "refresh_interval_ms": 300000,
+  "categories": [
+    { "id": "venta",    "label": "Venta",    "color": "#00d4ff" },
+    { "id": "compra",   "label": "Compra",   "color": "#30d158" },
+    { "id": "servicio", "label": "Servicio", "color": "#bf5af2" },
+    { "id": "trueque",  "label": "Trueque",  "color": "#ffd60a" }
+  ],
+  "publish_clients": [
+    { "id": "plebeian",  "name": "Plebeian Market", "url": "https://plebeian.market", "desc": "Publica anuncios NIP-99 (kind:30402)", "icon": "🛒" },
+    { "id": "shopstr",   "name": "Shopstr",          "url": "https://shopstr.store",   "desc": "Marketplace Nostr con Lightning",     "icon": "⚡" },
+    { "id": "primal",    "name": "Primal",            "url": "https://primal.net",      "desc": "Cliente web y móvil, posts kind:1",   "icon": "🌐" },
+    { "id": "amethyst",  "name": "Amethyst",          "url": "https://amethyst.social", "desc": "Android, todos los NIPs",             "icon": "💜" },
+    { "id": "yakihonne", "name": "YakiHonne",         "url": "https://yakihonne.com",   "desc": "Artículos largos NIP-23 (kind:30023)","icon": "✍️" },
+    { "id": "habla",     "name": "Habla.news",        "url": "https://habla.news",      "desc": "Blog descentralizado sobre Nostr",    "icon": "📰" }
+  ],
+  "nostr_clients": [
+    { "name": "Primal",    "url": "https://primal.net",          "platform": "Web/iOS/Android", "icon": "🌐" },
+    { "name": "Amethyst",  "url": "https://amethyst.social",     "platform": "Android",         "icon": "💜" },
+    { "name": "Damus",     "url": "https://damus.io",            "platform": "iOS",             "icon": "🟣" },
+    { "name": "Snort",     "url": "https://snort.social",        "platform": "Web",             "icon": "⚡" },
+    { "name": "Coracle",   "url": "https://coracle.social",      "platform": "Web",             "icon": "🔵" }
+  ],
+  "wallets": [
+    { "name": "Alby",   "url": "https://getalby.com",                     "platform": "Chrome/Firefox", "icon": "🐝" },
+    { "name": "Amber",  "url": "https://github.com/greenart7c3/Amber",    "platform": "Android",        "icon": "🟠" },
+    { "name": "nos2x",  "url": "https://github.com/fiatjaf/nos2x",        "platform": "Chrome",         "icon": "🔑" }
+  ],
+  "ratings": {
+    "namespace": "plazap2p.reputation",
+    "min_reviews_to_display": 1,
+    "aspects": [
+      { "id": "comunicacion", "label": "Comunicación", "icon": "💬" },
+      { "id": "cumplimiento", "label": "Cumplimiento",  "icon": "✅" },
+      { "id": "precio_justo", "label": "Precio justo",  "icon": "💰" },
+      { "id": "rapidez",      "label": "Rapidez",        "icon": "⚡" },
+      { "id": "confianza",    "label": "Confianza",       "icon": "🔐" }
+    ]
+  }
+}

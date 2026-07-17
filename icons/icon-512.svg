@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#07070c" rx="72"/>
+  <rect width="512" height="512" fill="url(#bg)" rx="72"/>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#f7931a" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#07070c" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <text x="256" y="328" font-size="256" text-anchor="middle"
+        fill="#f7931a" font-family="Arial, sans-serif" font-weight="800">₿</text>
+  <text x="256" y="440" font-size="52" text-anchor="middle"
+        fill="#f5f5f7" font-family="Arial, sans-serif" font-weight="700"
+        letter-spacing="10">P2P</text>
+</svg>

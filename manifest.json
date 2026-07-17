@@ -1,0 +1,61 @@
+{
+  "name": "PlazaP2P — Economía Circular P2P en Nostr",
+  "short_name": "PlazaP2P",
+  "description": "Mercado, comunidad y recursos Bitcoin sobre Nostr. Economía circular P2P, publicaciones abiertas, sin registro y sin intermediarios.",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#07070c",
+  "theme_color": "#f7931a",
+  "lang": "es",
+  "categories": ["finance", "shopping", "social"],
+  "icons": [
+    {
+      "src": "icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Publicar anuncio",
+      "short_name": "Publicar",
+      "description": "Publica en Nostr firmando con tu propia clave",
+      "url": "./publicar.html",
+      "icons": [{ "src": "icons/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Ver Mercado",
+      "short_name": "Mercado",
+      "description": "Mercado P2P con publicaciones abiertas desde Nostr",
+      "url": "./?tab=mercado",
+      "icons": [{ "src": "icons/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Conversor BTC",
+      "short_name": "Conversor",
+      "description": "Convierte BTC, sats y fiat",
+      "url": "./?tab=conversor",
+      "icons": [{ "src": "icons/icon-192.svg", "sizes": "192x192" }]
+    }
+  ]
+}

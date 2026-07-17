@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#07070c">
+  <!-- SEC-003: ver el comentario equivalente en index.html — misma política,
+       mismas razones (sin cabecera HTTP real posible en GitHub Pages). -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline';
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    img-src 'self' https: data:;
+    font-src 'self' https://fonts.gstatic.com;
+    connect-src 'self' https: wss:;
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self';
+  ">
+  <title>PlazaP2P — Publicar con tu clave</title>
+  <meta name="description" content="Publica servicios, ventas y eventos en Nostr firmando con tu propia clave (Amber / NIP-07). Sin registro, sin intermediarios.">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/publicar.css?v=30">
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────── -->
+<header class="app-header">
+  <div class="header-row-1">
+    <a class="header-logo" href="./" aria-label="Volver al mercado PlazaP2P">
+      <span class="btc-sym">₿</span>
+      <span>PlazaP2P</span>
+    </a>
+    <button class="header-badge id-badge" id="id-badge" type="button" title="Tu identidad Nostr">Sin conectar</button>
+  </div>
+</header>
+
+<main class="app-main" id="app-main">
+
+  <!-- ══════════════════════════════════════════════
+       IDENTIDAD — Conectar firmador (fase 0)
+  ══════════════════════════════════════════════ -->
+  <section id="sec-identidad" class="hidden">
+    <div class="form-title"><span class="f-icon">🔑</span><span>Tu identidad Nostr</span></div>
+
+    <!-- Estado: sin conectar -->
+    <div id="id-disconnected">
+      <p class="id-intro">
+        Publica con <strong>tu propia clave</strong>. La clave privada nunca toca esta app:
+        firma un firmador externo de código libre.
+      </p>
+
+      <button class="btn-primary" id="btn-connect" type="button">🔑 Conectar identidad</button>
+      <div class="f-error" id="err-connect"></div>
+
+      <!-- Guía si no hay firmador -->
+      <div id="signer-guide" class="signer-guide hidden">
+        <p><strong>Necesitas un firmador Nostr:</strong></p>
+        <ul>
+          <li>📱 <strong>Android:</strong> instala <a href="https://github.com/greenart7c3/Amber/releases" target="_blank" rel="noopener">Amber</a> (gratis, código libre)</li>
+          <li>💻 <strong>Escritorio:</strong> extensión <a href="https://getalby.com" target="_blank" rel="noopener">Alby</a> o <a href="https://github.com/fiatjaf/nos2x" target="_blank" rel="noopener">nos2x</a></li>
+        </ul>
+        <p class="id-hint">Después vuelve aquí y pulsa «Conectar identidad».</p>
+      </div>
+
+      <!-- Fallback portapapeles (Amber sin retorno automático) -->
+      <div id="paste-pubkey-block" class="paste-block hidden">
+        <p class="id-hint">¿Amber no te devolvió aquí automáticamente? Copia tu <strong>npub</strong> en Amber y pégalo:</p>
+        <input type="text" id="paste-pubkey" placeholder="npub1…" autocomplete="off" spellcheck="false">
+        <button class="btn-secondary" id="btn-paste-pubkey" type="button">Usar este npub</button>
+        <div class="f-error" id="err-paste-pubkey"></div>
+      </div>
+    </div>
+
+    <!-- Estado: conectado -->
+    <div id="id-connected" class="hidden">
+      <div class="id-card">
+        <div class="id-avatar" id="id-avatar">👤</div>
+        <div class="id-info">
+          <div class="id-name" id="id-name">…</div>
+          <div class="id-npub mono" id="id-npub"></div>
+        </div>
+      </div>
+      <button class="btn-secondary" id="btn-disconnect" type="button">Desconectar</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       HOME — Selector de tipo de publicación
+  ══════════════════════════════════════════════ -->
+  <section id="sec-home" class="hidden">
+
+    <p class="section-label">¿Qué quieres publicar?</p>
+
+    <div class="type-grid">
+      <div class="type-card" data-type="servicio">
+        <span class="card-icon">🔧</span>
+        <span class="card-name">Servicio</span>
+        <span class="card-sub">Ofrece tu trabajo</span>
+      </div>
+      <div class="type-card" data-type="evento">
+        <span class="card-icon">📅</span>
+        <span class="card-name">Evento</span>
+        <span class="card-sub">Meetup, taller, charla</span>
+      </div>
+      <div class="type-card" data-type="comunidad">
+        <span class="card-icon">🏘</span>
+        <span class="card-name">Comunidad</span>
+        <span class="card-sub">Grupo o canal</span>
+      </div>
+      <div class="type-card" data-type="herramienta">
+        <span class="card-icon">🛠</span>
+        <span class="card-name">Herramienta</span>
+        <span class="card-sub">Software Bitcoin</span>
+      </div>
+    </div>
+
+    <p class="section-label section-label--tx">Transacciones P2P</p>
+    <div class="type-grid col-3">
+      <div class="type-card" data-type="venta">
+        <span class="card-icon">📦</span>
+        <span class="card-name">Venta</span>
+      </div>
+      <div class="type-card" data-type="compra">
+        <span class="card-icon">🛒</span>
+        <span class="card-name">Compra</span>
+      </div>
+      <div class="type-card" data-type="intercambio">
+        <span class="card-icon">🔄</span>
+        <span class="card-name">Intercambio</span>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       FORM — Servicio
+  ══════════════════════════════════════════════ -->
+  <section id="sec-servicio" class="hidden">
+    <div class="form-title">
+      <span class="f-icon">🔧</span>
+      <span>Publicar Servicio</span>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="s-title">
+        Título <span class="req">*</span>
+        <span class="f-counter" id="cnt-s-title">0/200</span>
+      </label>
+      <input type="text" id="s-title" maxlength="200"
+        placeholder="p.ej. Diseño de logotipo Bitcoin" autocomplete="off">
+      <div class="f-error" id="err-s-title"></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="s-desc">
+        Descripción <span class="req">*</span>
+        <span class="f-counter" id="cnt-s-desc">0/2000</span>
+      </label>
+      <textarea id="s-desc" maxlength="2000" rows="4"
+        placeholder="Describe tu servicio en detalle…"></textarea>
+      <div class="f-error" id="err-s-desc"></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Categoría</label>
+      <div class="pills" id="pills-s-cat">
+        <div class="pill" data-value="consultoria">Consultoría</div>
+        <div class="pill" data-value="diseno">Diseño</div>
+        <div class="pill" data-value="desarrollo">Desarrollo</div>
+        <div class="pill" data-value="educacion">Educación</div>
+        <div class="pill" data-value="marketing">Marketing</div>
+        <div class="pill" data-value="otros">Otros</div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Precio (opcional)</label>
+      <div class="price-row">
+        <input type="number" id="s-price" min="0" step="any" placeholder="0.00">
+        <select id="s-currency">
+          <option value="EUR">EUR</option>
+          <option value="USD">USD</option>
+          <option value="BTC">BTC</option>
+          <option value="SATS">SATS</option>
+        </select>
+      </div>
+      <div class="f-error" id="err-s-price"></div>
+      <label class="negociar-label">
+        <input type="checkbox" id="s-negociar">
+        A negociar
+      </label>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="s-image">Imagen URL (opcional)</label>
+      <input type="url" id="s-image" placeholder="https://i.imgur.com/…" autocomplete="off">
+      <div class="f-error" id="err-s-image"></div>
+      <div class="img-hint">ℹ️ Sube en <strong>imgur.com</strong> o <strong>nostr.build</strong> y pega la URL directa</div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="s-contact">Contacto (opcional)</label>
+      <input type="text" id="s-contact" maxlength="200"
+        placeholder="@usuario, correo o npub (sin enlaces)" autocomplete="off">
+      <div class="f-error" id="err-s-contact"></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       FORM — Evento
+  ══════════════════════════════════════════════ -->
+  <section id="sec-evento" class="hidden">
+    <div class="form-title">
+      <span class="f-icon">📅</span>
+      <span>Publicar Evento</span>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="e-title">
+        Título <span class="req">*</span>
+        <span class="f-counter" id="cnt-e-title">0/200</span>
+      </label>
+      <input type="text" id="e-title" maxlength="200"
+        placeholder="p.ej. Meetup Bitcoin Madrid" autocomplete="off">
+      <div class="f-error" id="err-e-title"></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="e-desc">
+        Descripción <span class="req">*</span>
+        <span class="f-counter" id="cnt-e-desc">0/2000</span>
+      </label>
+      <textarea id="e-desc" maxlength="2000" rows="4"
+        placeholder="Describe el evento, quién puede venir, qué se hará…"></textarea>
+      <div class="f-error" id="err-e-desc"></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="e-date">Fecha y hora de inicio <span class="req">*</span></label>
+      <input type="datetime-local" id="e-date">
+      <div class="f-error" id="err-e-date"></div>
+      <label class="negociar-label">
+        <input type="checkbox" id="e-allday">
+        Todo el día (solo cuenta la fecha)
+      </label>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="e-date-end">Fin del evento (opcional)</label>
+      <input type="datetime-local" id="e-date-end">
+      <div class="f-error" id="err-e-date-end"></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="e-location">Lugar (opcional)</label>
+      <input type="text" id="e-location" maxlength="200"
+        placeholder="p.ej. Bar Satoshi, Madrid" autocomplete="off">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="e-image">Imagen URL (opcional)</label>
+      <input type="url" id="e-image" placeholder="https://i.imgur.com/…" autocomplete="off">
+      <div class="f-error" id="err-e-image"></div>
+      <div class="img-hint">ℹ️ Sube en <strong>imgur.com</strong> o <strong>nostr.build</strong></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="e-contact">Contacto / registro (opcional)</label>
+      <input type="text" id="e-contact" maxlength="200"
+        placeholder="@usuario o correo (sin enlaces)" autocomplete="off">
+      <div class="f-error" id="err-e-contact"></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       FORM — Comunidad
+  ══════════════════════════════════════════════ -->
+  <section id="sec-comunidad" class="hidden">
+    <div class="form-title">
+      <span class="f-icon">🏘</span>
+      <span>Publicar Comunidad</span>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="c-title">
+        Nombre <span class="req">*</span>
+        <span class="f-counter" id="cnt-c-title">0/80</span>
+      </label>
+      <input type="text" id="c-title" maxlength="80"
+        placeholder="p.ej. Bitcoin España" autocomplete="off">
+      <div class="f-error" id="err-c-title"></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="c-desc">
+        Descripción <span class="req">*</span>
+        <span class="f-counter" id="cnt-c-desc">0/800</span>
+      </label>
+      <textarea id="c-desc" maxlength="800" rows="3"
+        placeholder="¿De qué trata esta comunidad?"></textarea>
+      <div class="f-error" id="err-c-desc"></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Plataforma</label>
+      <div class="pills" id="pills-c-plat">
+        <div class="pill" data-value="telegram">Telegram</div>
+        <div class="pill" data-value="nostr">Nostr</div>
+        <div class="pill" data-value="matrix">Matrix</div>
+        <div class="pill" data-value="discord">Discord</div>
+        <div class="pill" data-value="otro">Otro</div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="c-access">URL de acceso (opcional)</label>
+      <input type="url" id="c-access" placeholder="https://t.me/…" autocomplete="off">
+      <div class="f-error" id="err-c-access"></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="c-image">Imagen URL (opcional)</label>
+      <input type="url" id="c-image" placeholder="https://i.imgur.com/…" autocomplete="off">
+      <div class="f-error" id="err-c-image"></div>
+      <div class="img-hint">ℹ️ Sube en <strong>imgur.com</strong> o <strong>nostr.build</strong></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       FORM — Herramienta
+  ══════════════════════════════════════════════ -->
+  <section id="sec-herramienta" class="hidden">
+    <div class="form-title">
+      <span class="f-icon">🛠</span>
+      <span>Publicar Herramienta</span>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="h-title">
+        Nombre <span class="req">*</span>
+        <span class="f-counter" id="cnt-h-title">0/80</span>
+      </label>
+      <input type="text" id="h-title" maxlength="80"
+        placeholder="p.ej. Peach Bitcoin" autocomplete="off">
+      <div class="f-error" id="err-h-title"></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="h-desc">
+        Descripción <span class="req">*</span>
+        <span class="f-counter" id="cnt-h-desc">0/800</span>
+      </label>
+      <textarea id="h-desc" maxlength="800" rows="3"
+        placeholder="¿Qué hace? ¿Por qué es útil para la comunidad?"></textarea>
+      <div class="f-error" id="err-h-desc"></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Categoría</label>
+      <div class="pills" id="pills-h-cat">
+        <div class="pill" data-value="wallet">Wallet</div>
+        <div class="pill" data-value="nostr">Nostr</div>
+        <div class="pill" data-value="seguridad">Seguridad</div>
+        <div class="pill" data-value="lightning">Lightning</div>
+        <div class="pill" data-value="educacion">Educación</div>
+        <div class="pill" data-value="otro">Otro</div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="h-url">URL oficial (opcional)</label>
+      <input type="url" id="h-url" placeholder="https://peachbitcoin.com" autocomplete="off">
+      <div class="f-error" id="err-h-url"></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Plataformas disponibles</label>
+      <div class="check-pills">
+        <label class="check-pill-label">
+          <input type="checkbox" name="h-platform" value="ios"> iOS
+        </label>
+        <label class="check-pill-label">
+          <input type="checkbox" name="h-platform" value="android"> Android
+        </label>
+        <label class="check-pill-label">
+          <input type="checkbox" name="h-platform" value="web"> Web
+        </label>
+        <label class="check-pill-label">
+          <input type="checkbox" name="h-platform" value="desktop"> Desktop
+        </label>
+        <label class="check-pill-label">
+          <input type="checkbox" name="h-platform" value="terminal"> Terminal
+        </label>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="h-image">Imagen URL (opcional)</label>
+      <input type="url" id="h-image" placeholder="https://i.imgur.com/…" autocomplete="off">
+      <div class="f-error" id="err-h-image"></div>
+      <div class="img-hint">ℹ️ Sube en <strong>imgur.com</strong> o <strong>nostr.build</strong></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       FORM — Transacción (venta / compra / intercambio)
+  ══════════════════════════════════════════════ -->
+  <section id="sec-transaccion" class="hidden">
+    <div class="form-title">
+      <span class="f-icon" id="tx-icon">📦</span>
+      <span id="tx-form-title">Publicar Venta</span>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="tx-title">
+        Título <span class="req">*</span>
+        <span class="f-counter" id="cnt-tx-title">0/150</span>
+      </label>
+      <input type="text" id="tx-title" maxlength="150"
+        placeholder="p.ej. Vendo Ledger Nano S nuevo" autocomplete="off">
+      <div class="f-error" id="err-tx-title"></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="tx-desc">
+        Descripción <span class="req">*</span>
+        <span class="f-counter" id="cnt-tx-desc">0/1500</span>
+      </label>
+      <textarea id="tx-desc" maxlength="1500" rows="4"
+        placeholder="Detalles, condiciones, método de pago aceptado…"></textarea>
+      <div class="f-error" id="err-tx-desc"></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Alcance</label>
+      <div class="pills" id="pills-tx-alcance">
+        <div class="pill" data-value="local">Local</div>
+        <div class="pill" data-value="nacional">Nacional</div>
+        <div class="pill" data-value="internacional">Internacional</div>
+        <div class="pill" data-value="online">Online</div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Precio (opcional)</label>
+      <div class="price-row">
+        <input type="number" id="tx-price" min="0" step="any" placeholder="0.00">
+        <select id="tx-currency">
+          <option value="EUR">EUR</option>
+          <option value="USD">USD</option>
+          <option value="BTC">BTC</option>
+          <option value="SATS">SATS</option>
+        </select>
+      </div>
+      <div class="f-error" id="err-tx-price"></div>
+      <label class="negociar-label">
+        <input type="checkbox" id="tx-negociar">
+        A negociar
+      </label>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="tx-image">Imagen URL (opcional)</label>
+      <input type="url" id="tx-image" placeholder="https://i.imgur.com/…" autocomplete="off">
+      <div class="f-error" id="err-tx-image"></div>
+      <div class="img-hint">ℹ️ Sube en <strong>imgur.com</strong> o <strong>nostr.build</strong></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="tx-contact">Contacto (opcional)</label>
+      <input type="text" id="tx-contact" maxlength="200"
+        placeholder="@usuario, correo o npub (sin enlaces)" autocomplete="off">
+      <div class="f-error" id="err-tx-contact"></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       FORM — Valorar (kind 1985)
+  ══════════════════════════════════════════════ -->
+  <section id="sec-valorar" class="hidden">
+    <div class="form-title">
+      <span class="f-icon">⭐</span>
+      <span>Valorar a un usuario</span>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="v-npub">npub del valorado <span class="req">*</span></label>
+      <input type="text" id="v-npub" placeholder="npub1…" autocomplete="off" spellcheck="false">
+      <div class="f-error" id="err-v-npub"></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Puntuación general <span class="req">*</span></label>
+      <div class="pills" id="pills-v-rating">
+        <div class="pill" data-value="1">1 ⭐</div>
+        <div class="pill" data-value="2">2 ⭐</div>
+        <div class="pill" data-value="3">3 ⭐</div>
+        <div class="pill" data-value="4">4 ⭐</div>
+        <div class="pill" data-value="5">5 ⭐</div>
+      </div>
+      <div class="f-error" id="err-v-rating"></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Aspectos (opcional)</label>
+      <div id="v-aspects"><!-- generado desde data/config.json → ratings.aspects --></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="v-comment">
+        Comentario (opcional)
+        <span class="f-counter" id="cnt-v-comment">0/500</span>
+      </label>
+      <textarea id="v-comment" maxlength="500" rows="3"
+        placeholder="¿Cómo fue la experiencia?"></textarea>
+    </div>
+
+    <p class="id-hint">La valoración se publica firmada con tu clave (kind 1985, verificable por cualquiera).</p>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       MIS ANUNCIOS
+  ══════════════════════════════════════════════ -->
+  <section id="sec-misanuncios" class="hidden">
+    <div class="form-title">
+      <span class="f-icon">📋</span>
+      <span>Mis anuncios</span>
+    </div>
+    <div id="ma-status" class="ma-status">Buscando tus anuncios en los relays…</div>
+    <div id="ma-list"></div>
+    <p class="id-hint">Solo aparecen los anuncios publicados con tu clave, desde esta app o desde cualquier otro cliente Nostr.</p>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       WALLET — NWC (NIP-47), fondos en la wallet externa
+  ══════════════════════════════════════════════ -->
+  <section id="sec-wallet" class="hidden">
+    <div class="form-title"><span class="f-icon">⚡</span><span>Wallet Lightning</span></div>
+
+    <!-- Sin conectar -->
+    <div id="w-disconnected">
+      <p class="id-intro">
+        Conecta tu wallet vía <strong>Nostr Wallet Connect</strong> (Alby Hub, Coinos, Minibits…).
+        Los fondos permanecen en <strong>tu wallet</strong> — esta app solo recibe un permiso
+        revocable y limitado.
+      </p>
+      <div class="field-group">
+        <label class="field-label" for="w-conn-string">String de conexión NWC</label>
+        <input type="password" id="w-conn-string" placeholder="nostr+walletconnect://…" autocomplete="off" spellcheck="false">
+        <div class="f-error" id="err-w-connect"></div>
+        <div class="img-hint">🔒 Configura un <strong>presupuesto</strong> (p.ej. 10&#8239;000 sats/día) al crear la conexión en tu wallet — es tu límite máximo de riesgo. Puedes revocarla en cualquier momento.</div>
+        <label class="negociar-label">
+          <input type="checkbox" id="w-remember">
+          Recordar esta conexión en este dispositivo
+        </label>
+        <div class="img-hint">⚠️ Si la recuerdas, la credencial queda guardada en el navegador: cualquier persona (o código malicioso) con acceso a este perfil podría gastar hasta el presupuesto configurado en tu wallet. Sin marcar, se olvida al cerrar la pestaña.</div>
+      </div>
+      <button class="btn-primary" id="w-btn-connect" type="button">🔌 Conectar wallet</button>
+    </div>
+
+    <!-- Conectada -->
+    <div id="w-connected" class="hidden">
+      <div class="id-card">
+        <div class="id-avatar">⚡</div>
+        <div class="id-info">
+          <div class="id-name" id="w-balance">···</div>
+          <div class="id-npub mono" id="w-wallet-id"></div>
+          <div class="id-npub" id="w-methods"></div>
+        </div>
+      </div>
+      <div class="f-error" id="err-w-balance"></div>
+      <button class="btn-secondary" id="w-btn-refresh" type="button">🔄 Actualizar saldo</button>
+
+      <!-- Recibir -->
+      <div class="form-title" style="margin-top:22px"><span class="f-icon">📥</span><span>Recibir</span></div>
+      <div class="field-group">
+        <label class="field-label" for="w-rcv-amount">Importe (sats)</label>
+        <div class="price-row">
+          <input type="number" id="w-rcv-amount" min="1" step="1" placeholder="1000">
+          <input type="text" id="w-rcv-desc" maxlength="100" placeholder="concepto (opcional)">
+        </div>
+        <div class="f-error" id="err-w-receive"></div>
+      </div>
+      <button class="btn-secondary" id="w-btn-invoice" type="button">📥 Generar factura</button>
+      <div id="w-invoice-box" class="hidden" style="text-align:center;margin-top:12px">
+        <div id="w-qr"></div>
+        <div class="naddr-box" id="w-invoice-text" title="Toca para copiar"
+             onclick="navigator.clipboard&&navigator.clipboard.writeText(this.textContent)"></div>
+      </div>
+
+      <!-- Pagar -->
+      <div class="form-title" style="margin-top:22px"><span class="f-icon">📤</span><span>Pagar</span></div>
+      <div class="field-group">
+        <label class="field-label" for="w-pay-invoice">Factura Lightning (BOLT11)</label>
+        <textarea id="w-pay-invoice" rows="3" placeholder="lnbc…" spellcheck="false"></textarea>
+        <div class="f-error" id="err-w-pay"></div>
+      </div>
+      <button class="btn-secondary" id="w-btn-decode" type="button">🔍 Revisar factura</button>
+
+      <div id="w-confirm-box" class="res-card hidden" style="margin-top:12px;text-align:left">
+        <div class="res-title" id="w-confirm-amount">…</div>
+        <div class="res-sub" id="w-confirm-desc"></div>
+        <div class="res-sub" id="w-confirm-exp"></div>
+        <button class="btn-primary" id="w-btn-pay" type="button">⚡ Confirmar pago</button>
+      </div>
+      <div id="w-pay-result" class="res-sub hidden" style="margin-top:10px"></div>
+
+      <button class="btn-secondary" id="w-btn-disconnect" type="button" style="margin-top:24px">Desconectar wallet</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       RESULTADO
+  ══════════════════════════════════════════════ -->
+  <section id="sec-resultado" class="hidden">
+    <div id="res-box"></div>
+  </section>
+
+  <!-- Fallback portapapeles para firma (Amber sin retorno automático) -->
+  <section id="sec-paste-event" class="hidden">
+    <div class="form-title"><span class="f-icon">📋</span><span>Pegar evento firmado</span></div>
+    <p class="id-hint">Si Amber no te devolvió aquí automáticamente: en Amber elige <strong>«Copiar»</strong> el resultado firmado y pégalo abajo.</p>
+    <textarea id="paste-event" rows="6" placeholder='{"id":"…","sig":"…"}' spellcheck="false"></textarea>
+    <button class="btn-primary" id="btn-paste-event" type="button">Publicar evento pegado</button>
+    <div class="f-error" id="err-paste-event"></div>
+  </section>
+
+</main>
+
+<!-- Botón sticky de publicar (sustituye al MainButton de Telegram) -->
+<div class="publish-bar hidden" id="publish-bar">
+  <button class="btn-publish" id="btn-publicar" type="button">📢 Publicar</button>
+</div>
+
+<!-- ── Bottom navigation ───────────────────────────────── -->
+<nav class="bottom-nav" role="tablist">
+  <button class="bn-tab bn-tab--active" id="nav-publicar" type="button">
+    <span class="bn-icon">📢</span>
+    <span class="bn-label">Publicar</span>
+  </button>
+  <button class="bn-tab" id="nav-misanuncios" type="button">
+    <span class="bn-icon">📋</span>
+    <span class="bn-label">Mis anuncios</span>
+  </button>
+  <button class="bn-tab" id="nav-valorar" type="button">
+    <span class="bn-icon">⭐</span>
+    <span class="bn-label">Valorar</span>
+  </button>
+  <button class="bn-tab" id="nav-wallet" type="button">
+    <span class="bn-icon">⚡</span>
+    <span class="bn-label">Wallet</span>
+  </button>
+  <a class="bn-tab" href="./" id="nav-mercado">
+    <span class="bn-icon">🛒</span>
+    <span class="bn-label">Mercado</span>
+  </a>
+</nav>
+
+<script type="module" src="js/publicar-app.js?v=30"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}))
+  }
+</script>
+</body>
+</html>

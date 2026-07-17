@@ -1,0 +1,45 @@
+# Copiar este archivo a .dev.vars para desarrollo local con wrangler dev
+# NUNCA commitear .dev.vars — contiene tus secrets reales
+#
+# En producción los secrets se guardan con:
+#   wrangler secret put BOT_TOKEN
+#   wrangler secret put BOT_NSEC
+#   wrangler secret put WEBHOOK_SECRET
+
+# Token del bot de Telegram (obtenido de @BotFather)
+BOT_TOKEN=
+
+# Clave privada Nostr del bot (nsec1...) — keypair DEDICADA, no la cuenta madre
+# Generar con:
+#   node --input-type=module -e "import{generateSecretKey,nip19,getPublicKey}from 'nostr-tools'; const sk=generateSecretKey(); console.log('nsec:',nip19.nsecEncode(sk)); console.log('npub:',nip19.npubEncode(getPublicKey(sk)))"
+BOT_NSEC=
+
+# Token aleatorio para validar que los webhooks vienen de Telegram (no de un atacante)
+# Generar con: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+WEBHOOK_SECRET=
+
+# ── Sistema de reputación ──────────────────────────────────────────────────────
+# URL de tu proyecto Supabase (visible — no es un secret)
+# Obtener en: Supabase dashboard → Settings → API → Project URL
+SUPABASE_URL=https://xxxx.supabase.co
+
+# Clave service_role de Supabase — PRIVADA, nunca exponer al frontend ni al repo
+# Obtener en: Supabase dashboard → Settings → API → service_role key
+# En producción: wrangler secret put SUPABASE_SERVICE_KEY
+SUPABASE_SERVICE_KEY=eyJ...
+
+# Fine-grained PAT de GitHub con permiso contents:write solo en este repo
+# Crear en: GitHub → Settings → Developer settings → Personal access tokens → Fine-grained
+# Permisos necesarios: Repository permissions → Contents → Read and write
+# En producción: wrangler secret put GITHUB_TOKEN
+GITHUB_TOKEN=ghp_...
+
+# Propietario del repositorio GitHub (usuario u organización)
+GITHUB_OWNER=jjstudio-dev
+
+# Nombre del repositorio GitHub donde está el frontend
+GITHUB_REPO=Plazap2p-v3
+
+# Ruta del archivo ratings.json dentro del repo (opcional — valor por defecto: Plazap2p-v3/data/ratings.json)
+# Ajusta si tu estructura de carpetas es diferente
+# RATINGS_FILE_PATH=Plazap2p-v3/data/ratings.json

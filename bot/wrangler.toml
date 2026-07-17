@@ -1,0 +1,26 @@
+name = "plazap2p-bot"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# URL pública del frontend / Mini App (GitHub Pages).
+# Cambiar si el repo o dominio cambia.
+MINI_APP_URL = "https://jjstudio-dev.github.io/Plazap2p-v3/"
+
+# Ruta del archivo de ratings en el repo GitHub (relativa a la raíz).
+# Solo necesaria si GITHUB_TOKEN/OWNER/REPO están configurados como secrets.
+RATINGS_FILE_PATH = "Plazap2p-v3/data/ratings.json"
+
+# GitHub repo info — si no se usan, el snapshot de ratings se omite con un warning.
+# GITHUB_OWNER = "jjstudio-dev"   # descomentar y rellenar si se quiere el snapshot
+# GITHUB_REPO  = "Plazap2p-v3"   # descomentar y rellenar si se quiere el snapshot
+
+[[kv_namespaces]]
+binding = "KV_BOT"
+id = ""           # Rellenar tras: wrangler kv namespace create KV_BOT
+preview_id = ""   # Rellenar tras: wrangler kv namespace create --preview KV_BOT
+
+# Keep-alive de Supabase: ping cada 6 horas para evitar pausa en free tier
+[[triggers]]
+crons = ["0 */6 * * *"]

@@ -1,0 +1,18 @@
+[
+  {
+    "_instrucciones": "PLANTILLA — Copia este bloque completo (sin la clave _instrucciones) al archivo multimedia.json para añadir un perfil. Agrupa aquí varias redes oficiales de la misma persona, asociación o proyecto.",
+    "id": "med-001",
+    "nombre": "<Nombre de la persona, asociación o proyecto>",
+    "tipo": "perfil",
+    "descripcion": "<Perfil breve en 2-3 frases. Qué hace, enfoque, comunidad a la que sirve y por qué es útil.>",
+    "idioma": "es",
+    "logo_url": "https://<url-del-logo-o-avatar>",
+    "enlaces": [
+      { "tipo": "web", "label": "Web", "url": "https://<web-oficial>" },
+      { "tipo": "youtube", "label": "YouTube", "url": "https://www.youtube.com/@<canal>" },
+      { "tipo": "x", "label": "X / Twitter", "url": "https://x.com/<usuario>" },
+      { "tipo": "pdf", "label": "PDF", "url": "docs/<archivo>.pdf" }
+    ],
+    "aprobado": true
+  }
+]

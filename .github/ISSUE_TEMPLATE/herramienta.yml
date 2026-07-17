@@ -1,0 +1,79 @@
+name: "🔧 Sugerir una Herramienta"
+description: Proponer una herramienta Bitcoin, Lightning, Nostr o privacidad para el directorio
+title: "[HERRAMIENTA] "
+labels: ["herramienta", "pendiente-revision"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por proponer una herramienta para PlazaP2P.
+        **PlazaP2P no verifica ni avala las herramientas listadas.** Cada persona es responsable de evaluar las herramientas antes de usarlas.
+
+  - type: input
+    id: nombre
+    attributes:
+      label: Nombre de la herramienta
+      placeholder: "RoboSats"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: categoria
+    attributes:
+      label: Categoría
+      options:
+        - p2p (Exchange P2P)
+        - lightning (Lightning Network)
+        - wallet (Wallet Bitcoin)
+        - node (Nodo Bitcoin)
+        - analytics (Analytics / Exploradores)
+        - privacy (Privacidad / Seguridad)
+        - nostr (Herramientas Nostr)
+        - utilities (Utilidades)
+    validations:
+      required: true
+
+  - type: input
+    id: link
+    attributes:
+      label: Link oficial
+      placeholder: "https://..."
+    validations:
+      required: true
+
+  - type: input
+    id: plataforma
+    attributes:
+      label: Plataforma(s)
+      placeholder: "Web · Mobile · Desktop · CLI"
+    validations:
+      required: true
+
+  - type: textarea
+    id: descripcion
+    attributes:
+      label: Descripción (máximo 200 caracteres)
+      placeholder: "Breve descripción de qué hace la herramienta y por qué es relevante para la comunidad..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: open_source
+    attributes:
+      label: ¿Es open source?
+      options:
+        - "Sí"
+        - "No"
+        - "Parcialmente"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirmacion
+    attributes:
+      label: Confirmación
+      options:
+        - label: Esta herramienta es legítima y relevante para la comunidad Bitcoin/Nostr/P2P
+          required: true
+        - label: Entiendo que PlazaP2P no verifica ni es responsable de las herramientas listadas
+          required: true

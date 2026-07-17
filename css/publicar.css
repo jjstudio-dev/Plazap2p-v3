@@ -1,0 +1,595 @@
+/* publicar.css — hoja ÚNICA de publicar.html (autosuficiente).
+   El bloque BASE está copiado de mini-app/styles.css (misma estética
+   cyberpunk dark que css/style.css) para que publicar.html no dependa
+   del directorio mini-app/. Si cambias tokens aquí, mantén la
+   coherencia con mini-app/styles.css y css/style.css. */
+
+/* ══════════════ BASE (origen: mini-app/styles.css) ══════════════ */
+
+/* ── Reset ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Design tokens (PlazaP2P cyberpunk dark) ──────────────── */
+:root {
+  --bg:         #07070c;
+  --bg-2:       #0e0e17;
+  --surface:    rgba(255,255,255,0.04);
+  --surface-2:  rgba(255,255,255,0.07);
+  --surface-3:  rgba(255,255,255,0.12);
+  --border:     rgba(255,255,255,0.08);
+  --border-act: rgba(0,212,255,0.35);
+  --t-1:        #f5f5f7;
+  --t-2:        #86868b;
+  --t-3:        #48484d;
+  --accent:     #00d4ff;
+  --accent-dim: #007a99;
+  --btc:        #f7931a;
+  --err:        #ff453a;
+  --ok:         #30d158;
+  --c-servicio: #bf5af2;
+  --c-evento:   #30d158;
+  --c-comunidad:#ffd60a;
+  --c-herr:     #00d4ff;
+  --c-venta:    #00d4ff;
+  --c-compra:   #30d158;
+  --c-trueque:  #ffd60a;
+  --r-sm: 6px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --font-head: 'Orbitron', sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+}
+
+/* ── Base ───────────────────────────────────────────────────── */
+html {
+  background: var(--bg);
+  color: var(--t-1);
+  font-family: var(--font-body);
+  font-size: 15px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--bg);
+  min-height: 100dvh;
+}
+
+/* ── Header (estructura de 2 filas) ─────────────────────────── */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+
+.header-row-1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 52px;
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-head);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--t-1);
+  letter-spacing: 0.02em;
+  text-decoration: none;
+}
+
+.header-logo .btc-sym { color: var(--btc); }
+
+.header-badge {
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  padding: 3px 9px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--t-2);
+  white-space: nowrap;
+}
+
+/* ── Main container ─────────────────────────────────────────── */
+.app-main {
+  padding: 16px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* ── Section label ──────────────────────────────────────────── */
+.section-label {
+  font-family: var(--font-head);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--t-3);
+  margin-bottom: 14px;
+}
+.section-label--tx { margin-top: 4px; }
+
+/* ── Home: type grid ────────────────────────────────────────── */
+.type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.type-grid.col-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.type-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 18px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.type-card:active { transform: scale(0.96); background: var(--surface-2); }
+
+/* A11Y-001: type-card/pill son <div role="button" tabindex="0"> (ver
+   publicar-app.js#makeKeyboardActivatable) — necesitan su propio anillo de
+   foco visible, el navegador no les da uno por defecto al no ser <button>. */
+.type-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.type-card .card-icon { font-size: 1.9rem; line-height: 1; }
+.type-card .card-name { font-size: 0.8rem; font-weight: 600; color: var(--t-1); }
+.type-card .card-sub  { font-size: 0.68rem; color: var(--t-2); line-height: 1.3; }
+
+.type-card[data-type="servicio"]    { --cc: var(--c-servicio); }
+.type-card[data-type="evento"]      { --cc: var(--c-evento); }
+.type-card[data-type="comunidad"]   { --cc: var(--c-comunidad); }
+.type-card[data-type="herramienta"] { --cc: var(--c-herr); }
+.type-card[data-type="venta"]       { --cc: var(--c-venta); }
+.type-card[data-type="compra"]      { --cc: var(--c-compra); }
+.type-card[data-type="intercambio"] { --cc: var(--c-trueque); }
+
+.type-card:active .card-icon {
+  filter: drop-shadow(0 0 8px var(--cc, var(--accent)));
+}
+
+@media (hover: hover) {
+  .type-card:hover {
+    border-color: var(--cc, var(--accent));
+    background: var(--surface-2);
+    transform: translateY(-2px);
+    box-shadow:
+      0 6px 24px rgba(0,0,0,.35),
+      0 0 0 1px var(--cc, var(--accent)),
+      0 0 20px rgba(0,212,255,.07);
+  }
+  .type-card:hover .card-icon {
+    filter: drop-shadow(0 0 10px var(--cc, var(--accent)));
+  }
+}
+
+/* ── Form title ─────────────────────────────────────────────── */
+.form-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-head);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--t-1);
+  padding-bottom: 14px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.form-title .f-icon { font-size: 1.3rem; }
+
+/* ── Field group ────────────────────────────────────────────── */
+.field-group { margin-bottom: 18px; }
+
+.field-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--t-2);
+}
+
+.req { color: var(--err); margin-left: 2px; }
+
+.f-counter {
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  color: var(--t-3);
+  transition: color 0.15s;
+}
+.f-counter.over { color: var(--err); }
+
+/* ── Inputs / textarea / select ─────────────────────────────── */
+input[type="text"],
+input[type="url"],
+input[type="number"],
+input[type="password"],
+input[type="datetime-local"],
+textarea,
+select {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  color: var(--t-1);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--border-act);
+  background: var(--surface-2);
+}
+
+input.invalid,
+textarea.invalid { border-color: var(--err); }
+
+textarea {
+  resize: vertical;
+  min-height: 84px;
+  line-height: 1.5;
+}
+
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2386868b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  padding-right: 30px;
+  cursor: pointer;
+}
+
+::placeholder { color: var(--t-3); }
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.45);
+  cursor: pointer;
+}
+
+/* ── Field error ─────────────────────────────────────────────── */
+.f-error {
+  display: none;
+  font-size: 0.73rem;
+  color: var(--err);
+  margin-top: 5px;
+  line-height: 1.4;
+}
+.f-error.show { display: block; }
+
+/* ── Pills ───────────────────────────────────────────────────── */
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  /* A11Y-002: algo más de aire entre pills — evita que un objetivo táctil
+     más alto (ver .pill) quede pegado al de la fila/columna vecina. */
+  gap: 9px;
+}
+
+.pill {
+  /* A11Y-002: 5px 13px (~25px alto) cumplía el mínimo WCAG 2.5.8 (24px) por
+     muy poco. Con el gap ampliado de arriba hay margen para acercarnos más
+     a los 44px recomendados (Material/HIG) sin invadir el pill vecino. */
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--t-2);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.pill:active { transform: scale(0.94); }
+
+.pill:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pill.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0,212,255,0.09);
+}
+
+/* ── Price row ───────────────────────────────────────────────── */
+.price-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.price-row input[type="number"] { flex: 1; }
+
+.price-row select {
+  width: 84px;
+  flex-shrink: 0;
+}
+
+.negociar-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 9px;
+  font-size: 0.8rem;
+  color: var(--t-2);
+  cursor: pointer;
+  user-select: none;
+}
+
+.negociar-label input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ── Platform checkboxes (herramienta) ──────────────────────── */
+.check-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.check-pill-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.78rem;
+  color: var(--t-2);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.check-pill-label input[type="checkbox"] {
+  width: 13px;
+  height: 13px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.check-pill-label:has(input:checked) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0,212,255,0.09);
+}
+
+/* ── Image hint ──────────────────────────────────────────────── */
+.img-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: var(--t-3);
+}
+
+/* ── Utility ─────────────────────────────────────────────────── */
+.hidden { display: none !important; }
+
+/* ── Bottom nav ──────────────────────────────────────────────── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  display: flex;
+  align-items: stretch;
+  height: 52px;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.bn-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 0 8px;
+  background: none;
+  border: none;
+  color: var(--t-3);
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: color 0.18s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  position: relative;
+  text-decoration: none;
+}
+
+.bn-tab::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 22%;
+  right: 22%;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: transparent;
+  transition: background 0.2s;
+}
+
+.bn-tab--active        { color: var(--accent); }
+.bn-tab--active::after { background: var(--accent); }
+
+.bn-icon  { font-size: 1.25rem; line-height: 1; }
+.bn-label { font-size: 0.62rem; font-weight: 500; letter-spacing: 0.03em; }
+
+/* ══════════════ ESTILOS PROPIOS DE PUBLICAR ══════════════ */
+
+/* ── Identidad ─────────────────────────────────────────────── */
+.id-intro { color: var(--t-2); margin-bottom: 16px; line-height: 1.5; }
+.id-hint  { color: var(--t-2); font-size: 0.85rem; margin-top: 10px; line-height: 1.45; }
+
+.id-badge { cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--t-2); }
+.id-badge.connected { color: var(--ok); border-color: rgba(48,209,88,0.35); }
+
+.id-card {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-md); padding: 14px; margin-bottom: 14px;
+}
+.id-avatar {
+  width: 46px; height: 46px; border-radius: 50%;
+  background: var(--surface-2); display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; overflow: hidden; flex-shrink: 0;
+}
+.id-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.id-info { min-width: 0; }
+.id-name { font-weight: 600; }
+.id-npub { color: var(--t-2); font-size: 0.78rem; word-break: break-all; }
+.mono { font-family: var(--font-mono); }
+
+.signer-guide {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-md); padding: 14px; margin-top: 14px; line-height: 1.6;
+}
+.signer-guide ul { padding-left: 18px; margin-top: 6px; }
+.signer-guide a { color: var(--accent); }
+
+.paste-block { margin-top: 18px; }
+.paste-block input, #sec-paste-event textarea {
+  width: 100%; background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: var(--r-sm); color: var(--t-1); padding: 10px;
+  font-family: var(--font-mono); font-size: 0.82rem; margin-bottom: 8px;
+}
+
+/* ── Botones ───────────────────────────────────────────────── */
+.btn-primary, .btn-secondary, .btn-publish {
+  display: block; width: 100%; border: none; cursor: pointer;
+  border-radius: var(--r-md); padding: 13px 16px;
+  font-family: var(--font-body); font-weight: 600; font-size: 1rem;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+.btn-primary { background: var(--btc); color: var(--bg); }
+.btn-secondary {
+  background: var(--surface-2); color: var(--t-1);
+  border: 1px solid var(--border); margin-top: 8px;
+}
+.btn-primary:active, .btn-publish:active { transform: scale(0.985); }
+.btn-primary:disabled, .btn-publish:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Barra sticky de publicación (sustituto del MainButton de Telegram) */
+.publish-bar {
+  position: fixed; left: 0; right: 0; bottom: 56px; z-index: 90;
+  padding: 10px 14px;
+  background: linear-gradient(to top, var(--bg) 65%, transparent);
+}
+.btn-publish { background: var(--btc); color: var(--bg); box-shadow: 0 4px 18px rgba(247,147,26,0.35); }
+
+/* ── Resultado ─────────────────────────────────────────────── */
+.res-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 18px; text-align: center;
+}
+.res-card.ok  { border-color: rgba(48,209,88,0.4); }
+.res-card.err { border-color: rgba(255,69,58,0.4); }
+.res-icon  { font-size: 2.4rem; margin-bottom: 8px; }
+.res-title { font-family: var(--font-head); font-size: 1.05rem; margin-bottom: 8px; }
+.res-sub   { color: var(--t-2); font-size: 0.88rem; line-height: 1.5; margin-bottom: 14px; }
+.res-relays { text-align: left; margin: 12px 0; font-size: 0.8rem; }
+.res-relay  { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; color: var(--t-2); }
+.res-relay .r-ok  { color: var(--ok); }
+.res-relay .r-err { color: var(--err); }
+.res-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.res-actions a.btn-secondary { text-decoration: none; text-align: center; }
+.naddr-box {
+  background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--r-sm);
+  padding: 8px; font-family: var(--font-mono); font-size: 0.7rem;
+  word-break: break-all; color: var(--t-2); margin-top: 10px; cursor: pointer;
+}
+
+/* ── Mis anuncios ──────────────────────────────────────────── */
+.ma-status { color: var(--t-2); font-size: 0.9rem; margin-bottom: 12px; }
+.ma-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-md); padding: 12px 14px; margin-bottom: 10px;
+}
+.ma-item.inactive { opacity: 0.5; }
+.ma-title { font-weight: 600; margin-bottom: 2px; }
+.ma-meta  { color: var(--t-2); font-size: 0.78rem; margin-bottom: 8px; }
+.ma-actions { display: flex; gap: 8px; }
+.ma-actions button {
+  flex: 1; background: var(--surface-2); color: var(--t-1);
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  padding: 7px 8px; font-size: 0.82rem; cursor: pointer; font-family: var(--font-body);
+}
+.ma-actions button.danger { color: var(--err); border-color: rgba(255,69,58,0.3); }
+
+/* ── Valorar ───────────────────────────────────────────────── */
+.aspect-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.aspect-lbl { font-size: 0.88rem; color: var(--t-2); }
+.aspect-pills { display: flex; gap: 6px; }
+.aspect-pills .pill { padding: 8px 11px; font-size: 0.8rem; } /* A11Y-002 */
+
+/* ── Spinner ───────────────────────────────────────────────── */
+.spinner {
+  display: inline-block; width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.25); border-top-color: var(--t-1);
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+  vertical-align: -3px; margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:        0.01ms !important;
+    animation-iteration-count: 1      !important;
+    transition-duration:       0.01ms !important;
+  }
+  .spinner { animation: spin 2s linear infinite; animation-duration: 2s !important; animation-iteration-count: infinite !important; }
+}
+
+/* El body del mini-app dejaba hueco para el MainButton de Telegram;
+   aquí el hueco es para publish-bar + bottom-nav */
+body { padding-bottom: 132px; }

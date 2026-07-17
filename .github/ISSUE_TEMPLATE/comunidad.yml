@@ -1,0 +1,80 @@
+name: "🏘 Sugerir una Comunidad"
+description: Proponer un grupo o comunidad para el directorio de PlazaP2P
+title: "[COMUNIDAD] "
+labels: ["comunidad", "pendiente-revision"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por proponer una comunidad para PlazaP2P.
+        **PlazaP2P no verifica ni avala las comunidades listadas.** Cada persona es responsable de evaluar una comunidad antes de unirse.
+
+  - type: input
+    id: nombre
+    attributes:
+      label: Nombre de la comunidad
+      placeholder: "Bitcoin Hispano"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: plataforma
+    attributes:
+      label: Plataforma
+      options:
+        - Telegram
+        - Nostr
+        - Discord
+        - Matrix
+        - Signal
+        - Web
+        - Otra
+    validations:
+      required: true
+
+  - type: input
+    id: link
+    attributes:
+      label: Link de acceso
+      placeholder: "https://t.me/..."
+    validations:
+      required: true
+
+  - type: input
+    id: pais
+    attributes:
+      label: País o región (pon "Global" si es internacional)
+      placeholder: "Argentina"
+    validations:
+      required: true
+
+  - type: textarea
+    id: descripcion
+    attributes:
+      label: Descripción de la comunidad
+      placeholder: "¿De qué trata? ¿A quién va dirigida? ¿Qué tipo de contenido se comparte?"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: idioma
+    attributes:
+      label: Idioma principal
+      options:
+        - Español
+        - Inglés
+        - Portugués
+        - Bilingüe (ES/EN)
+        - Otro
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirmacion
+    attributes:
+      label: Confirmación
+      options:
+        - label: Confirmo que la información es correcta y que tengo relación legítima con esta comunidad
+          required: true
+        - label: Entiendo que PlazaP2P no verifica ni es responsable de las comunidades listadas
+          required: true
