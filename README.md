@@ -117,42 +117,54 @@ Si el mantenedor configura una cuenta Nostr madre y publica una lista NIP-51 (`k
 
 ```
 plazap2p-v3/
-├── index.html              # SPA — 8 tabs, tema cyberpunk dark
+├── index.html              # SPA — mercado/feed/eventos/etc., tema cyberpunk dark
+├── publicar.html           # Wizard de publicación firmada (identidad, wallet, zaps, reportes)
 ├── manifest.json           # PWA (instalable en móvil y escritorio)
 ├── sw.js                   # Service Worker cache-first
 ├── robots.txt
 ├── sitemap.xml
+├── .well-known/
+│   └── assetlinks.json     # Digital Asset Links — debe republicarse en la raíz del dominio, ver sección app/
 ├── css/
-│   └── style.css           # Tema cyberpunk (heredado de V2, extendido)
-├── js/
-│   ├── app.js              # Lógica principal: Nostr + JSON estáticos
-│   ├── nostr.js            # Bech32 / NIP-19 sin dependencias externas
-│   ├── relay-pool.js       # WebSocket pool con reconexión automática
-│   ├── btc-stats.js        # Precio BTC en tiempo real
-│   ├── btc-chart.js        # Gráfico de precio
-│   └── converter.js        # Conversor BTC / sats / fiat
+│   ├── tokens.css          # Fuente única de tokens de diseño
+│   ├── style.css           # Tema cyberpunk (heredado de V2, extendido)
+│   └── publicar.css        # Hoja autosuficiente de publicar.html
+├── js/                     # ~30 módulos, uno por responsabilidad — ver tests/ para el contrato de cada uno
+├── tests/                  # node:test — un archivo por módulo testeable
 ├── data/
 │   ├── config.json         # Relays, maintainer_pubkey, naddr lista curada
 │   ├── comunidades.json
 │   ├── herramientas.json   # 34+ herramientas Bitcoin
 │   └── multimedia.json
 ├── icons/
-├── app/                    # APK para descarga directa (sin código fuente)
-├── bot/                    # Bot Telegram V3 — referencia, no desplegado
+├── app/                    # APK Android firmado (wrapper TWA, sin código fuente)
 └── .github/
+    ├── workflows/app.yml   # CI: sintaxis, JSON, tests, enlaces, versión de assets
     └── ISSUE_TEMPLATE/     # plantillas para contribuciones al JSON
         ├── comunidad.yml
         ├── herramienta.yml
         └── multimedia.yml
 ```
 
-`app/` y `bot/` no forman parte de la app web activa:
+`app/` no forma parte de la app web activa:
 
-- **[`app/`](app/)** — aquí se publica el APK compilado para quien prefiera
-  instalar la app en Android en lugar de usar la PWA desde el navegador.
-- **[`bot/`](bot/)** — diseño completo de un bot de Telegram para PlazaP2P.
-  Se incluye solo como referencia para quien quiera replicarlo; **no está
-  desplegado**. La vía activa del proyecto es la app web de este repositorio.
+- **[`app/`](app/)** — el APK Android firmado ([`PlazaP2P.apk`](app/PlazaP2P.apk)),
+  para quien prefiera instalarlo en lugar de usar la PWA desde el navegador.
+  Es un wrapper TWA (Trusted Web Activity): abre esta misma web en pantalla
+  completa, mismo código, sin app aparte que mantener.
+
+> **Pendiente para que el APK abra sin barra de navegador** (Digital Asset
+> Links): publicar `.well-known/assetlinks.json` (ya preparado en este repo)
+> en la **raíz** del dominio `jjstudio-dev.github.io` — no en `/Plazap2p-v3/`.
+> Como este repo se sirve en una subruta, ese archivo debe vivir en el
+> repositorio que controla la raíz de `jjstudio-dev.github.io` (normalmente
+> un repo llamado igual que el usuario). Sin este paso el APK sigue
+> funcionando, solo que como pestaña de Chrome con barra de URL visible
+> (fallback automático ya configurado) en vez de app "de confianza".
+
+> El bot de Telegram V3 (diseño completo, nunca desplegado en producción)
+> se retiró de este repositorio. La única vía activa del proyecto es esta
+> app web/PWA — sin backend, sin bot, sin intermediarios.
 
 ---
 

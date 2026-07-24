@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/publicar.css?v=30">
+  <link rel="stylesheet" href="css/publicar.css?v=41">
 </head>
 <body>
 
@@ -53,6 +53,13 @@
         Publica con <strong>tu propia clave</strong>. La clave privada nunca toca esta app:
         firma un firmador externo de código libre.
       </p>
+
+      <!-- ONB-001: las tres ideas clave ANTES de conectar nada, no después -->
+      <ul class="onb-list">
+        <li><strong>PlazaP2P es un cliente, no una plataforma.</strong> No hay cuenta central: tus publicaciones viven en la red Nostr, no aquí.</li>
+        <li><strong>Firmar no es una identidad civil.</strong> Tu clave Nostr es un seudónimo criptográfico — nadie la vincula a tu nombre real por usarla.</li>
+        <li><strong>La wallet (si la conectas más adelante) es independiente</strong> de tu identidad: nunca uses la misma clave para ambas.</li>
+      </ul>
 
       <button class="btn-primary" id="btn-connect" type="button">🔑 Conectar identidad</button>
       <div class="f-error" id="err-connect"></div>
@@ -197,10 +204,14 @@
     </div>
 
     <div class="field-group">
-      <label class="field-label" for="s-image">Imagen URL (opcional)</label>
-      <input type="url" id="s-image" placeholder="https://i.imgur.com/…" autocomplete="off">
+      <label class="field-label" for="s-image">Imagen (opcional)</label>
+      <div class="img-upload-row">
+        <input type="file" id="s-image-file" class="img-file-input" accept="image/jpeg,image/png,image/webp,image/gif">
+        <span class="img-upload-status" id="s-image-status"></span>
+      </div>
+      <input type="url" id="s-image" placeholder="https://i.imgur.com/… (o sube un archivo arriba)" autocomplete="off">
       <div class="f-error" id="err-s-image"></div>
-      <div class="img-hint">ℹ️ Sube en <strong>imgur.com</strong> o <strong>nostr.build</strong> y pega la URL directa</div>
+      <div class="img-hint">ℹ️ Con firmador de extensión, sube el archivo directamente (Blossom). Si no, pega la URL de una imagen ya alojada (<strong>imgur.com</strong>, <strong>nostr.build</strong>…).</div>
     </div>
 
     <div class="field-group">
@@ -263,10 +274,14 @@
     </div>
 
     <div class="field-group">
-      <label class="field-label" for="e-image">Imagen URL (opcional)</label>
-      <input type="url" id="e-image" placeholder="https://i.imgur.com/…" autocomplete="off">
+      <label class="field-label" for="e-image">Imagen (opcional)</label>
+      <div class="img-upload-row">
+        <input type="file" id="e-image-file" class="img-file-input" accept="image/jpeg,image/png,image/webp,image/gif">
+        <span class="img-upload-status" id="e-image-status"></span>
+      </div>
+      <input type="url" id="e-image" placeholder="https://i.imgur.com/… (o sube un archivo arriba)" autocomplete="off">
       <div class="f-error" id="err-e-image"></div>
-      <div class="img-hint">ℹ️ Sube en <strong>imgur.com</strong> o <strong>nostr.build</strong></div>
+      <div class="img-hint">ℹ️ Con firmador de extensión, sube el archivo directamente (Blossom). Si no, pega la URL de una imagen ya alojada.</div>
     </div>
 
     <div class="field-group">
@@ -324,10 +339,14 @@
     </div>
 
     <div class="field-group">
-      <label class="field-label" for="c-image">Imagen URL (opcional)</label>
-      <input type="url" id="c-image" placeholder="https://i.imgur.com/…" autocomplete="off">
+      <label class="field-label" for="c-image">Imagen (opcional)</label>
+      <div class="img-upload-row">
+        <input type="file" id="c-image-file" class="img-file-input" accept="image/jpeg,image/png,image/webp,image/gif">
+        <span class="img-upload-status" id="c-image-status"></span>
+      </div>
+      <input type="url" id="c-image" placeholder="https://i.imgur.com/… (o sube un archivo arriba)" autocomplete="off">
       <div class="f-error" id="err-c-image"></div>
-      <div class="img-hint">ℹ️ Sube en <strong>imgur.com</strong> o <strong>nostr.build</strong></div>
+      <div class="img-hint">ℹ️ Con firmador de extensión, sube el archivo directamente (Blossom). Si no, pega la URL de una imagen ya alojada.</div>
     </div>
   </section>
 
@@ -400,10 +419,14 @@
     </div>
 
     <div class="field-group">
-      <label class="field-label" for="h-image">Imagen URL (opcional)</label>
-      <input type="url" id="h-image" placeholder="https://i.imgur.com/…" autocomplete="off">
+      <label class="field-label" for="h-image">Imagen (opcional)</label>
+      <div class="img-upload-row">
+        <input type="file" id="h-image-file" class="img-file-input" accept="image/jpeg,image/png,image/webp,image/gif">
+        <span class="img-upload-status" id="h-image-status"></span>
+      </div>
+      <input type="url" id="h-image" placeholder="https://i.imgur.com/… (o sube un archivo arriba)" autocomplete="off">
       <div class="f-error" id="err-h-image"></div>
-      <div class="img-hint">ℹ️ Sube en <strong>imgur.com</strong> o <strong>nostr.build</strong></div>
+      <div class="img-hint">ℹ️ Con firmador de extensión, sube el archivo directamente (Blossom). Si no, pega la URL de una imagen ya alojada.</div>
     </div>
   </section>
 
@@ -465,10 +488,14 @@
     </div>
 
     <div class="field-group">
-      <label class="field-label" for="tx-image">Imagen URL (opcional)</label>
-      <input type="url" id="tx-image" placeholder="https://i.imgur.com/…" autocomplete="off">
+      <label class="field-label" for="tx-image">Imagen (opcional)</label>
+      <div class="img-upload-row">
+        <input type="file" id="tx-image-file" class="img-file-input" accept="image/jpeg,image/png,image/webp,image/gif">
+        <span class="img-upload-status" id="tx-image-status"></span>
+      </div>
+      <input type="url" id="tx-image" placeholder="https://i.imgur.com/… (o sube un archivo arriba)" autocomplete="off">
       <div class="f-error" id="err-tx-image"></div>
-      <div class="img-hint">ℹ️ Sube en <strong>imgur.com</strong> o <strong>nostr.build</strong></div>
+      <div class="img-hint">ℹ️ Con firmador de extensión, sube el archivo directamente (Blossom). Si no, pega la URL de una imagen ya alojada.</div>
     </div>
 
     <div class="field-group">
@@ -524,6 +551,93 @@
   </section>
 
   <!-- ══════════════════════════════════════════════
+       REPORTAR (MOD-002, NIP-56)
+  ══════════════════════════════════════════════ -->
+  <section id="sec-reportar" class="hidden">
+    <div class="form-title">
+      <span class="f-icon">🚩</span>
+      <span>Reportar</span>
+    </div>
+
+    <p class="id-hint">El reporte es un evento Nostr público y firmado (kind 1984) — cualquier cliente o relay puede leerlo. PlazaP2P no retira contenido ni garantiza ninguna acción: solo hace el reporte descubrible.</p>
+
+    <div class="field-group">
+      <label class="field-label" for="r-npub">npub reportado <span class="req">*</span></label>
+      <input type="text" id="r-npub" placeholder="npub1…" autocomplete="off" spellcheck="false">
+      <div class="f-error" id="err-r-npub"></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Motivo <span class="req">*</span></label>
+      <div class="pills" id="pills-r-tipo">
+        <div class="pill" data-value="spam">Spam</div>
+        <div class="pill" data-value="impersonation">Suplantación</div>
+        <div class="pill" data-value="illegal">Contenido ilegal</div>
+        <div class="pill" data-value="malware">Malware/phishing</div>
+        <div class="pill" data-value="nudity">Contenido sexual</div>
+        <div class="pill" data-value="profanity">Lenguaje ofensivo</div>
+        <div class="pill" data-value="other">Otro</div>
+      </div>
+      <div class="f-error" id="err-r-tipo"></div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="r-comment">
+        Detalles (opcional)
+        <span class="f-counter" id="cnt-r-comment">0/500</span>
+      </label>
+      <textarea id="r-comment" maxlength="500" rows="3"
+        placeholder="Contexto adicional para quien lea el reporte…"></textarea>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       ZAP (NIP-57) — ZAP-001/002
+  ══════════════════════════════════════════════ -->
+  <section id="sec-zap" class="hidden">
+    <div class="form-title">
+      <span class="f-icon">⚡</span>
+      <span>Enviar zap</span>
+    </div>
+
+    <p class="id-hint">
+      Un zap es un pago Lightning con un recibo Nostr público adjunto — cualquiera puede verificar que lo enviaste.
+      Se firma con tu <strong>identidad</strong> y se paga con tu <strong>wallet</strong> — son cosas separadas.
+    </p>
+
+    <div id="zap-target-info" class="id-hint"></div>
+
+    <div class="field-group hidden" id="zap-no-lud16">
+      <p class="f-error show">Este usuario no tiene una lightning address (lud16) publicada en su perfil — no se le puede enviar un zap todavía.</p>
+    </div>
+
+    <div class="field-group hidden" id="zap-no-wallet">
+      <p class="f-error show">Conecta tu wallet primero.</p>
+      <button class="btn-secondary" id="zap-btn-goto-wallet" type="button">🔌 Ir a Wallet</button>
+    </div>
+
+    <div id="zap-form-fields">
+      <div class="field-group">
+        <label class="field-label" for="z-amount">Importe (sats) <span class="req">*</span></label>
+        <input type="number" id="z-amount" min="1" step="1" placeholder="21" inputmode="numeric">
+        <div class="f-error" id="err-z-amount"></div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="z-comment">
+          Comentario (opcional)
+          <span class="f-counter" id="cnt-z-comment">0/300</span>
+        </label>
+        <textarea id="z-comment" maxlength="300" rows="2" placeholder="¡Gracias!"></textarea>
+      </div>
+
+      <button class="btn-primary" id="btn-send-zap" type="button">⚡ Enviar zap</button>
+      <div class="f-error" id="err-zap"></div>
+      <div id="zap-result" class="res-sub hidden"></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
        MIS ANUNCIOS
   ══════════════════════════════════════════════ -->
   <section id="sec-misanuncios" class="hidden">
@@ -548,6 +662,10 @@
         Conecta tu wallet vía <strong>Nostr Wallet Connect</strong> (Alby Hub, Coinos, Minibits…).
         Los fondos permanecen en <strong>tu wallet</strong> — esta app solo recibe un permiso
         revocable y limitado.
+      </p>
+      <p class="id-intro">
+        La wallet es <strong>independiente de tu identidad Nostr</strong> — nunca generes
+        la conexión NWC con la misma clave que usas para publicar y firmar.
       </p>
       <div class="field-group">
         <label class="field-label" for="w-conn-string">String de conexión NWC</label>
@@ -595,6 +713,9 @@
 
       <!-- Pagar -->
       <div class="form-title" style="margin-top:22px"><span class="f-icon">📤</span><span>Pagar</span></div>
+      <!-- PAY-001: contexto informativo si se llegó desde un anuncio concreto
+           (?pagar=<naddr> en index.html) — nunca certifica la operación, solo recuerda a qué se refiere el pago. -->
+      <div id="w-pay-context" class="id-hint hidden"></div>
       <div class="field-group">
         <label class="field-label" for="w-pay-invoice">Factura Lightning (BOLT11)</label>
         <textarea id="w-pay-invoice" rows="3" placeholder="lnbc…" spellcheck="false"></textarea>
@@ -634,34 +755,44 @@
 
 <!-- Botón sticky de publicar (sustituye al MainButton de Telegram) -->
 <div class="publish-bar hidden" id="publish-bar">
+  <!-- UX-002: solo visible cuando el formulario abierto viene de un borrador
+       restaurado (ver js/drafts.js) — da la "opción clara de eliminarlo". -->
+  <button class="btn-discard-draft hidden" id="btn-discard-draft" type="button">🗑️ Descartar borrador</button>
   <button class="btn-publish" id="btn-publicar" type="button">📢 Publicar</button>
 </div>
 
-<!-- ── Bottom navigation ───────────────────────────────── -->
+<!-- ── Bottom navigation ───────────────────────────────────────────
+     Mismos 5 destinos que el shell de index.html (MOB-002/CODE-011):
+     Plaza/Explorar enlazan de vuelta al mercado; Actividad agrupa Mis
+     anuncios+Valorar y Perfil agrupa Identidad+Wallet mediante chips
+     (mismo patrón visual que #mbn-chips en index.html/js/app-shell.js,
+     pero cableado aquí porque publicar.html tiene su propio showSection()
+     — ver CODE-018 para la unificación futura con el router común). -->
+<div class="pub-chips" id="pub-chips" role="tablist" aria-label="Secciones" hidden></div>
 <nav class="bottom-nav" role="tablist">
+  <a class="bn-tab" href="./#/plaza">
+    <span class="bn-icon">🛒</span>
+    <span class="bn-label">Plaza</span>
+  </a>
+  <a class="bn-tab" href="./#/explorar">
+    <span class="bn-icon">🧭</span>
+    <span class="bn-label">Explorar</span>
+  </a>
   <button class="bn-tab bn-tab--active" id="nav-publicar" type="button">
     <span class="bn-icon">📢</span>
     <span class="bn-label">Publicar</span>
   </button>
-  <button class="bn-tab" id="nav-misanuncios" type="button">
+  <button class="bn-tab" id="nav-actividad" type="button">
     <span class="bn-icon">📋</span>
-    <span class="bn-label">Mis anuncios</span>
+    <span class="bn-label">Actividad</span>
   </button>
-  <button class="bn-tab" id="nav-valorar" type="button">
-    <span class="bn-icon">⭐</span>
-    <span class="bn-label">Valorar</span>
+  <button class="bn-tab" id="nav-perfil" type="button">
+    <span class="bn-icon">👤</span>
+    <span class="bn-label">Perfil</span>
   </button>
-  <button class="bn-tab" id="nav-wallet" type="button">
-    <span class="bn-icon">⚡</span>
-    <span class="bn-label">Wallet</span>
-  </button>
-  <a class="bn-tab" href="./" id="nav-mercado">
-    <span class="bn-icon">🛒</span>
-    <span class="bn-label">Mercado</span>
-  </a>
 </nav>
 
-<script type="module" src="js/publicar-app.js?v=30"></script>
+<script type="module" src="js/publicar-app.js?v=41"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}))

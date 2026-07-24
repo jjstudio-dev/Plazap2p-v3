@@ -3,38 +3,48 @@
 //
 // ── Checklist de release ─────────────────────────────────────────
 // Al desplegar cambios, actualizar la versión V en TODOS estos sitios:
-//   1. index.html    → style.css?v=V, app.js?v=V y los 5 imports del bloque inline
+//   1. index.html    → style.css?v=V, app.js?v=V y los 7 imports del bloque inline
 //   2. js/app.js     → const ASSET_VERSION = 'V' (versiona los data/*.json)
 //   3. publicar.html → publicar.css?v=V, publicar-app.js?v=V
 //   4. sw.js         → CACHE 'rN' (incrementar) + entradas ?v=V de STATICS
 // Regla: cada entrada de STATICS es EXACTAMENTE una URL que el navegador
 // pide de verdad. Los imports internos de ES modules van SIN query.
-const CACHE    = 'plazap2p-v3-r36';
+const CACHE    = 'plazap2p-v3-r47';
 const STATICS  = [
   './',
   './index.html',
   './publicar.html',
   // Assets versionados (los pide el HTML / versioned() con ?v=)
-  './css/style.css?v=30',
-  './css/publicar.css?v=30',
-  './js/app.js?v=30',
-  './js/publicar-app.js?v=30',
-  './js/btc-stats.js?v=30',
-  './js/btc-chart.js?v=30',
-  './js/btc-market.js?v=30',
-  './js/converter.js?v=30',
-  './js/mini-converter.js?v=30',
-  './data/config.json?v=30',
-  './data/comunidades.json?v=30',
-  './data/herramientas.json?v=30',
-  './data/multimedia.json?v=30',
-  './data/eventos.json?v=30',
-  './data/mantenimiento.json?v=30',
-  // Imports internos de ES modules (siempre sin query)
+  './css/style.css?v=41',
+  './css/publicar.css?v=41',
+  './js/app.js?v=41',
+  './js/app-shell.js?v=41',
+  './js/router.js?v=41',
+  './js/publicar-app.js?v=41',
+  './js/btc-stats.js?v=41',
+  './js/btc-chart.js?v=41',
+  './js/btc-market.js?v=41',
+  './js/converter.js?v=41',
+  './js/mini-converter.js?v=41',
+  './data/config.json?v=41',
+  './data/comunidades.json?v=41',
+  './data/herramientas.json?v=41',
+  './data/multimedia.json?v=41',
+  './data/eventos.json?v=41',
+  './data/mantenimiento.json?v=41',
+  // Imports internos (@import CSS / ES modules, siempre sin query)
+  './css/tokens.css',
   './js/signer.js',
   './js/publish-utils.js',
   './js/publish-builders.js',
   './js/mis-anuncios.js',
+  './js/drafts.js',
+  './js/media-upload.js',
+  './js/moderation.js',
+  './js/trust-signals.js',
+  './js/profile.js',
+  './js/zaps.js',
+  './js/favorites.js',
   './js/reputacion.js',
   './js/nostr.js',
   './js/relay-pool.js',

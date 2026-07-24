@@ -10,18 +10,22 @@
 //  - El usuario firma con SU clave (no hay Modo Perfil ni /vincular).
 
 import { RelayPool } from './relay-pool.js'
-import { encodeNaddr, getTagValue, getTagValues, hexToNpub } from './nostr.js'
+import { encodeNaddr, decodeNaddr, getTagValue, getTagValues, hexToNpub } from './nostr.js'
 import * as signer from './signer.js'
 import {
   buildServicio, buildEvento, buildComunidad, buildHerramienta,
-  buildTransaccion, buildValoracion, buildRetirada, normalizePrice,
+  buildTransaccion, buildValoracion, buildRetirada, buildReporte, normalizePrice,
   VALID_CATS_SERVICIO, VALID_PLATS_COMUNIDAD, VALID_CATS_HERRAMIENTA,
-  VALID_ALCANCES, VALID_CURRENCIES,
+  VALID_ALCANCES, VALID_CURRENCIES, VALID_REPORT_TYPES,
 } from './publish-builders.js'
 import { sanitizeContact } from './publish-utils.js'
 import { initMisAnuncios, refreshMisAnuncios, stopMisAnuncios } from './mis-anuncios.js'
 import { fetchReputacion } from './reputacion.js'
-import { initWallet, refreshWallet } from './wallet-ui.js'
+import { initWallet, refreshWallet, hasWallet, payViaWallet } from './wallet-ui.js'
+import { fetchProfileMeta } from './profile.js'
+import { sendZap } from './zaps.js'
+import { saveDraft, loadDraft, deleteDraft } from './drafts.js'
+import { uploadImage } from './media-upload.js'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -33,7 +37,7 @@ const TX_META = {
 }
 const ALL_SECTIONS = [
   'sec-identidad', 'sec-home', 'sec-servicio', 'sec-evento', 'sec-comunidad',
-  'sec-herramienta', 'sec-transaccion', 'sec-valorar', 'sec-misanuncios',
+  'sec-herramienta', 'sec-transaccion', 'sec-valorar', 'sec-reportar', 'sec-zap', 'sec-misanuncios',
   'sec-wallet', 'sec-resultado', 'sec-paste-event',
 ]
 const FORM_FIELD_IDS = [
@@ -42,7 +46,7 @@ const FORM_FIELD_IDS = [
   'c-title', 'c-desc', 'c-access', 'c-image',
   'h-title', 'h-desc', 'h-url', 'h-image',
   'tx-title', 'tx-desc', 'tx-price', 'tx-currency', 'tx-negociar', 'tx-image', 'tx-contact',
-  'v-npub', 'v-comment',
+  'v-npub', 'v-comment', 'r-npub', 'r-comment',
 ]
 const FALLBACK_RELAYS = [
   'wss://nos.lol', 'wss://relay.primal.net', 'wss://relay.damus.io',
@@ -60,6 +64,25 @@ let userPubkey = signer.getStoredPubkey()
 let lastSignedEvent = null   // para el botón Reintentar sin re-firmar
 let broadcasting = false     // evita reintentos concurrentes (RelayPool indexa por eventId)
 let devMode = false
+let draftRestored = false    // UX-002: el formulario abierto viene de un borrador (controla #btn-discard-draft)
+let valorarRefTag = null     // REP-002: referencia opcional (tag a/e) del anuncio que motivó la valoración
+let valorarRefFor = null     // ...válida solo mientras v-npub siga siendo ESTE hex (si el usuario lo cambia a mano, la ref queda obsoleta)
+let reportRefTag = null      // MOD-002: misma idea que valorarRefTag, para sec-reportar
+let zapTargetHex = null      // ZAP-001: pubkey del receptor de la sección zap actualmente abierta
+let zapTargetLud16 = null
+let zapRefTag = null
+
+/** REP-002: naddr de ?ref= → tag 'a' `<kind>:<pubkey>:<d>`, o null si no hay/está roto. */
+function parseValorarRef(naddrRaw) {
+  if (!naddrRaw) return null
+  try {
+    const { kind, pubkey, identifier } = decodeNaddr(naddrRaw)
+    if (!kind || !/^[0-9a-f]{64}$/i.test(pubkey) || !identifier) return null
+    return `${kind}:${pubkey}:${identifier}`
+  } catch {
+    return null // ref malformada: se ignora, no rompe el flujo de valorar
+  }
+}
 
 const $ = id => document.getElementById(id)
 
@@ -95,13 +118,70 @@ document.addEventListener('DOMContentLoaded', async () => {
     $('v-npub').value = hexToNpub(valorarTarget)
     if (userPubkey) {
       renderAspects()
-      setActiveNav('nav-valorar')
-      showSection('sec-valorar')
+      openActividad('valorar')
+      // REP-002 — después de openActividad(), que resetea valorarRefTag a null
+      valorarRefTag = parseValorarRef(params.get('ref'))
+      valorarRefFor = valorarRefTag ? valorarTarget : null
       onValoradoChange()   // muestra la reputación actual del valorado
       return
     }
     // Sin identidad: pedir conexión primero (el npub queda precargado)
-    showSection('sec-identidad')
+    openPerfil('identidad')
+    return
+  }
+
+  // 3b. Deep link ?report=<npub|hex>&ref=<naddr> — "🚩 Reportar" del modal
+  //     de un anuncio en index.html (MOD-002).
+  const reportTarget = signer.parseToHex(params.get('report') || '')
+  if (reportTarget) {
+    $('r-npub').value = hexToNpub(reportTarget)
+    if (userPubkey) {
+      reportRefTag = parseValorarRef(params.get('ref')) // mismo formato de referencia que REP-002
+      setActiveNav('nav-actividad')
+      hidePubChips()
+      selectedType = null
+      editingDTag = null
+      editingPublishedAt = null
+      showSection('sec-reportar')
+      $('btn-publicar').textContent = '🚩 Enviar reporte'
+      return
+    }
+    openPerfil('identidad')
+    return
+  }
+
+  // 3c. Deep link ?zap=<npub|hex>&ref=<naddr> — "⚡ Zap" del modal de un
+  //     anuncio en index.html (ZAP-001).
+  const zapTarget = signer.parseToHex(params.get('zap') || '')
+  if (zapTarget) {
+    if (userPubkey) {
+      setActiveNav('nav-actividad')
+      hidePubChips()
+      selectedType = null
+      editingDTag = null
+      editingPublishedAt = null
+      openZap(zapTarget, parseValorarRef(params.get('ref')))
+      return
+    }
+    openPerfil('identidad')
+    return
+  }
+
+  // 3d. Deep link ?pagar=<naddr> — "💳 Pagar" del modal de un anuncio en
+  //     index.html (PAY-001: contexto informativo, nunca certifica la operación).
+  const pagarNaddr = params.get('pagar')
+  if (pagarNaddr) {
+    if (userPubkey) {
+      try {
+        const { pubkey, kind } = decodeNaddr(pagarNaddr)
+        const ctx = $('w-pay-context')
+        ctx.textContent = `💳 Vas a pagar en relación con este anuncio: ${hexToNpub(pubkey).slice(0, 20)}… — verifica el importe y el destinatario con la otra parte antes de pagar.`
+        ctx.classList.remove('hidden')
+      } catch { /* naddr ilegible: se omite el contexto, el pago sigue funcionando igual */ }
+      openPerfil('wallet')
+      return
+    }
+    openPerfil('identidad')
     return
   }
 
@@ -109,7 +189,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const rawType = params.get('type') ?? ''
   if (userPubkey && VALID_TYPES.includes(rawType)) navigateTo(rawType)
   else if (userPubkey) showSection('sec-home')
-  else showSection('sec-identidad')
+  else openPerfil('identidad')
 })
 
 async function loadConfig() {
@@ -164,12 +244,15 @@ function wireUi() {
   // Contadores de caracteres
   ;[['s-title', 200], ['s-desc', 2000], ['e-title', 200], ['e-desc', 2000],
     ['c-title', 80], ['c-desc', 800], ['h-title', 80], ['h-desc', 800],
-    ['tx-title', 150], ['tx-desc', 1500], ['v-comment', 500],
+    ['tx-title', 150], ['tx-desc', 1500], ['v-comment', 500], ['r-comment', 500], ['z-comment', 300],
   ].forEach(([id, max]) => setupCounter(id, max))
 
   // Toggles "A negociar"
   setupNegociar('s-negociar', 's-price', 's-currency')
   setupNegociar('tx-negociar', 'tx-price', 'tx-currency')
+
+  // MED-001: subida de imagen a Blossom (solo firmador NIP-07 — ver setupImageUpload)
+  ;['s', 'e', 'c', 'h', 'tx'].forEach(setupImageUpload)
 
   // Identidad
   $('btn-connect').addEventListener('click', onConnectClick)
@@ -178,9 +261,9 @@ function wireUi() {
     userPubkey = null
     stopMisAnuncios()   // si no, la suscripción del pubkey desconectado sigue abierta
     updateIdentityUi()
-    showSection('sec-identidad')
+    openPerfil('identidad')
   })
-  $('id-badge').addEventListener('click', () => showSection('sec-identidad'))
+  $('id-badge').addEventListener('click', () => openPerfil('identidad'))
   $('btn-paste-pubkey').addEventListener('click', onPastePubkey)
 
   // Publicar (botón sticky)
@@ -189,38 +272,52 @@ function wireUi() {
   // Fallback pegar evento firmado
   $('btn-paste-event').addEventListener('click', onPasteEvent)
 
-  // Bottom nav
+  // Zap (ZAP-001)
+  $('btn-send-zap').addEventListener('click', submitZap)
+  $('zap-btn-goto-wallet').addEventListener('click', () => openPerfil('wallet'))
+
+  // Bottom nav — 5 destinos alineados con el shell de index.html (MOB-002).
+  // Actividad y Perfil agrupan dos secciones cada uno mediante chips.
   $('nav-publicar').addEventListener('click', () => {
     setActiveNav('nav-publicar')
+    hidePubChips()
     editingDTag = null   // salir de un modo edición abandonado
     editingPublishedAt = null
     showSection(userPubkey ? 'sec-home' : 'sec-identidad')
   })
-  $('nav-misanuncios').addEventListener('click', () => {
-    setActiveNav('nav-misanuncios')
-    if (!userPubkey) { showSection('sec-identidad'); return }
-    showSection('sec-misanuncios')
-    refreshMisAnuncios()
-  })
-  $('nav-valorar').addEventListener('click', () => {
-    setActiveNav('nav-valorar')
-    if (!userPubkey) { showSection('sec-identidad'); return }
-    // El botón "Publicar" es compartido con los formularios (sec-valorar
-    // está en isForm): si queda un selectedType de un formulario abandonado,
-    // handleSubmit publicaría ESE formulario en vez de la valoración visible.
-    selectedType = null
-    editingDTag = null
-    editingPublishedAt = null
-    renderAspects()
-    showSection('sec-valorar')
-    $('btn-publicar').textContent = '⭐ Enviar valoración'
-  })
-  $('nav-wallet').addEventListener('click', () => {
-    setActiveNav('nav-wallet')
-    showSection('sec-wallet')
-    refreshWallet()
+  $('nav-actividad').addEventListener('click', () => openActividad())
+  $('nav-perfil').addEventListener('click', () => openPerfil())
+  $('pub-chips').addEventListener('click', e => {
+    const chip = e.target.closest('.pub-chip')
+    if (!chip) return
+    const chipId = chip.dataset.chip
+    if (ACTIVIDAD_CHIPS.some(c => c.id === chipId)) openActividad(chipId)
+    else openPerfil(chipId)
   })
   initWallet()
+
+  // UX-002: autoguardado de borrador (debounced). Nunca durante una edición
+  // real (editingDTag) — si no, un draft con el d-tag de un anuncio ajeno
+  // podría restaurarse luego en un formulario "nuevo" y sobrescribirlo al
+  // publicar (ver el guard equivalente en navigateTo()).
+  let draftSaveTimer = null
+  document.addEventListener('input', () => {
+    if (!selectedType || editingDTag) return
+    clearTimeout(draftSaveTimer)
+    draftSaveTimer = setTimeout(() => {
+      if (saveDraft(selectedType, takeFormSnapshot())) draftRestored = true
+      $('btn-discard-draft')?.classList.toggle('hidden', !draftRestored)
+    }, 800)
+  })
+  $('btn-discard-draft').addEventListener('click', () => {
+    if (!selectedType) return
+    const type = selectedType // resetFormsAfterSuccess() pone selectedType a null
+    deleteDraft(type)
+    draftRestored = false
+    $('btn-discard-draft').classList.add('hidden')
+    resetFormsAfterSuccess()
+    navigateTo(type) // vuelve a mostrar el mismo formulario, ahora vacío (loadDraft ya no encuentra nada)
+  })
 
   // Reputación en vivo al escribir el npub del valorado
   $('v-npub').addEventListener('change', onValoradoChange)
@@ -233,6 +330,8 @@ function wireUi() {
     statusEl: () => $('ma-status'),
     onEdit: startEdit,
     onRetirar: startRetirada,
+    onDuplicar: startDuplicar,
+    onMarcarVendido: startMarcarVendido,
   })
 }
 
@@ -246,8 +345,67 @@ function makeKeyboardActivatable(root) {
 }
 
 function setActiveNav(id) {
-  ;['nav-publicar', 'nav-misanuncios', 'nav-valorar', 'nav-wallet'].forEach(n =>
+  ;['nav-publicar', 'nav-actividad', 'nav-perfil'].forEach(n =>
     $(n).classList.toggle('bn-tab--active', n === id))
+}
+
+// ── Chips de sub-navegación: Actividad (Mis anuncios/Valorar) y
+//    Perfil (Identidad/Wallet) — mismo patrón que #mbn-chips en index.html.
+const ACTIVIDAD_CHIPS = [
+  { id: 'misanuncios', label: '📋 Mis anuncios' },
+  { id: 'valorar',     label: '⭐ Valorar' },
+]
+const PERFIL_CHIPS = [
+  { id: 'identidad', label: '🔑 Identidad' },
+  { id: 'wallet',    label: '⚡ Wallet' },
+]
+
+function renderPubChips(items, activeId) {
+  const wrap = $('pub-chips')
+  wrap.innerHTML = items.map(it =>
+    `<button class="pub-chip${it.id === activeId ? ' active' : ''}" data-chip="${it.id}" type="button">${it.label}</button>`
+  ).join('')
+  wrap.hidden = false
+  document.body.classList.add('has-chips')
+}
+
+function hidePubChips() {
+  $('pub-chips').hidden = true
+  $('pub-chips').innerHTML = ''
+  document.body.classList.remove('has-chips')
+}
+
+function openActividad(chipId = 'misanuncios') {
+  setActiveNav('nav-actividad')
+  if (!userPubkey) { hidePubChips(); showSection('sec-identidad'); return }
+  renderPubChips(ACTIVIDAD_CHIPS, chipId)
+  if (chipId === 'valorar') {
+    // El botón "Publicar" es compartido con los formularios (sec-valorar
+    // está en isForm): si queda un selectedType de un formulario abandonado,
+    // handleSubmit publicaría ESE formulario en vez de la valoración visible.
+    selectedType = null
+    editingDTag = null
+    editingPublishedAt = null
+    valorarRefTag = null // reset por defecto — el deep link ?ref= lo rellena DESPUÉS de llamar aquí
+    valorarRefFor = null
+    renderAspects()
+    showSection('sec-valorar')
+    $('btn-publicar').textContent = '⭐ Enviar valoración'
+  } else {
+    showSection('sec-misanuncios')
+    refreshMisAnuncios()
+  }
+}
+
+function openPerfil(chipId = 'identidad') {
+  setActiveNav('nav-perfil')
+  renderPubChips(PERFIL_CHIPS, chipId)
+  if (chipId === 'wallet') {
+    showSection('sec-wallet')
+    refreshWallet()
+  } else {
+    showSection('sec-identidad')
+  }
 }
 
 // ── Navegación entre secciones ────────────────────────────────────────────────
@@ -255,15 +413,34 @@ function setActiveNav(id) {
 function showSection(id) {
   ALL_SECTIONS.forEach(s => $(s)?.classList.add('hidden'))
   $(id)?.classList.remove('hidden')
-  const isForm = ['sec-servicio', 'sec-evento', 'sec-comunidad', 'sec-herramienta', 'sec-transaccion', 'sec-valorar'].includes(id)
+  const isForm = ['sec-servicio', 'sec-evento', 'sec-comunidad', 'sec-herramienta', 'sec-transaccion', 'sec-valorar', 'sec-reportar'].includes(id)
   $('publish-bar').classList.toggle('hidden', !isForm)
   window.scrollTo({ top: 0, behavior: 'instant' })
 }
 
-function navigateTo(type) {
+function navigateTo(type, options = {}) {
   if (!userPubkey) { showSection('sec-identidad'); return }
   selectedType = type
-  if (!editingDTag) clearAllErrors()
+  draftRestored = false
+  if (!editingDTag && !options.skipDraft) {
+    // UX-002: nunca pisa una edición real de un anuncio existente (arriba,
+    // editingDTag ya viene puesto por startEdit() antes de llamar aquí) —
+    // solo se ofrece al abrir un formulario NUEVO. skipDraft: lo usa
+    // startDuplicar() (ADS-001), que ya rellenó los campos a mano.
+    clearAllErrors()
+    const draft = loadDraft(type)
+    if (draft) {
+      restoreFormSnapshot(draft.snapshot)
+      // restoreFormSnapshot() también fija editingDTag/editingPublishedAt desde
+      // el snapshot — aquí SIEMPRE debe quedar null: este bloque solo se
+      // ejecuta para una publicación nueva (arriba, !editingDTag), nunca se
+      // debe heredar un d-tag de sesión vieja y sobrescribir un anuncio ajeno.
+      editingDTag = null
+      editingPublishedAt = null
+      draftRestored = true
+    }
+  }
+  $('btn-discard-draft')?.classList.toggle('hidden', !draftRestored)
   const secId = TX_META[type] ? 'sec-transaccion' : `sec-${type}`
   if (TX_META[type]) {
     $('tx-icon').textContent = TX_META[type].icon
@@ -426,6 +603,9 @@ async function handleSubmit() {
   if (!selectedType && !$('sec-valorar').classList.contains('hidden')) {
     return submitValoracion()
   }
+  if (!selectedType && !$('sec-reportar').classList.contains('hidden')) {
+    return submitReporte()
+  }
   if (!selectedType) return
 
   clearAllErrors()
@@ -440,7 +620,95 @@ async function handleSubmit() {
   }
   if (devMode) built.unsignedEvent.tags.push(['t', 'plazap2p-test'])
 
-  await signAndPublish(built.unsignedEvent, { type: selectedType, dTag: built.dTag })
+  // UX-001: ninguna firma empieza sin que el usuario vea antes exactamente
+  // qué va a firmar — signAndPublish() ahora solo lo llama el botón
+  // "Confirmar y firmar" de renderPreview(), nunca este handler directamente.
+  renderPreview(built.unsignedEvent, { type: selectedType, dTag: built.dTag })
+}
+
+/** UX-001 — resumen antes de firmar. Reutiliza el mismo #res-box/.res-card
+ * que renderResult() (Firmando.../Publicado): mismo contenedor, se
+ * sobrescribe con box.replaceChildren() en ambos, sin solapamiento. */
+function renderPreview(unsignedEvent, meta) {
+  const box = $('res-box')
+  box.replaceChildren()
+
+  const card = document.createElement('div')
+  card.className = 'res-card'
+
+  const icon = document.createElement('div')
+  icon.className = 'res-icon'
+  icon.textContent = '👁️'
+  card.appendChild(icon)
+
+  const h = document.createElement('div')
+  h.className = 'res-title'
+  h.textContent = 'Revisa antes de firmar'
+  card.appendChild(h)
+
+  const npub = userPubkey ? hexToNpub(userPubkey) : ''
+  const p = document.createElement('div')
+  p.className = 'res-sub'
+  p.textContent = `Firmarás como ${npub.slice(0, 16)}… y quedará público en la red Nostr, en los relays configurados.`
+  card.appendChild(p)
+
+  const priceTag = unsignedEvent.tags.find(t => t[0] === 'price')
+  const fields = document.createElement('div')
+  fields.className = 'res-relays'
+  const addRow = (label, value) => {
+    if (!value) return
+    const row = document.createElement('div')
+    row.className = 'res-relay'
+    const l = document.createElement('span'); l.textContent = label
+    const v = document.createElement('span'); v.textContent = value
+    row.append(l, v)
+    fields.appendChild(row)
+  }
+  addRow('Tipo', TX_META[meta.type]?.label || meta.type)
+  addRow('Título', getTagValue(unsignedEvent.tags, 'title'))
+  addRow('Precio', priceTag ? `${priceTag[1]} ${priceTag[2] || ''}`.trim() : null)
+  addRow('Contacto', getTagValue(unsignedEvent.tags, 'contact'))
+  addRow('Imagen', getTagValue(unsignedEvent.tags, 'image') ? 'adjunta' : null)
+  addRow('Relays', `${(config?.relays || []).length} configurados`)
+  card.appendChild(fields)
+
+  const summary = getTagValue(unsignedEvent.tags, 'summary')
+  if (summary) {
+    const desc = document.createElement('p')
+    desc.className = 'res-sub'
+    desc.style.textAlign = 'left'
+    desc.style.whiteSpace = 'pre-wrap'
+    desc.textContent = summary
+    card.appendChild(desc)
+  }
+
+  const actions = document.createElement('div')
+  actions.className = 'res-actions'
+
+  const editBtn = document.createElement('button')
+  editBtn.className = 'btn-secondary'
+  editBtn.type = 'button'
+  editBtn.textContent = '← Editar'
+  editBtn.addEventListener('click', () => {
+    // Sin pasar por navigateTo(): mantiene los campos tal como el usuario
+    // los dejó, sin que la restauración de borrador (UX-002) los reemplace.
+    showSection(TX_META[meta.type] ? 'sec-transaccion' : `sec-${meta.type}`)
+  })
+  actions.appendChild(editBtn)
+
+  const confirmBtn = document.createElement('button')
+  confirmBtn.className = 'btn-primary'
+  confirmBtn.type = 'button'
+  confirmBtn.textContent = '🔑 Confirmar y firmar'
+  confirmBtn.addEventListener('click', () => {
+    confirmBtn.disabled = true
+    signAndPublish(unsignedEvent, meta)
+  })
+  actions.appendChild(confirmBtn)
+
+  card.appendChild(actions)
+  box.appendChild(card)
+  showSection('sec-resultado')
 }
 
 function runBuilder(type, payload) {
@@ -576,6 +844,9 @@ async function broadcastAndReportInner(signedEvent, pending) {
       try { naddr = encodeNaddr({ kind: signedEvent.kind, pubkey: signedEvent.pubkey, identifier: dTag, relays: config.relays.slice(0, 3) }) }
       catch { /* naddr es opcional */ }
     }
+    deleteDraft(pending?.meta?.type) // UX-002: publicado con éxito → ya no es un borrador pendiente
+    draftRestored = false
+    $('btn-discard-draft')?.classList.add('hidden')
     resetFormsAfterSuccess()
     renderResult({
       ok: true,
@@ -967,7 +1238,10 @@ async function submitValoracion() {
     if (v) aspects[a.id] = Number(v)
   }
 
-  const built = buildValoracion({ rateeHex, rating, comment: val('v-comment'), aspects }, userPubkey)
+  // REP-002: la referencia solo se adjunta si sigue siendo del MISMO npub
+  // para el que se guardó — si el usuario cambió v-npub a mano, ya no aplica.
+  const refTag = (valorarRefTag && valorarRefFor === rateeHex) ? valorarRefTag : null
+  const built = buildValoracion({ rateeHex, rating, comment: val('v-comment'), aspects, refTag }, userPubkey)
   if (!built.ok) { setErr('err-v-npub', built.error); return }
   if (devMode) built.unsignedEvent.tags.push(['t', 'plazap2p-test'])
 
@@ -975,26 +1249,117 @@ async function submitValoracion() {
   await signAndPublish(built.unsignedEvent, { type: 'valoracion' })
 }
 
+async function submitReporte() {
+  clearAllErrors()
+  const reportedHex = signer.parseToHex(val('r-npub'))
+  if (!reportedHex) { setErr('err-r-npub', 'npub inválido'); return }
+  const reportType = pillVal('pills-r-tipo', VALID_REPORT_TYPES)
+  if (!reportType) { setErr('err-r-tipo', 'Elige un motivo'); return }
+
+  const built = buildReporte({ reportedHex, reportType, comment: val('r-comment'), refTag: reportRefTag }, userPubkey)
+  if (!built.ok) { setErr('err-r-npub', built.error); return }
+  if (devMode) built.unsignedEvent.tags.push(['t', 'plazap2p-test'])
+
+  selectedType = null
+  await signAndPublish(built.unsignedEvent, { type: 'reporte' })
+}
+
+// ── Zap (NIP-57) ──────────────────────────────────────────────────────────────
+// ZAP-001: el request (kind 9734) se firma con la IDENTIDAD, nunca con la
+// wallet — por eso, igual que MED-001 (subida Blossom), esta pantalla solo
+// funciona con firmador NIP-07 hoy: el salto de página de Amber está pensado
+// para el flujo de publicación principal, no para un paso intermedio de
+// firma dentro de enviar un zap. Con Amber, ver el aviso de abajo.
+
+async function openZap(recipientHex, refTag) {
+  showSection('sec-zap')
+  zapTargetHex = recipientHex
+  zapTargetLud16 = null
+  zapRefTag = refTag
+  $('zap-target-info').textContent = `Enviando a ${hexToNpub(recipientHex).slice(0, 20)}…`
+  $('zap-form-fields').classList.add('hidden')
+  $('zap-no-wallet').classList.add('hidden')
+  $('zap-no-lud16').classList.add('hidden')
+  setErr('err-zap', '')
+  $('zap-result').classList.add('hidden')
+
+  if (signer.detectSigner() !== 'nip07') {
+    setErr('err-zap', 'Enviar zaps requiere un firmador de extensión (NIP-07) por ahora — con Amber, usa la wallet directamente desde tu cliente Nostr habitual.')
+    return
+  }
+  if (!hasWallet()) {
+    $('zap-no-wallet').classList.remove('hidden')
+    return
+  }
+
+  $('zap-target-info').textContent += ' — consultando su perfil…'
+  const profile = await fetchProfileMeta(pool, recipientHex)
+  if (!profile?.lud16) {
+    $('zap-no-lud16').classList.remove('hidden')
+    $('zap-target-info').textContent = `Enviando a ${hexToNpub(recipientHex).slice(0, 20)}…`
+    return
+  }
+  zapTargetLud16 = profile.lud16
+  $('zap-target-info').textContent = `Enviando a ${profile.displayName || profile.name || hexToNpub(recipientHex).slice(0, 20) + '…'} (${profile.lud16})`
+  $('zap-form-fields').classList.remove('hidden')
+}
+
+async function submitZap() {
+  setErr('err-zap', '')
+  $('zap-result').classList.add('hidden')
+  const amountSats = Number($('z-amount').value)
+  if (!Number.isInteger(amountSats) || amountSats <= 0) { setErr('err-z-amount', 'Importe inválido (sats enteros)'); return }
+  if (!zapTargetHex || !zapTargetLud16) { setErr('err-zap', 'Falta el destinatario o su lightning address'); return }
+
+  const btn = $('btn-send-zap')
+  btn.disabled = true
+  btn.innerHTML = '<span class="spinner"></span>Enviando…'
+  try {
+    const { payResult } = await sendZap({
+      recipientHex: zapTargetHex,
+      recipientLud16: zapTargetLud16,
+      amountMsats: amountSats * 1000,
+      relays: config.relays,
+      comment: val('z-comment'),
+      addressableRef: (zapRefTag && /^\d+:[0-9a-f]{64}:.*$/i.test(zapRefTag)) ? zapRefTag : null,
+    }, userPubkey, signer.nip07Sign, null, (_conn, bolt11) => payViaWallet(bolt11))
+
+    $('zap-result').textContent = `✅ Zap de ${amountSats.toLocaleString('es-ES')} sats enviado` +
+      (payResult?.preimage ? ` · preimage ${String(payResult.preimage).slice(0, 16)}…` : '')
+    $('zap-result').classList.remove('hidden')
+    $('z-amount').value = ''
+    $('z-comment').value = ''
+  } catch (e) {
+    setErr('err-zap', e?.message || 'no se pudo enviar el zap')
+  } finally {
+    btn.disabled = false
+    btn.textContent = '⚡ Enviar zap'
+  }
+}
+
 // ── Editar / Retirar (desde Mis anuncios) ────────────────────────────────────
 
 /** Precarga el formulario desde los tags de un evento propio y entra en modo edición. */
-function startEdit(ev) {
+/** Detecta el tipo de wizard (servicio/evento/.../intercambio) a partir de los
+ * tags del evento — compartido por startEdit() y startDuplicar(). */
+function detectTypeFromEvent(ev) {
+  const tTags = getTagValues(ev.tags, 't')
+  if (tTags.includes('plazap2p-servicio')) return 'servicio'
+  if (tTags.includes('plazap2p-evento') || ev.kind === 31922 || ev.kind === 31923) return 'evento'
+  if (tTags.includes('plazap2p-comunidad')) return 'comunidad'
+  if (tTags.includes('plazap2p-herramienta')) return 'herramienta'
+  if (tTags.includes('plazap2p-venta')) return 'venta'
+  if (tTags.includes('plazap2p-compra')) return 'compra'
+  if (tTags.includes('plazap2p-intercambio')) return 'intercambio'
+  return null
+}
+
+/** Rellena los campos del formulario del `type` dado a partir de los tags de
+ * un evento ya publicado — compartido por startEdit() (editar) y
+ * startDuplicar() (ADS-001: publicar de cero a partir de un anuncio propio). */
+function populateFormFromEvent(ev, type) {
   const tags = ev.tags
   const tTags = getTagValues(tags, 't')
-  let type = null
-  if (tTags.includes('plazap2p-servicio')) type = 'servicio'
-  else if (tTags.includes('plazap2p-evento') || ev.kind === 31922 || ev.kind === 31923) type = 'evento'
-  else if (tTags.includes('plazap2p-comunidad')) type = 'comunidad'
-  else if (tTags.includes('plazap2p-herramienta')) type = 'herramienta'
-  else if (tTags.includes('plazap2p-venta')) type = 'venta'
-  else if (tTags.includes('plazap2p-compra')) type = 'compra'
-  else if (tTags.includes('plazap2p-intercambio')) type = 'intercambio'
-  if (!type) { alert('Este anuncio no se puede editar desde la app (tipo desconocido).'); return }
-
-  editingDTag = getTagValue(tags, 'd')
-  // PROT-002: conservar el published_at original (si no existe, created_at)
-  const pubAtRaw = Number(getTagValue(tags, 'published_at'))
-  editingPublishedAt = (Number.isInteger(pubAtRaw) && pubAtRaw > 0) ? pubAtRaw : ev.created_at
   const prefix = TX_META[type] ? 'tx' : type[0]
   const set = (id, v) => { const el = $(id); if (el && v != null) el.value = v }
   const setPill = (groupId, value) => {
@@ -1049,8 +1414,50 @@ function startEdit(ev) {
     const loc = getTagValue(tags, 'location')
     if (VALID_ALCANCES.includes(loc)) setPill('pills-tx-alcance', loc)
   }
+}
 
+function startEdit(ev) {
+  const type = detectTypeFromEvent(ev)
+  if (!type) { alert('Este anuncio no se puede editar desde la app (tipo desconocido).'); return }
+
+  editingDTag = getTagValue(ev.tags, 'd')
+  // PROT-002: conservar el published_at original (si no existe, created_at)
+  const pubAtRaw = Number(getTagValue(ev.tags, 'published_at'))
+  editingPublishedAt = (Number.isInteger(pubAtRaw) && pubAtRaw > 0) ? pubAtRaw : ev.created_at
+  populateFormFromEvent(ev, type)
   navigateTo(type)
+}
+
+/** ADS-001 — Duplicar: parte de un anuncio propio (activo o no) para publicar
+ * uno NUEVO con los mismos datos. A diferencia de Editar, nunca hereda el
+ * d-tag ni el published_at original — es una publicación distinta, no una
+ * revisión de la existente. */
+function startDuplicar(ev) {
+  const type = detectTypeFromEvent(ev)
+  if (!type) { alert('Este anuncio no se puede duplicar desde la app (tipo desconocido).'); return }
+  editingDTag = null
+  editingPublishedAt = null
+  populateFormFromEvent(ev, type)
+  // skipDraft: los campos ya vienen rellenados desde el anuncio original —
+  // si navigateTo() aplicara aquí su restauración de borrador (UX-002) podría
+  // pisarlos con un borrador viejo sin relación.
+  navigateTo(type, { skipDraft: true })
+}
+
+/** Marcar vendido: NO encola kind 5 (a diferencia de Retirar) — el anuncio
+ * conserva su d-tag y sigue siendo consultable, solo deja de listarse como
+ * activo (addEvent() en app.js ya retira status:sold del mercado en vivo). */
+function startMarcarVendido(ev) {
+  if (!confirm('¿Marcar este anuncio como vendido? Dejará de aparecer como activo en el mercado.')) return
+  const soldEvent = {
+    kind: ev.kind,
+    created_at: Math.floor(Date.now() / 1000),
+    tags: ev.tags.map(t => t[0] === 'status' ? ['status', 'sold'] : t),
+    content: ev.content,
+    pubkey: userPubkey,
+  }
+  if (!soldEvent.tags.some(t => t[0] === 'status')) soldEvent.tags.push(['status', 'sold'])
+  signAndPublish(soldEvent, { type: 'marcar-vendido' })
 }
 
 /** Retirada: republica con status:inactive y encola el kind 5 (dos firmas). */
@@ -1148,5 +1555,44 @@ function setupNegociar(checkId, priceId, currId) {
     price.disabled = cb.checked
     curr.disabled = cb.checked
     if (cb.checked) { price.value = ''; price.classList.remove('invalid') }
+  })
+}
+
+/**
+ * MED-001 — sube la imagen elegida a Blossom y rellena el campo de URL con
+ * el resultado. Solo con NIP-07: Amber necesita un salto de página con
+ * estado pendiente (igual que la firma del anuncio) que este paso
+ * intermedio no implementa todavía — con Amber el input queda deshabilitado
+ * y el campo de URL manual sigue siendo la vía (no se ha quitado).
+ */
+function setupImageUpload(prefix) {
+  const fileInput = $(`${prefix}-image-file`)
+  const urlInput = $(`${prefix}-image`)
+  const status = $(`${prefix}-image-status`)
+  if (!fileInput || !urlInput || !status) return
+
+  if (signer.detectSigner() !== 'nip07') {
+    fileInput.disabled = true
+    fileInput.title = 'Subida directa solo disponible con extensión Nostr (NIP-07) — pega una URL abajo'
+    return
+  }
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0]
+    if (!file) return
+    status.className = 'img-upload-status'
+    status.textContent = '⏳ Subiendo…'
+    fileInput.disabled = true
+    try {
+      const url = await uploadImage(file, userPubkey, signer.nip07Sign)
+      urlInput.value = url
+      status.className = 'img-upload-status ok'
+      status.textContent = '✅ Subida'
+    } catch (e) {
+      status.className = 'img-upload-status err'
+      status.textContent = '❌ ' + (e?.message || 'error al subir')
+    } finally {
+      fileInput.disabled = false
+    }
   })
 }

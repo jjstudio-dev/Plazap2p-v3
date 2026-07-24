@@ -1,45 +1,17 @@
 /* publicar.css — hoja ÚNICA de publicar.html (autosuficiente).
-   El bloque BASE está copiado de mini-app/styles.css (misma estética
-   cyberpunk dark que css/style.css) para que publicar.html no dependa
-   del directorio mini-app/. Si cambias tokens aquí, mantén la
-   coherencia con mini-app/styles.css y css/style.css. */
+   El bloque BASE mantiene la misma estética cyberpunk dark que
+   css/style.css. Los tokens se importan de tokens.css (CODE-013):
+   antes había un :root duplicado aquí con --t-3 desactualizado
+   (#48484d, ~2.2:1, fallaba WCAG AA) mientras style.css ya tenía
+   el valor corregido — no declarar tokens en este archivo.
+   @import DEBE ser la primera regla del archivo (antes que cualquier
+   selector) o el navegador la ignora silenciosamente. */
+@import url('tokens.css');
 
-/* ══════════════ BASE (origen: mini-app/styles.css) ══════════════ */
+/* ══════════════ BASE ══════════════ */
 
 /* ── Reset ─────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-/* ── Design tokens (PlazaP2P cyberpunk dark) ──────────────── */
-:root {
-  --bg:         #07070c;
-  --bg-2:       #0e0e17;
-  --surface:    rgba(255,255,255,0.04);
-  --surface-2:  rgba(255,255,255,0.07);
-  --surface-3:  rgba(255,255,255,0.12);
-  --border:     rgba(255,255,255,0.08);
-  --border-act: rgba(0,212,255,0.35);
-  --t-1:        #f5f5f7;
-  --t-2:        #86868b;
-  --t-3:        #48484d;
-  --accent:     #00d4ff;
-  --accent-dim: #007a99;
-  --btc:        #f7931a;
-  --err:        #ff453a;
-  --ok:         #30d158;
-  --c-servicio: #bf5af2;
-  --c-evento:   #30d158;
-  --c-comunidad:#ffd60a;
-  --c-herr:     #00d4ff;
-  --c-venta:    #00d4ff;
-  --c-compra:   #30d158;
-  --c-trueque:  #ffd60a;
-  --r-sm: 6px;
-  --r-md: 12px;
-  --r-lg: 16px;
-  --font-head: 'Orbitron', sans-serif;
-  --font-body: 'Inter', system-ui, sans-serif;
-  --font-mono: 'Share Tech Mono', monospace;
-}
 
 /* ── Base ───────────────────────────────────────────────────── */
 html {
@@ -408,6 +380,28 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   color: var(--t-3);
 }
 
+/* ── Subida de imagen (MED-001, Blossom) ──────────────────────── */
+.img-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.img-file-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.78rem;
+  color: var(--t-2);
+}
+.img-file-input:disabled { opacity: 0.4; }
+.img-upload-status {
+  font-size: 0.75rem;
+  color: var(--t-2);
+  white-space: nowrap;
+}
+.img-upload-status.ok  { color: var(--ok); }
+.img-upload-status.err { color: var(--err); }
+
 /* ── Utility ─────────────────────────────────────────────────── */
 .hidden { display: none !important; }
 
@@ -465,10 +459,61 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 .bn-icon  { font-size: 1.25rem; line-height: 1; }
 .bn-label { font-size: 0.62rem; font-weight: 500; letter-spacing: 0.03em; }
 
+/* ── Chips de sub-navegación (Actividad/Perfil) ─────────────────
+   Mismo lenguaje visual que .mbn-chips en css/style.css — duplicado
+   aquí porque publicar.css es autosuficiente por diseño (no depende
+   de style.css). body.has-chips reserva espacio solo cuando hay fila
+   de chips visible, para no dejar hueco vacío el resto del tiempo. */
+.pub-chips {
+  position: fixed;
+  left: 0; right: 0;
+  bottom: 52px;
+  z-index: 89;
+  display: none;
+  gap: 6px;
+  padding: 8px 10px;
+  background: rgba(7,7,12,0.95);
+  border-top: 1px solid var(--border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.pub-chips:not([hidden]) { display: flex; }
+.pub-chip {
+  flex: 0 0 auto;
+  padding: 7px 14px;
+  min-height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--t-2);
+  font: 500 0.78rem var(--font-body);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pub-chip.active        { color: var(--accent); border-color: var(--border-act); background: rgba(0,212,255,0.08); }
+.pub-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+body.has-chips { padding-bottom: 180px; }
+
 /* ══════════════ ESTILOS PROPIOS DE PUBLICAR ══════════════ */
 
 /* ── Identidad ─────────────────────────────────────────────── */
 .id-intro { color: var(--t-2); margin-bottom: 16px; line-height: 1.5; }
+
+/* ONB-001 */
+.onb-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.onb-list li { font-size: 0.8rem; color: var(--t-2); line-height: 1.4; }
+.onb-list li strong { color: var(--t-1); }
 .id-hint  { color: var(--t-2); font-size: 0.85rem; margin-top: 10px; line-height: 1.45; }
 
 .id-badge { cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--t-2); }
@@ -527,6 +572,15 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 }
 .btn-publish { background: var(--btc); color: var(--bg); box-shadow: 0 4px 18px rgba(247,147,26,0.35); }
 
+/* UX-002: acción secundaria, discreta a propósito — no debe competir
+   visualmente con el botón principal de publicar. */
+.btn-discard-draft {
+  display: block; width: 100%; border: none; background: none; cursor: pointer;
+  color: var(--t-2); font-family: var(--font-body); font-size: 0.78rem;
+  padding: 4px 0 8px; text-align: center;
+}
+.btn-discard-draft:hover, .btn-discard-draft:focus-visible { color: var(--err); }
+
 /* ── Resultado ─────────────────────────────────────────────── */
 .res-card {
   background: var(--surface); border: 1px solid var(--border);
@@ -558,9 +612,9 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 .ma-item.inactive { opacity: 0.5; }
 .ma-title { font-weight: 600; margin-bottom: 2px; }
 .ma-meta  { color: var(--t-2); font-size: 0.78rem; margin-bottom: 8px; }
-.ma-actions { display: flex; gap: 8px; }
+.ma-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .ma-actions button {
-  flex: 1; background: var(--surface-2); color: var(--t-1);
+  flex: 1 1 auto; min-width: 84px; min-height: 44px; background: var(--surface-2); color: var(--t-1);
   border: 1px solid var(--border); border-radius: var(--r-sm);
   padding: 7px 8px; font-size: 0.82rem; cursor: pointer; font-family: var(--font-body);
 }

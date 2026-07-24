@@ -1,0 +1,53 @@
+/* ============================================================
+   PLAZAP2P V3 — Tokens compartidos
+   Fuente única de verdad para index.html y publicar.html.
+   No declarar estas variables en otro sitio — importar este
+   archivo y sobreescribir aquí si un valor cambia.
+   ============================================================ */
+:root {
+  /* Fondo y superficies */
+  --bg:         #07070c;
+  --bg-2:       #0e0e17;
+  --surface:    rgba(255,255,255,0.04);
+  --surface-2:  rgba(255,255,255,0.07);
+  --surface-3:  rgba(255,255,255,0.12);
+  --border:     rgba(255,255,255,0.08);
+  --border-act: rgba(0,212,255,0.35);
+
+  /* Texto */
+  --t-1: #f5f5f7;
+  --t-2: #86868b;
+  --t-3: #7d7d84; /* A11Y-002: ~4.5-5:1 sobre --bg/--surface (antes #48484d, ~2.2:1, fallaba AA) */
+  --t-4: #2e2e36;
+
+  /* Acentos */
+  --accent:     #00d4ff;
+  --accent-dim: #007a99;
+  --btc:        #f7931a;
+  --ok:         #30d158;
+  --err:        #ff453a;
+
+  /* Categorías de anuncio/contenido */
+  --c-venta:     #00d4ff;
+  --c-compra:    #30d158;
+  --c-servicio:  #bf5af2;
+  --c-trueque:   #ffd60a;
+  --c-evento:    #30d158;
+  --c-comunidad: #ffd60a;
+  --c-herr:      #00d4ff;
+  --c-otro:      #86868b;
+
+  /* Tipografía */
+  --font-head: 'Orbitron', sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+
+  /* Radios */
+  --r-sm: 6px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+
+  /* Motion */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}

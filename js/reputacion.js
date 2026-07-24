@@ -108,12 +108,21 @@ export function fetchReputacionBatch(pool, hexes, timeoutMs = 6000) {
   })
 }
 
-function aggregate(byAuthor, rateeHex) {
+/**
+ * Agrega los eventos 1985 ya filtrados/deduplicados de un valorado.
+ * Exportada para test (REP-003: sirve tanto a fetchReputacion como a un
+ * eventual recálculo desde fixtures, sin depender de una suscripción real).
+ */
+export function aggregate(byAuthor, rateeHex) {
   let sum = 0
   let count = 0
   const aspectSums = {}
   const aspectCounts = {}
   const comments = []
+  // REP-003: distribución (cuántas de 1★ a 5★), no solo la media — dos
+  // vendedores con avg=4.0 pueden tener historiales muy distintos (20
+  // valoraciones de 4★ frente a 10 de 5★ + 10 de 3★).
+  const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
 
   for (const ev of byAuthor.values()) {
     const ratingTag = ev.tags.find(t => t[0] === 'l' && /^rating:[1-5]$/.test(t[1] || '') && t[2] === 'plazap2p.reputation')
@@ -121,6 +130,7 @@ function aggregate(byAuthor, rateeHex) {
     const rating = Number(ratingTag[1].split(':')[1])
     sum += rating
     count++
+    distribution[rating]++
     if (ev.content) comments.push({ rating, comment: ev.content.slice(0, 500), ts: ev.created_at, author: ev.pubkey })
 
     for (const t of ev.tags) {
@@ -140,6 +150,7 @@ function aggregate(byAuthor, rateeHex) {
     count,
     avg: count ? sum / count : 0,
     aspects,
+    distribution,
     comments: comments.sort((a, b) => b.ts - a.ts).slice(0, 20),
   }
 }

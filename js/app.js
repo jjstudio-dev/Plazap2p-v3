@@ -1,13 +1,18 @@
 import { encodeNaddr, hexToNpub, hexToNote, getTagValue, getTagValues, decodeNpub } from './nostr.js';
 import { RelayPool } from './relay-pool.js';
 import { fetchReputacionBatch } from './reputacion.js';
+import { parseAnuncioHash, anuncioRoute, routeForTab } from './router.js';
+import { isBlocked, blockPubkey, unblockPubkey, listBlocked } from './moderation.js';
+import { trustLevel } from './trust-signals.js';
+import { fetchZapReceipts } from './zaps.js';
+import { isFavorite, toggleFavorite } from './favorites.js';
 
 // ── Constants ──────────────────────────────────────────────────
 const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '30';
+const ASSET_VERSION  = '41';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -33,6 +38,7 @@ let liveRatingsFetching = false;
 const STATIC_TABS = new Set(['comunidades', 'herramientas', 'multimedia', 'vendedores']);
 
 let staticEvents = [];  // curated fallback events loaded from data/eventos.json
+let pendingAnuncioNaddr = null; // CODE-004: naddr de #/anuncio/<naddr> aún no cargado
 
 const channels   = {};  // { [channelId]: Map<key, parsedItem> }
 const limits     = {};  // { [channelId]: number }
@@ -55,6 +61,7 @@ async function init() {
     loadSortPrefs();
     initPool();
     initUI();
+    initAnuncioDeepLink();
     renderActiveChannel();
     updateAllBadges();
     showSkeletons(activeTab);
@@ -205,6 +212,18 @@ function subscribeAll() {
   }
 }
 
+// ── NIP-40 ─────────────────────────────────────────────────────
+// Tag opcional ['expiration', '<unix segs>']. Timestamp inválido (no
+// numérico, negativo) se ignora en vez de tratarse como "ya caducado" —
+// un tag malformado no debe ocultar un anuncio válido.
+function isExpired(event) {
+  const raw = getTagValue(event.tags, 'expiration');
+  if (!raw) return false;
+  const ts = parseInt(raw, 10);
+  if (!Number.isFinite(ts) || ts <= 0) return false;
+  return ts < Math.floor(Date.now() / 1000);
+}
+
 // ── Event ingestion ────────────────────────────────────────────
 function addEvent(channelId, event) {
   try {
@@ -221,6 +240,15 @@ function addEvent(channelId, event) {
         if (!event.tags?.some(t => t[0] === 't' && required.includes(t[1]))) return;
       }
     }
+
+    // ADS-002 (NIP-40): un anuncio caducado no debe listarse como activo.
+    // Solo afecta a lectura/render — el evento sigue existiendo en los relays,
+    // esto no es un borrado.
+    if (isExpired(event)) return;
+
+    // MOD-001: moderación LOCAL — el autor sigue publicando normalmente en
+    // Nostr, esta app simplemente no le muestra su contenido EN ESTE navegador.
+    if (isBlocked(event.pubkey)) return;
 
     const key      = eventKey(event);
     const existing = ch.get(key);
@@ -247,6 +275,7 @@ function addEvent(channelId, event) {
       ch.delete(key);
     } else {
       ch.set(key, parsed);
+      if (channelId === 'mercado' && pendingAnuncioNaddr === parsed.naddr) tryOpenPendingAnuncio();
     }
     lastUpdated = new Date();
 
@@ -486,6 +515,22 @@ function renderStarDisplay(avg, n, compact = true) {
   return `<div class="star-display-full">${stars}<span class="star-count-full">${safeAvg.toFixed(1)} · ${safeN} valoración${safeN !== 1 ? 'es' : ''}</span></div>`;
 }
 
+// REP-003: distribución 5★→1★, no solo la media — visible solo con datos en
+// vivo (rep.distribution la calcula aggregate() en reputacion.js; el índice
+// histórico estático no la tiene).
+function renderDistributionBars(distribution, total) {
+  if (!total) return '';
+  return [5, 4, 3, 2, 1].map(star => {
+    const n = distribution?.[star] || 0;
+    const pct = Math.round((n / total) * 100);
+    return `<div class="rating-aspect-item">
+      <span class="aspect-label">${star}★</span>
+      <div class="aspect-bar-track"><div class="aspect-bar-fill" style="width:${pct}%"></div></div>
+      <span class="aspect-val">${n}</span>
+    </div>`;
+  }).join('');
+}
+
 function renderAspectsBar(aspects) {
   const LABELS = { comunicacion: '💬 Comunicación', cumplimiento: '✅ Cumplimiento', precio_justo: '💰 Precio justo', rapidez: '⚡ Rapidez', confianza: '🔐 Confianza' };
   return Object.entries(aspects)
@@ -619,10 +664,25 @@ window.openReputacionModal = async function(hex) {
       }).join('')
     : '';
 
+  const distributionHtml = (rep && rep.count > 0 && rep.distribution)
+    ? `<div class="modal-rating-header" style="margin-top:12px">Distribución (${rep.count} valoración${rep.count !== 1 ? 'es' : ''})</div>` +
+      renderDistributionBars(rep.distribution, rep.count)
+    : '';
+
+  // SPAM-001/REP-001: señal de confianza EXPLICADA, nunca "verificado" ni
+  // una promesa de seguridad — solo cuántos valoradores distintos hay.
+  const trust = trustLevel(n);
+  const trustHtml = `<div class="trust-signal trust-${trust.level}">
+    <strong>${esc(trust.label)}</strong>
+    <span>${esc(trust.note)}</span>
+  </div>`;
+
   modal.innerHTML = shell(`<div class="modal-rating-section">
     <div class="modal-rating-header">Reputación agregada${rep && rep.count > 0 ? ' (en vivo desde los relays)' : ' (índice histórico)'}</div>
     ${renderStarDisplay(avg, n, false)}
+    ${trustHtml}
     ${Object.keys(aspects).length ? renderAspectsBar(aspects) : ''}
+    ${distributionHtml}
     ${commentsHtml}
   </div>`);
 };
@@ -658,7 +718,9 @@ function renderActiveChannel() {
   // Populate location dropdown from all items before applying filters
   if (activeTab === 'mercado') updateLocationSelect(items);
 
-  if (activeTab === 'mercado' && activeFilter !== 'all') {
+  if (activeTab === 'mercado' && activeFilter === 'favoritos') {
+    items = items.filter(l => isFavorite(l.naddr)); // BON-001: pseudo-categoría, no un campo real del evento
+  } else if (activeTab === 'mercado' && activeFilter !== 'all') {
     items = items.filter(l => l.category === activeFilter);
   }
 
@@ -817,10 +879,12 @@ function renderListingCard(l) {
   const isNew    = (Date.now() / 1000 - l.publishedAt) < 3600;
   const rating   = getSellerRating(l.pubkeyHex);
   const ratingHtml = rating ? renderStarDisplay(rating.avg, rating.n, true) : '';
+  const favActive = isFavorite(l.naddr);
   return `<article class="listing-card" onclick="openModal('${l.naddr}')" style="--card-accent:${color}">
     <div class="card-top-row">
       <div class="card-badge" style="color:${color};border-color:${color}40">${l.category.toUpperCase()}</div>
       ${isNew ? '<span class="card-new-badge">nuevo</span>' : ''}
+      <button class="card-fav-btn${favActive ? ' active' : ''}" onclick="event.stopPropagation(); toggleFav('${l.naddr}', this)" title="${favActive ? 'Quitar de favoritos' : 'Guardar en favoritos'}" aria-pressed="${favActive}">${favActive ? '⭐' : '☆'}</button>
     </div>
     <h3 class="card-title">${esc(l.title)}</h3>
     ${l.location ? `<div class="card-location">📍 ${esc(l.location)}</div>` : ''}
@@ -829,7 +893,7 @@ function renderListingCard(l) {
       <span class="card-age">${fmtAge(l.publishedAt)}</span>
       ${ratingHtml}
       <div class="card-footer-actions">
-        <button class="card-share-btn" onclick="event.stopPropagation(); copyToClipboard('${njumpUrl}')" title="Copiar enlace">🔗</button>
+        <button class="card-share-btn" onclick="event.stopPropagation(); shareOrCopy('${njumpUrl}')" title="Compartir">🔗</button>
         <a href="${njumpUrl}" target="_blank" rel="noopener noreferrer"
            class="card-nostr-link" onclick="event.stopPropagation()">Ver en Nostr →</a>
       </div>
@@ -892,7 +956,7 @@ function renderFeedCard(p) {
     <div class="card-footer">
       <span class="card-npub">${p.npub.slice(0, 16)}…</span>
       <div class="card-footer-actions">
-        <button class="card-share-btn" onclick="event.stopPropagation(); copyToClipboard('${njumpUrl}')" title="Copiar enlace">🔗</button>
+        <button class="card-share-btn" onclick="event.stopPropagation(); shareOrCopy('${njumpUrl}')" title="Compartir">🔗</button>
         <span class="card-nostr-link">Ver en Nostr →</span>
       </div>
     </div>
@@ -914,7 +978,7 @@ function renderArticleCard(a) {
       <div class="card-footer">
         <span class="card-age">${fmtAge(a.publishedAt)}</span>
         <div class="card-footer-actions">
-          <button class="card-share-btn" onclick="event.stopPropagation(); copyToClipboard('${njumpUrl}')" title="Copiar enlace">🔗</button>
+          <button class="card-share-btn" onclick="event.stopPropagation(); shareOrCopy('${njumpUrl}')" title="Compartir">🔗</button>
           <span class="card-nostr-link">Leer →</span>
         </div>
       </div>
@@ -965,7 +1029,7 @@ function renderCalendarEventCard(e) {
       <div class="event-actions">
         <a href="${safeUrl(primaryLink)}" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-sm" onclick="event.stopPropagation()">Ver evento ↗</a>
         <a href="${njumpUrl}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm" onclick="event.stopPropagation()">Nostr ↗</a>
-        <button class="card-share-btn" onclick="event.stopPropagation(); copyToClipboard('${njumpUrl}')" title="Copiar enlace">🔗</button>
+        <button class="card-share-btn" onclick="event.stopPropagation(); shareOrCopy('${njumpUrl}')" title="Compartir">🔗</button>
       </div>
     </div>
   </article>`;
@@ -1081,8 +1145,42 @@ function showToast(msg) {
   }, 3200);
 }
 
+// ── Deep link a un anuncio: #/anuncio/<naddr> (CODE-004) ────────
+// Complementa router.js (que solo conoce destinos del shell, no anuncios
+// concretos): aquí sí tenemos `channels`/openModal, así que el cableado
+// real vive en este archivo. No sustituye la navegación por tabs — un
+// anuncio es una vista superpuesta sobre el tab Mercado.
+function initAnuncioDeepLink() {
+  const naddr = parseAnuncioHash(window.location.hash);
+  if (naddr) { pendingAnuncioNaddr = naddr; tryOpenPendingAnuncio(); }
+
+  window.addEventListener('hashchange', () => {
+    const n = parseAnuncioHash(window.location.hash);
+    if (n) { pendingAnuncioNaddr = n; tryOpenPendingAnuncio(); return; }
+    // El hash ya no apunta a un anuncio (Atrás/Adelante a otra sección):
+    // si el modal seguía abierto, cerrarlo para no dejar UI y URL desincronizadas.
+    const modal = document.getElementById('listing-modal');
+    if (modal && !modal.classList.contains('hidden')) window.closeModal({ syncHash: false });
+  });
+}
+
+// Los eventos de mercado llegan async desde los relays (o ya están en
+// caché) — reintenta cada vez que hay datos nuevos hasta encontrar el naddr
+// pendiente. Sin timeout propio: si el relay no lo tiene, simplemente no
+// aparece (igual que cualquier otro anuncio no encontrado).
+function tryOpenPendingAnuncio() {
+  if (!pendingAnuncioNaddr) return;
+  const ch = channels['mercado'];
+  const found = ch && [...ch.values()].find(x => x.naddr === pendingAnuncioNaddr);
+  if (!found) return;
+  const target = pendingAnuncioNaddr;
+  pendingAnuncioNaddr = null;
+  if (activeTab !== 'mercado') window.switchTab('mercado', { syncUrl: false, syncHash: false });
+  window.openModal(target, { syncHash: false });
+}
+
 // ── Modal (mercado / kind:30402) ───────────────────────────────
-window.openModal = function(naddr) {
+window.openModal = function(naddr, options = {}) {
   const ch = channels['mercado'];
   if (!ch) return;
   const l = [...ch.values()].find(x => x.naddr === naddr);
@@ -1094,7 +1192,10 @@ window.openModal = function(naddr) {
   const rating   = getSellerRating(l.pubkeyHex);
   // Valorar dentro de la app: publicar.html abre la sección Valorar con el
   // npub del vendedor precargado (firma con la clave del usuario, kind 1985).
-  const valorarUrl = `publicar.html?valorar=${l.npub}`;
+  // REP-002: ref=naddr da contexto (qué anuncio motivó la valoración) sin
+  // certificar que la operación se completó — publicar-app.js lo añade como
+  // tag 'a' opcional, ignorándolo si llega roto.
+  const valorarUrl = `publicar.html?valorar=${l.npub}&ref=${encodeURIComponent(l.naddr)}`;
 
   const ratingBlock = rating
     ? `<div class="modal-rating-section">
@@ -1108,10 +1209,12 @@ window.openModal = function(naddr) {
         <a href="${esc(valorarUrl)}" class="btn-ghost btn-sm modal-rate-btn">⭐ Ser el primero en valorar</a>
       </div>`;
 
+  const modalFavActive = isFavorite(l.naddr);
   modal.innerHTML = `
     <div class="modal-overlay" onclick="closeModal()"></div>
     <div class="modal-box">
       <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="card-fav-btn${modalFavActive ? ' active' : ''}" style="position:absolute;top:14px;right:52px" onclick="toggleFav('${l.naddr}', this)" title="${modalFavActive ? 'Quitar de favoritos' : 'Guardar en favoritos'}" aria-pressed="${modalFavActive}">${modalFavActive ? '⭐' : '☆'}</button>
       <div class="modal-category" style="color:${color}">${l.category.toUpperCase()}</div>
       <h2 id="modal-title" class="modal-title">${esc(l.title)}</h2>
       ${l.location ? `<div class="modal-location">📍 ${esc(l.location)}</div>` : ''}
@@ -1120,6 +1223,8 @@ window.openModal = function(naddr) {
         <span><strong>Pago:</strong> ${l.payment.join(', ')}</span>
         <span><strong>Publicado:</strong> ${fmtAge(l.publishedAt)}</span>
       </div>
+      ${l.price ? `<div class="modal-meta"><span><strong>Precio:</strong> ${esc(l.price)} ${esc(l.currency || '')}</span>
+        <button class="card-share-btn" onclick="closeModal();switchTab('conversor')" title="Convertir a sats/otras monedas">🧮 Convertir</button></div>` : ''}
       ${ratingBlock}
       <div class="modal-notice">
         <span>🔒</span>
@@ -1131,18 +1236,78 @@ window.openModal = function(naddr) {
         </a>
         <button onclick="closeModal()" class="btn-secondary">Cerrar</button>
       </div>
+      <a class="btn-ghost btn-sm modal-rate-btn" href="publicar.html?zap=${l.npub}&ref=${encodeURIComponent(l.naddr)}" title="Pago Lightning con recibo Nostr (NIP-57)">
+        ⚡ Enviar zap
+      </a>
+      <a class="btn-ghost btn-sm modal-rate-btn" href="publicar.html?pagar=${encodeURIComponent(l.naddr)}" title="Pagar una factura Lightning (PAY-001)">
+        💳 Pagar
+      </a>
+      <div class="modal-zap-total" id="modal-zap-total"></div>
+      <div class="modal-secondary-actions">
+        <button class="modal-hide-seller-btn" onclick="hideSeller('${l.pubkeyHex}')" title="Deja de ver publicaciones de este autor en este navegador">
+          🚫 Ocultar este vendedor
+        </button>
+        <a class="modal-hide-seller-btn" href="publicar.html?report=${l.npub}&ref=${encodeURIComponent(l.naddr)}" title="Reporte público y firmado (MOD-002)">
+          🚩 Reportar
+        </a>
+      </div>
     </div>`;
 
   modal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
   trapFocus(modal);
+
+  // CODE-004: URL restaurable — abrir un anuncio (desde donde sea: tarjeta,
+  // búsqueda, deep link) queda reflejado en el hash para poder compartirlo,
+  // recargar y usar Atrás para cerrarlo. syncHash:false lo usa
+  // tryOpenPendingAnuncio() cuando el hash YA es el origen de la apertura.
+  if (options.syncHash !== false) {
+    const hash = anuncioRoute(naddr);
+    if (window.location.hash !== hash) window.history.pushState(null, '', hash);
+  }
+
+  // ZAP-002: total de zaps recibidos, solo con recibos verificados
+  // (validateZapReceipt en zaps.js) — nunca a partir de una cifra sin firmar.
+  modal.dataset.naddr = naddr;
+  fetchZapReceipts(pool, l.pubkeyHex).then(({ totalMsats, receipts }) => {
+    if (modal.classList.contains('hidden') || modal.dataset.naddr !== naddr) return; // ya se cerró o cambió de anuncio
+    const el = document.getElementById('modal-zap-total');
+    if (!el) return;
+    el.textContent = receipts.length > 0
+      ? `⚡ ${Math.floor(totalMsats / 1000).toLocaleString('es-ES')} sats recibidos en zaps (${receipts.length} verificado${receipts.length === 1 ? '' : 's'})`
+      : '';
+  }).catch(() => { /* sin zaps o relay caído: no mostrar nada, no es un error visible */ });
 };
 
-window.closeModal = function() {
+window.closeModal = function(options = {}) {
   const modal = document.getElementById('listing-modal');
   modal?.classList.add('hidden');
   document.body.style.overflow = '';
   releaseFocus(modal);
+  if (options.syncHash === false) return; // ya viene de un cambio de hash (Atrás/Adelante)
+  if (parseAnuncioHash(window.location.hash)) {
+    window.history.replaceState(null, '', routeForTab(activeTab) || '#/plaza');
+  }
+};
+
+// MOD-001: oculta a un autor SOLO en este navegador — no es un reporte ni
+// afecta a lo que otros ven. Purga lo ya cargado en todos los canales
+// (no solo mercado: el mismo autor puede tener posts en feed/eventos/...).
+window.hideSeller = function(pubkeyHex) {
+  if (!confirm('¿Ocultar las publicaciones de este vendedor en este navegador? Puedes deshacerlo luego en Acerca → Moderación personal.')) return
+  blockPubkey(pubkeyHex);
+  // Purga por `npub`: es el único campo que ponen TODOS los parseX() (mercado
+  // tiene además pubkeyHex, pero feed/artículos/eventos solo tienen npub).
+  const npub = hexToNpub(pubkeyHex);
+  for (const ch of Object.values(channels)) {
+    for (const [key, item] of ch) {
+      if (item.npub === npub) ch.delete(key);
+    }
+  }
+  window.closeModal();
+  saveToCache();
+  renderActiveChannel();
+  updateAllBadges();
 };
 
 // ── Focus trap (B.4): #listing-modal y #modal-donar-overlay son los únicos
@@ -1216,6 +1381,7 @@ function initUI() {
   initSort();
   initSearch();
   initTabFromUrl();
+  initModerationUI();
 
   // Accesibilidad: Escape cierra los modales abiertos
   document.addEventListener('keydown', e => {
@@ -1224,6 +1390,62 @@ function initUI() {
     if (listing && !listing.classList.contains('hidden')) window.closeModal();
     const donar = document.getElementById('modal-donar-overlay');
     if (donar && !donar.classList.contains('hidden')) window.closeDonarModal();
+  });
+}
+
+// ── MOD-001/BON-017: gestión de la lista de moderación personal ─────────
+function renderBlockedList() {
+  const wrap = document.getElementById('blocked-list');
+  if (!wrap) return;
+  const hexes = listBlocked();
+  if (hexes.length === 0) {
+    wrap.innerHTML = `<div class="blocked-empty">No has ocultado a ningún vendedor.</div>`;
+    return;
+  }
+  wrap.innerHTML = hexes.map(hex => {
+    const npub = hexToNpub(hex);
+    return `<div class="blocked-item">
+      <span>${esc(npub.slice(0, 20))}…</span>
+      <button type="button" data-unblock="${hex}">Dejar de ocultar</button>
+    </div>`;
+  }).join('');
+}
+
+function initModerationUI() {
+  renderBlockedList();
+
+  document.getElementById('blocked-list')?.addEventListener('click', e => {
+    const btn = e.target.closest('button[data-unblock]');
+    if (!btn) return;
+    unblockPubkey(btn.getAttribute('data-unblock'));
+    renderBlockedList();
+    renderActiveChannel(); // el contenido de ese autor puede volver a aparecer
+  });
+
+  document.getElementById('btn-export-blocked')?.addEventListener('click', async () => {
+    const json = exportBlocked();
+    try {
+      await navigator.clipboard.writeText(json);
+      showToast('📋 Lista copiada al portapapeles');
+    } catch {
+      // Sin permiso de portapapeles: al menos mostrarla para copiar a mano
+      prompt('Copia tu lista de moderación (JSON):', json);
+    }
+  });
+
+  document.getElementById('btn-import-blocked')?.addEventListener('click', () => {
+    const errEl = document.getElementById('err-blocked');
+    if (errEl) errEl.textContent = '';
+    const raw = prompt('Pega el JSON exportado de tu lista de moderación:');
+    if (!raw) return;
+    try {
+      const added = importBlocked(raw);
+      renderBlockedList();
+      renderActiveChannel();
+      showToast(`✅ ${added} vendedor${added === 1 ? '' : 'es'} añadido${added === 1 ? '' : 's'} a la lista`);
+    } catch (e) {
+      if (errEl) errEl.textContent = 'No se pudo importar: ' + (e?.message || 'formato inválido');
+    }
   });
 }
 
@@ -1239,6 +1461,15 @@ function initSearch() {
       renderActiveChannel();
     });
   });
+
+  // CODE-002: la búsqueda del hero (solo visible ≤768px) es un .tab-search
+  // más — el bloque de arriba ya la sincroniza y filtra. Solo le falta
+  // llevar al mercado la primera vez que se usa, porque filtra activeTab
+  // y el hero no tiene un tab propio.
+  const heroSearch = document.getElementById('hero-search');
+  heroSearch?.addEventListener('focus', () => {
+    if (activeTab !== 'mercado') window.switchTab('mercado');
+  }, { once: true });
 }
 
 function initSort() {
@@ -1374,6 +1605,31 @@ window.copyToClipboard = async function(text) {
   } catch {
     showToast('No se pudo copiar');
   }
+};
+
+// BON-001: favorito local (no publica nada, no requiere identidad).
+window.toggleFav = function(naddr, btnEl) {
+  const active = toggleFavorite(naddr);
+  if (btnEl) {
+    btnEl.classList.toggle('active', active);
+    btnEl.textContent = active ? '⭐' : '☆';
+    btnEl.title = active ? 'Quitar de favoritos' : 'Guardar en favoritos';
+    btnEl.setAttribute('aria-pressed', String(active));
+  }
+  // Si se está viendo el filtro "Favoritos", quitar uno debe quitarlo de la vista.
+  if (activeTab === 'mercado' && activeFilter === 'favoritos') renderActiveChannel();
+};
+
+// SOC-001/BON-005: hoja de compartir nativa en móvil (Telegram, WhatsApp,
+// etc.) si el navegador la soporta; si no, copia al portapapeles como antes.
+// Solo se comparte la URL pública (naddr/nevent vía njump, o nuestra propia
+// ruta #/anuncio/) — nunca sesión, borradores ni datos de wallet.
+window.shareOrCopy = async function(url, title = 'PlazaP2P') {
+  if (navigator.share) {
+    try { await navigator.share({ title, url }); return; }
+    catch (e) { if (e?.name === 'AbortError') return; /* el usuario canceló la hoja: no hacer nada */ }
+  }
+  window.copyToClipboard(url);
 };
 
 function esc(str) {

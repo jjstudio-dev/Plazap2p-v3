@@ -1,5 +1,6 @@
-// publish-utils.js — Utilidades puras portadas VERBATIM de bot/src/utils.js
-// (misma lógica de sanitización/validación que usa el bot — mantener en sync).
+// publish-utils.js — Utilidades puras, originalmente portadas VERBATIM del
+// bot de Telegram V3 (retirado de este repo; ver historial de git para el
+// origen exacto). Misma lógica de sanitización/validación.
 // Solo se portan las funciones sin dependencia de Telegram:
 // NO se portan hashTelegramId (no hay Telegram ID), escMd (MarkdownV2) ni
 // generateChallenge (la app no necesita /vincular: el usuario firma sus eventos).

@@ -84,23 +84,36 @@ function generateDTag() {
  * valor original para no perder la fecha de publicación.
  * @param {string} [dTag] — pasar un d existente para EDITAR (replaceable event)
  * @param {number} [publishedAt] — published_at original al editar (Unix segs)
+ * @param {number} [expirationDays] — ADS-002 (NIP-40): si se indica, añade
+ *   `expiration` = ahora + N días. Se recalcula desde "ahora" en cada
+ *   llamada — editar o duplicar un anuncio ya renueva su caducidad sin
+ *   necesitar una acción "Renovar" separada.
  */
-function assembleEvent(kind, tags, content, userPubHex, dTag = null, publishedAt = null) {
+function assembleEvent(kind, tags, content, userPubHex, dTag = null, publishedAt = null, expirationDays = null) {
   const uid = dTag || generateDTag()
   const pubAt = (Number.isInteger(publishedAt) && publishedAt > 0)
     ? publishedAt
     : Math.floor(Date.now() / 1000)
+  const allTags = [['d', uid], ['published_at', String(pubAt)], ...tags, CLIENT_TAG, ['status', 'active']]
+  if (Number.isInteger(expirationDays) && expirationDays > 0) {
+    allTags.push(['expiration', String(Math.floor(Date.now() / 1000) + expirationDays * 86400)])
+  }
   return {
     dTag: uid,
     unsignedEvent: {
       kind,
       created_at: Math.floor(Date.now() / 1000),
-      tags: [['d', uid], ['published_at', String(pubAt)], ...tags, CLIENT_TAG, ['status', 'active']],
+      tags: allTags,
       content,
       pubkey: String(userPubHex).toLowerCase(),
     },
   }
 }
+
+// ADS-002: solo los anuncios de "mercado" caducan (evita listados fantasma);
+// comunidades/herramientas son directorio curado, sin fecha de caducidad —
+// y los eventos ya tienen su propio fin vía NIP-52 start/end.
+const MERCADO_EXPIRATION_DAYS = 60
 
 // ── buildServicio ─────────────────────────────────────────────────────────────
 // Schema (mismo que publish.js del bot, sin alias):
@@ -127,7 +140,7 @@ export function buildServicio(data, userPubHex, dTag = null, publishedAt = null)
   ]
   applyCommonOptionalTags(tags, data)
 
-  const { unsignedEvent, dTag: uid } = assembleEvent(30402, tags, String(data.desc) + FOOTER, userPubHex, dTag, publishedAt)
+  const { unsignedEvent, dTag: uid } = assembleEvent(30402, tags, String(data.desc) + FOOTER, userPubHex, dTag, publishedAt, MERCADO_EXPIRATION_DAYS)
   return { ok: true, unsignedEvent, dTag: uid }
 }
 
@@ -320,7 +333,7 @@ export function buildTransaccion(data, userPubHex, dTag = null, publishedAt = nu
   if (alcanceClean) tags.push(['location', alcanceClean])
   applyCommonOptionalTags(tags, data)
 
-  const { unsignedEvent, dTag: uid } = assembleEvent(30402, tags, content, userPubHex, dTag, publishedAt)
+  const { unsignedEvent, dTag: uid } = assembleEvent(30402, tags, content, userPubHex, dTag, publishedAt, MERCADO_EXPIRATION_DAYS)
   return { ok: true, unsignedEvent, dTag: uid }
 }
 
@@ -330,7 +343,18 @@ export function buildTransaccion(data, userPubHex, dTag = null, publishedAt = nu
 // real). Kind 1985 NO es addressable: sin d-tag ni status.
 // aspects: { comunicacion: 5, cumplimiento: 4, ... } — ids de config.json
 
-export function buildValoracion({ rateeHex, rating, comment = '', aspects = {} }, userPubHex) {
+// REP-002: 'a' apunta a un anuncio addressable (kind:pubkey:d), 'e' a un
+// evento no addressable (kind 1, 30023...) por su id — nunca ambos.
+const A_TAG_RE = /^\d+:[0-9a-f]{64}:.*$/i
+const E_TAG_RE = /^[0-9a-f]{64}$/i
+
+/**
+ * @param {string} [refTag] — referencia OPCIONAL a la operación/anuncio que
+ *   motiva la valoración (REP-002): 'a' (`<kind>:<pubkey>:<d>`, anuncios
+ *   addressable) o 'e' (id de 64 hex, otros eventos). Da contexto — NO
+ *   certifica que la operación se completó ni la garantiza (sección 30).
+ */
+export function buildValoracion({ rateeHex, rating, comment = '', aspects = {}, refTag = null }, userPubHex) {
   const pkErr = validatePubkey(userPubHex)
   if (pkErr) return { ok: false, error: pkErr }
   if (!Number.isInteger(rating) || rating < 1 || rating > 5)
@@ -346,6 +370,12 @@ export function buildValoracion({ rateeHex, rating, comment = '', aspects = {} }
     ['p', String(rateeHex).toLowerCase()],
     CLIENT_TAG,
   ]
+  if (refTag) {
+    const clean = String(refTag).trim()
+    if (A_TAG_RE.test(clean)) tags.push(['a', clean])
+    else if (E_TAG_RE.test(clean)) tags.push(['e', clean.toLowerCase()])
+    // referencia no reconocible: se ignora en vez de fallar la valoración entera
+  }
   for (const [id, score] of Object.entries(aspects)) {
     const n = Number(score)
     if (/^[a-z_]{2,30}$/.test(id) && Number.isInteger(n) && n >= 1 && n <= 5)
@@ -383,6 +413,47 @@ export function buildRetirada({ kind, dTag, eventId }, userPubHex) {
       created_at: Math.floor(Date.now() / 1000),
       tags,
       content: 'Anuncio retirado por el autor (PlazaP2P)',
+      pubkey: String(userPubHex).toLowerCase(),
+    },
+  }
+}
+
+// ── buildReporte — kind 1984 (NIP-56) ────────────────────────────────────────
+// MOD-002: reporte firmado y público — cualquier cliente/relay puede leerlo.
+// PlazaP2P no promete retirar nada: solo facilita que el reporte exista y
+// sea descubrible, igual que cualquier otro evento Nostr.
+
+export const VALID_REPORT_TYPES = ['spam', 'illegal', 'impersonation', 'malware', 'nudity', 'profanity', 'other']
+
+/**
+ * @param {string} refTag — 'a' (`<kind>:<pubkey>:<d>`, anuncio addressable) o
+ *   'e' (id hex de 64, otro evento). El 'p' del reportado es siempre obligatorio.
+ */
+export function buildReporte({ reportedHex, reportType, refTag = null, comment = '' }, userPubHex) {
+  const pkErr = validatePubkey(userPubHex)
+  if (pkErr) return { ok: false, error: pkErr }
+  if (!/^[0-9a-f]{64}$/i.test(String(reportedHex || '')))
+    return { ok: false, error: 'pubkey del reportado inválida' }
+  if (String(reportedHex).toLowerCase() === String(userPubHex).toLowerCase())
+    return { ok: false, error: 'no puedes reportarte a ti mismo' }
+  if (!VALID_REPORT_TYPES.includes(String(reportType)))
+    return { ok: false, error: `tipo de reporte inválido: ${reportType}` }
+
+  const tags = [['p', String(reportedHex).toLowerCase(), reportType]]
+  if (refTag) {
+    const clean = String(refTag).trim()
+    if (A_TAG_RE.test(clean)) tags.push(['a', clean, reportType])
+    else if (E_TAG_RE.test(clean)) tags.push(['e', clean.toLowerCase(), reportType])
+  }
+  tags.push(CLIENT_TAG)
+
+  return {
+    ok: true,
+    unsignedEvent: {
+      kind: 1984,
+      created_at: Math.floor(Date.now() / 1000),
+      tags,
+      content: String(comment || '').slice(0, 500),
       pubkey: String(userPubHex).toLowerCase(),
     },
   }

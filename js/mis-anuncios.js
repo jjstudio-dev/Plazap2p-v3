@@ -11,6 +11,21 @@ import { getTagValue } from './nostr.js'
 
 const SUB_ID = 'mis-anuncios'
 
+/** ADS-002 — texto de aviso de caducidad próxima, o null si no aplica.
+ * Exportada para test (pura, sin DOM) — el resto del módulo sí lo necesita. */
+export function formatExpiration(expirationRaw, nowSec = Math.floor(Date.now() / 1000)) {
+  if (!expirationRaw) return null
+  const ts = parseInt(expirationRaw, 10)
+  if (!Number.isFinite(ts) || ts <= 0) return null
+  // floor, no ceil: "dentro de 3 horas" debe leerse "hoy" (0 días), no
+  // redondear hacia arriba a "1 día" — ceil nunca llegaba a 0 salvo ts==ahora.
+  const daysLeft = Math.floor((ts - nowSec) / 86400)
+  if (daysLeft < 0) return 'caducado'
+  if (daysLeft === 0) return 'caduca hoy'
+  if (daysLeft <= 7) return `caduca en ${daysLeft} día${daysLeft === 1 ? '' : 's'}`
+  return null // no molesta con el aviso si aún faltan más de 7 días
+}
+
 let deps = null           // { pool, getPubkey, listEl, statusEl, onEdit, onRetirar }
 let items = new Map()     // `${kind}:${dTag}` → evento más reciente
 let eoseSeen = false
@@ -93,27 +108,52 @@ function render(timedOut = false) {
     meta.className = 'ma-meta'
     const tipo = (ev.tags.find(t => t[0] === 't' && t[1]?.startsWith('plazap2p-'))?.[1] || '').replace('plazap2p-', '')
     const fecha = new Date(ev.created_at * 1000).toLocaleDateString('es-ES')
-    meta.textContent = `${tipo || 'anuncio'} · ${fecha}` + (inactive ? ` · ${status_ === 'sold' ? 'vendido' : 'retirado'}` : '')
+    const expText = !inactive ? formatExpiration(getTagValue(ev.tags, 'expiration')) : null
+    meta.textContent = `${tipo || 'anuncio'} · ${fecha}`
+      + (inactive ? ` · ${status_ === 'sold' ? 'vendido' : 'retirado'}` : '')
+      + (expText ? ` · ⏳ ${expText}` : '')
     item.appendChild(meta)
 
-    if (!inactive) {
-      const actions = document.createElement('div')
-      actions.className = 'ma-actions'
+    const actions = document.createElement('div')
+    actions.className = 'ma-actions'
 
+    if (!inactive) {
       const edit = document.createElement('button')
       edit.type = 'button'
       edit.textContent = '✏️ Editar'
       edit.addEventListener('click', () => deps.onEdit(ev))
+      actions.appendChild(edit)
+
+      // ADS-001: solo tiene sentido "vendido" para lo que se vende (mercado,
+      // no eventos/comunidades/herramientas ni compra/intercambio).
+      const tTags_ = ev.tags.filter(t => t[0] === 't').map(t => t[1])
+      if (deps.onMarcarVendido && (tTags_.includes('plazap2p-venta') || tTags_.includes('plazap2p-servicio'))) {
+        const sold = document.createElement('button')
+        sold.type = 'button'
+        sold.textContent = '💰 Vendido'
+        sold.addEventListener('click', () => deps.onMarcarVendido(ev))
+        actions.appendChild(sold)
+      }
 
       const del = document.createElement('button')
       del.type = 'button'
       del.className = 'danger'
       del.textContent = '🗑 Retirar'
       del.addEventListener('click', () => deps.onRetirar(ev))
-
-      actions.append(edit, del)
-      item.appendChild(actions)
+      actions.appendChild(del)
     }
+
+    // ADS-001: duplicar sirve tanto para anuncios activos (relanzar algo
+    // parecido) como retirados/vendidos (volver a publicar el mismo).
+    if (deps.onDuplicar) {
+      const dup = document.createElement('button')
+      dup.type = 'button'
+      dup.textContent = '🔁 Duplicar'
+      dup.addEventListener('click', () => deps.onDuplicar(ev))
+      actions.appendChild(dup)
+    }
+
+    if (actions.childElementCount > 0) item.appendChild(actions)
     list.appendChild(item)
   }
 }

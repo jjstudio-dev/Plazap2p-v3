@@ -30,8 +30,16 @@ export function refreshWallet() {
   if (conn) refreshBalance()
 }
 
-/** ¿Hay wallet conectada? (para el botón ⚡ Pagar de anuncios, futuro) */
+/** ¿Hay wallet conectada? (para el botón ⚡ Pagar/Zap de anuncios) */
 export function hasWallet() { return !!conn }
+
+/** Paga una factura ya generada (zaps, LNURL directo) con la wallet conectada. Lanza si no hay wallet. */
+export async function payViaWallet(bolt11) {
+  if (!conn) throw new Error('conecta tu wallet primero (pestaña Wallet)')
+  const res = await nwc.payInvoice(conn, bolt11)
+  refreshBalance()
+  return res
+}
 
 function renderState() {
   $('w-disconnected').classList.toggle('hidden', !!conn)

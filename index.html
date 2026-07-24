@@ -38,7 +38,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800&family=Inter:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=30" />
+  <link rel="stylesheet" href="css/style.css?v=41" />
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#f7931a" />
@@ -108,6 +108,9 @@
       </div>
       <span class="counter-updated" id="counter-updated"></span>
     </div>
+    <!-- CODE-002: en móvil (≤768px, ver .hero-search-wrap/.hero-quick en
+         style.css) esto se sustituye por búsqueda + accesos rápidos; en
+         escritorio se mantiene igual (oculto solo por CSS, no por JS). -->
     <div class="hero-actions">
       <button class="btn-primary" onclick="switchTab('mercado');document.querySelector('.main-nav').scrollIntoView({behavior:'smooth'})">
         🛒 Ver Mercado
@@ -124,6 +127,21 @@
       <button class="btn-ghost btn-ghost--btc" onclick="window.openDonarModal?.()" title="Apoyar el proyecto">
         ♥ Apoyar
       </button>
+    </div>
+
+    <!-- Solo visible ≤768px (CODE-002). El input reutiliza .tab-search: ya
+         existe un solo initSearch() en app.js que sincroniza TODOS los
+         .tab-search entre sí — no hace falta más JS para que esto filtre. -->
+    <div class="hero-search-wrap">
+      <input type="search" class="tab-search hero-search" id="hero-search"
+             placeholder="Buscar en el mercado…" aria-label="Buscar en el mercado" />
+      <div class="hero-quick">
+        <button class="hero-quick-btn" onclick="switchTab('mercado');document.querySelector('.main-nav').scrollIntoView({behavior:'smooth'})" aria-label="Ver Mercado" title="Mercado">🛒</button>
+        <button class="hero-quick-btn" onclick="switchTab('bitcoin')" aria-label="Bitcoin" title="Bitcoin">₿</button>
+        <button class="hero-quick-btn" onclick="switchTab('nostr')" aria-label="Red Nostr" title="Nostr">⚡</button>
+        <button class="hero-quick-btn" onclick="switchTab('publicar')" aria-label="Cómo aparecer" title="Publicar">📢</button>
+        <button class="hero-quick-btn" onclick="window.openDonarModal?.()" aria-label="Apoyar el proyecto" title="Apoyar">♥</button>
+      </div>
     </div>
   </div>
 </section>
@@ -233,6 +251,7 @@
       <button class="filter-btn" data-filter="compra">Compra</button>
       <button class="filter-btn" data-filter="servicio">Servicio</button>
       <button class="filter-btn" data-filter="trueque">Trueque</button>
+      <button class="filter-btn" data-filter="favoritos">⭐ Favoritos</button>
     </div>
 
     <div class="p2p-trust-strip" role="note" aria-label="Confianza P2P">
@@ -1153,6 +1172,18 @@
       <p class="about-note">PlazaP2P facilita el descubrimiento de contenido, pero la responsabilidad de cualquier interacción es siempre de las personas involucradas.</p>
     </div>
 
+    <!-- MOD-001/BON-017: moderación personal (local, portable) -->
+    <div class="about-block">
+      <h2 class="subsection-title">Moderación personal</h2>
+      <p>Ocultar un vendedor solo afecta a <strong>este navegador</strong> — no es un reporte ni un bloqueo global; el autor sigue publicando con normalidad en Nostr. La lista es tuya: puedes exportarla e importarla en otro dispositivo.</p>
+      <div id="blocked-list" class="blocked-list"></div>
+      <div class="blocked-actions">
+        <button class="btn-ghost btn-sm" id="btn-export-blocked" type="button">⬇️ Exportar lista</button>
+        <button class="btn-ghost btn-sm" id="btn-import-blocked" type="button">⬆️ Importar lista</button>
+      </div>
+      <div class="f-error" id="err-blocked"></div>
+    </div>
+
     <!-- FAQ -->
     <div class="about-block">
       <h2 class="subsection-title">Preguntas frecuentes</h2>
@@ -1307,6 +1338,26 @@
   </div>
 </footer>
 
+<!-- Shell móvil: barra de 5 destinos (MOB-003, ≤768px) — ver js/app-shell.js -->
+<div class="mbn-chips" id="mbn-chips" role="tablist" aria-label="Secciones" hidden></div>
+<nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Navegación principal">
+  <button class="mbn-btn" data-dest="plaza" type="button">
+    <span class="mbn-icon">🛒</span><span class="mbn-label">Plaza</span>
+  </button>
+  <button class="mbn-btn" data-dest="explorar" type="button">
+    <span class="mbn-icon">🧭</span><span class="mbn-label">Explorar</span>
+  </button>
+  <button class="mbn-btn mbn-btn--central" data-dest="publicar" type="button">
+    <span class="mbn-icon">📢</span><span class="mbn-label">Publicar</span>
+  </button>
+  <button class="mbn-btn" data-dest="actividad" type="button">
+    <span class="mbn-icon">📋</span><span class="mbn-label">Actividad</span>
+  </button>
+  <button class="mbn-btn" data-dest="perfil" type="button">
+    <span class="mbn-icon">👤</span><span class="mbn-label">Perfil</span>
+  </button>
+</nav>
+
 <!-- Scroll to top -->
 <button id="btn-scroll-top" class="btn-scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Volver arriba" aria-label="Volver arriba">↑</button>
 
@@ -1314,14 +1365,18 @@
 <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <!-- ESM module — app.js imports nostr.js and relay-pool.js -->
-<script type="module" src="js/app.js?v=30"></script>
+<script type="module" src="js/app.js?v=41"></script>
 <script type="module">
-  import { initBtcStats }      from './js/btc-stats.js?v=30';
-  import { initPriceChart }    from './js/btc-chart.js?v=30';
-  import { initConverter }     from './js/converter.js?v=30';
-  import { initMiniConverter } from './js/mini-converter.js?v=30';
-  import { initBtcMarket }     from './js/btc-market.js?v=30';
+  import { initBtcStats }      from './js/btc-stats.js?v=41';
+  import { initPriceChart }    from './js/btc-chart.js?v=41';
+  import { initConverter }     from './js/converter.js?v=41';
+  import { initMiniConverter } from './js/mini-converter.js?v=41';
+  import { initBtcMarket }     from './js/btc-market.js?v=41';
+  import { initAppShell }      from './js/app-shell.js?v=41';
+  import { initRouter }        from './js/router.js?v=41';
 
+  initAppShell();
+  initRouter();
   initMiniConverter();
   initBtcStats();
   initPriceChart();
