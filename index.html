@@ -221,6 +221,7 @@
     <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-bitcoin"       data-tab="bitcoin">₿ Bitcoin</button>
     <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-conversor"    data-tab="conversor">💱 Conversor</button>
     <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-nostr"         data-tab="nostr">⚡ Nostr</button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-app-android"   data-tab="app-android">📱 App Android</button>
     <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-publicar"      data-tab="publicar">📢 Publicar</button>
     <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-relays"        data-tab="relays">🔗 Relays</button>
     <button class="nav-tab" role="tab" aria-selected="false" aria-controls="tab-acerca"        data-tab="acerca">📋 Acerca</button>
@@ -775,6 +776,121 @@
         <a href="https://github.com/jjstudio-dev/Plazap2p-v3/issues/new?template=sugerencia-cliente.yml&title=[Sugerencia+Cliente/Servicio]" target="_blank" rel="noopener noreferrer" class="btn-outline-small">📬 Proponer cliente o servicio</a>
       </div>
     </div>
+  </section>
+
+  <!-- App Android tab -->
+  <section id="tab-app-android" class="section-panel">
+    <div class="section-header">
+      <span class="section-title"><span class="icon">📱</span> App Android</span>
+    </div>
+
+    <div class="about-block">
+      <h2 class="subsection-title">PlazaP2P en tu bolsillo</h2>
+      <p><strong>PlazaP2P Android</strong> es la app nativa del proyecto: mismo mercado, mismo directorio y misma reputación que esta web, pensada para el móvil. Comparte la filosofía de siempre — sin servidor propio, sin cuentas, sin custodiar tus fondos ni tu clave. Tu identidad es tu npub y tu clave privada nunca sale del dispositivo.</p>
+      <p>Está en desarrollo activo y el repositorio de código aún no es público. Esta es solo una presentación breve de lo que hace hoy — los detalles técnicos se publicarán junto con el código.</p>
+    </div>
+
+    <h2 class="subsection-title">Qué hace hoy</h2>
+    <div class="tools-grid">
+      <div class="tool-card tool-card--static">
+        <div class="tool-header">
+          <span class="guia-title">Identidad Nostr</span>
+        </div>
+        <div class="guia-meta"><span class="guia-tipo-badge">npub</span></div>
+        <p class="guia-desc">Tu cuenta es tu clave Nostr. Sin registro, sin email, sin contraseña — la misma identidad que usas en la web o en cualquier cliente.</p>
+      </div>
+      <div class="tool-card tool-card--static">
+        <div class="tool-header">
+          <span class="guia-title">Firma remota con Amber</span>
+        </div>
+        <div class="guia-meta"><span class="guia-tipo-badge">NIP-55</span></div>
+        <p class="guia-desc">La app se sincroniza con Amber para firmar tus eventos. Tu clave privada nunca sale del dispositivo ni pasa por la app.</p>
+      </div>
+      <div class="tool-card tool-card--static">
+        <div class="tool-header">
+          <span class="guia-title">Wallet Lightning</span>
+        </div>
+        <div class="guia-meta"><span class="guia-tipo-badge">NWC · No custodial</span></div>
+        <p class="guia-desc">Conecta tu propia wallet vía Nostr Wallet Connect: saldo, recibir, pagar e historial, sin que PlazaP2P custodie nunca tus fondos.</p>
+      </div>
+      <div class="tool-card tool-card--static">
+        <div class="tool-header">
+          <span class="guia-title">Mensajería cifrada</span>
+        </div>
+        <div class="guia-meta"><span class="guia-tipo-badge badge-beta">Beta</span> <span class="guia-tipo-badge">NIP-17</span></div>
+        <p class="guia-desc">Chat 1:1 cifrado extremo a extremo para contactar vendedores directamente.</p>
+      </div>
+      <div class="tool-card tool-card--static">
+        <div class="tool-header">
+          <span class="guia-title">Zaps</span>
+        </div>
+        <div class="guia-meta"><span class="guia-tipo-badge">NIP-57</span></div>
+        <p class="guia-desc">Envía y recibe propinas Lightning verificadas directamente sobre publicaciones y perfiles.</p>
+      </div>
+      <div class="tool-card tool-card--static">
+        <div class="tool-header">
+          <span class="guia-title">Mercado, Directorio y Reputación</span>
+        </div>
+        <div class="guia-meta"><span class="guia-tipo-badge">Paridad con la web</span></div>
+        <p class="guia-desc">Explora anuncios, servicios y valoraciones firmadas — la misma red que ves aquí, con navegación pensada para móvil.</p>
+      </div>
+      <div class="tool-card tool-card--static">
+        <div class="tool-header">
+          <span class="guia-title">Grupos y canales</span>
+        </div>
+        <div class="guia-meta"><span class="guia-tipo-badge badge-proximamente">Próximamente</span></div>
+        <p class="guia-desc">Chat grupal tipo comunidad. En estudio — requiere infraestructura de relay adicional antes de activarse.</p>
+      </div>
+      <div class="tool-card tool-card--static">
+        <div class="tool-header">
+          <span class="guia-title">Modo claro y oscuro</span>
+        </div>
+        <div class="guia-meta"><span class="guia-tipo-badge">Tema</span></div>
+        <p class="guia-desc">Oscuro por defecto, con alternativa en modo claro configurable desde Ajustes.</p>
+      </div>
+    </div>
+
+    <h2 class="subsection-title">Apps que necesitas</h2>
+    <p class="subsection-sub">Para sacarle todo el partido a PlazaP2P Android con la seguridad necesaria, necesitas estas dos apps complementarias. Instálalas siempre desde sus fuentes oficiales.</p>
+
+    <div class="tools-grid">
+      <a href="https://github.com/greenart7c3/Amber" target="_blank" rel="noopener noreferrer" class="tool-card">
+        <div class="tool-header">
+          <div class="tool-logo-wrap"><img class="tool-logo" src="https://github.com/favicon.ico" alt="" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+          <span class="guia-title">Amber</span>
+        </div>
+        <div class="guia-meta"><span class="guia-tipo-badge">Necesaria · Android</span></div>
+        <p class="guia-desc">Firmador de eventos Nostr NIP-55. Firma en tu nombre sin que tu clave privada salga nunca del dispositivo.</p>
+        <div class="guia-footer"><span class="tool-arrow">↗</span></div>
+      </a>
+      <a href="https://minibits.cash" target="_blank" rel="noopener noreferrer" class="tool-card">
+        <div class="tool-header">
+          <div class="tool-logo-wrap"><img class="tool-logo" src="https://minibits.cash/favicon.ico" alt="" loading="lazy" onerror="this.parentElement.style.display='none'"></div>
+          <span class="guia-title">Minibits Wallet</span>
+        </div>
+        <div class="guia-meta"><span class="guia-tipo-badge">Recomendada · Android · iOS</span></div>
+        <p class="guia-desc">Wallet Lightning con Nostr Wallet Connect (NWC) integrado. La opción que mejor encaja con la Wallet de PlazaP2P Android.</p>
+        <div class="guia-footer"><span class="tool-arrow">↗</span></div>
+      </a>
+    </div>
+    <p class="about-note">Instala Amber y Minibits <strong>solo</strong> desde los enlaces oficiales de arriba. Desconfía de APKs de terceros, enlaces acortados o anuncios patrocinados que digan ser "Amber" o "Minibits". Antes de instalar, verifica en la tienda que el nombre de paquete coincide: <code>com.greenart7c3.nostrsigner</code> (Amber) y <code>com.minibits_wallet</code> (Minibits).</p>
+
+    <!-- CTA: misma red que la web -->
+    <div class="community-cta-block">
+      <div class="community-cta-icon">🔗</div>
+      <div class="community-cta-content">
+        <h3>Una sola red, no dos ecosistemas</h3>
+        <p>La reputación, el mercado y los anuncios que ves en la app son exactamente los mismos que ves en esta web: ambos son solo ventanas distintas hacia la misma red Nostr pública.</p>
+      </div>
+    </div>
+
+    <div class="about-block">
+      <h2 class="subsection-title">Descarga</h2>
+      <p>PlazaP2P Android está en desarrollo activo y su código todavía no se ha publicado. La descarga se habilitará aquí en cuanto esté lista para distribución pública.</p>
+      <button class="btn-primary" disabled aria-disabled="true">📱 Descarga próximamente</button>
+    </div>
+
+    <p class="about-note">Esta es una presentación breve — no profundiza en detalles técnicos ni de implementación, eso llegará junto con la publicación del código. Las funciones marcadas Beta pueden cambiar mientras se terminan de pulir. Dudas o sugerencias, vía <a href="https://github.com/jjstudio-dev/Plazap2p-v3/issues/new?title=[APP+ANDROID]" target="_blank" rel="noopener noreferrer">GitHub Issue</a>.</p>
   </section>
 
   <!-- Publicar tab -->

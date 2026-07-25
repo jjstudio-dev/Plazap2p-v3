@@ -60,6 +60,44 @@ El repo V1 está archivado como referencia histórica. V2 sigue operativo como d
 
 ---
 
+## V3.1 — Del bot a la app nativa
+
+Breve cronología de cómo llegamos a "una app" para PlazaP2P, aparte de esta web:
+
+1. **Bot de Telegram V3** — la primera idea de app/asistente fuera del navegador. Diseño completo (wizards de publicación, reputación dual Supabase+Nostr, anti-scam), pero **nunca se desplegó en producción**. Retirado de este repositorio.
+2. **Wrapper TWA** (carpeta [`app/`](app/)) — instalar esta misma web como si fuera una app, en pantalla completa y sin barra de navegador. Se llegó a preparar y firmar una build interna, pero **nunca se publicó en abierto ni se distribuyó**: en el propio proceso de diseño se decidió que, por usabilidad, merecía más la pena portar la idea a una app nativa de verdad. Ver [`app/README.md`](app/README.md) para el detalle.
+3. **PlazaP2P Android** (vía activa) — app nativa en desarrollo, con su propia interfaz e integraciones (Amber, Wallet, Mensajería), en un proyecto aparte (código todavía privado). Es la que sustituye de verdad al bot y al wrapper TWA, y comparte identidad, reputación y red Nostr con esta web.
+
+Ni el bot ni el wrapper TWA están publicados — ambos quedaron desplazados por la app nativa. La vía activa es PlazaP2P Android.
+
+V3.1 también trae, en esta misma web: sistema de tokens de diseño (`css/tokens.css`), un router con historial real (Atrás/Adelante entre secciones), Zaps (NIP-57) con pago vía wallet conectada, borradores de publicación, favoritos, copia de seguridad local y varias mejoras de confianza/moderación. Ver `git log` para el detalle línea a línea.
+
+### PlazaP2P Android — qué hace hoy
+
+Presentación breve — el detalle técnico se publicará junto con el código:
+
+| Función | Estado |
+|---|---|
+| Identidad Nostr (npub, sin registro) | ✅ |
+| Firma remota con Amber (NIP-55) | ✅ |
+| Wallet Lightning (NWC, no custodial) | ✅ |
+| Mensajería cifrada 1:1 (NIP-17) | 🧪 Beta |
+| Zaps (NIP-57) | ✅ |
+| Mercado, Directorio y Reputación (paridad con la web) | ✅ |
+| Grupos y canales | 🔜 Próximamente |
+| Modo claro y oscuro | ✅ |
+
+**Apps que necesitas** para sacarle todo el partido, con la seguridad necesaria — instálalas siempre desde su fuente oficial y verifica el nombre de paquete en la tienda antes de instalar:
+
+| App | Para qué | Fuente oficial | Paquete |
+|---|---|---|---|
+| [Amber](https://github.com/greenart7c3/Amber) | Firmador NIP-55 — necesaria | `github.com/greenart7c3/Amber` | `com.greenart7c3.nostrsigner` |
+| [Minibits Wallet](https://minibits.cash) | Wallet Lightning con NWC — recomendada | `minibits.cash` | `com.minibits_wallet` |
+
+Descarga: en desarrollo, todavía sin publicar — se anunciará en la pestaña [📱 App Android](https://jjstudio-dev.github.io/Plazap2p-v3/?tab=app-android) de esta web en cuanto esté lista.
+
+---
+
 ## Qué es PlazaP2P v3
 
 PlazaP2P es una **plaza abierta de solo lectura** para descubrir mercado, publicaciones y recursos alrededor de Bitcoin. Funciona sobre Nostr y muestra en tiempo real anuncios, posts y artículos publicados en relays públicos con el tag `#plazap2p`.
@@ -124,7 +162,7 @@ plazap2p-v3/
 ├── robots.txt
 ├── sitemap.xml
 ├── .well-known/
-│   └── assetlinks.json     # Digital Asset Links — debe republicarse en la raíz del dominio, ver sección app/
+│   └── assetlinks.json     # Digital Asset Links del wrapper TWA abandonado (ver app/) — sin uso activo
 ├── css/
 │   ├── tokens.css          # Fuente única de tokens de diseño
 │   ├── style.css           # Tema cyberpunk (heredado de V2, extendido)
@@ -137,7 +175,7 @@ plazap2p-v3/
 │   ├── herramientas.json   # 34+ herramientas Bitcoin
 │   └── multimedia.json
 ├── icons/
-├── app/                    # APK Android firmado (wrapper TWA, sin código fuente)
+├── app/                    # Historia bot → TWA → app nativa (ver app/README.md); sin binarios publicados
 └── .github/
     ├── workflows/app.yml   # CI: sintaxis, JSON, tests, enlaces, versión de assets
     └── ISSUE_TEMPLATE/     # plantillas para contribuciones al JSON
@@ -146,25 +184,7 @@ plazap2p-v3/
         └── multimedia.yml
 ```
 
-`app/` no forma parte de la app web activa:
-
-- **[`app/`](app/)** — el APK Android firmado ([`PlazaP2P.apk`](app/PlazaP2P.apk)),
-  para quien prefiera instalarlo en lugar de usar la PWA desde el navegador.
-  Es un wrapper TWA (Trusted Web Activity): abre esta misma web en pantalla
-  completa, mismo código, sin app aparte que mantener.
-
-> **Pendiente para que el APK abra sin barra de navegador** (Digital Asset
-> Links): publicar `.well-known/assetlinks.json` (ya preparado en este repo)
-> en la **raíz** del dominio `jjstudio-dev.github.io` — no en `/Plazap2p-v3/`.
-> Como este repo se sirve en una subruta, ese archivo debe vivir en el
-> repositorio que controla la raíz de `jjstudio-dev.github.io` (normalmente
-> un repo llamado igual que el usuario). Sin este paso el APK sigue
-> funcionando, solo que como pestaña de Chrome con barra de URL visible
-> (fallback automático ya configurado) en vez de app "de confianza".
-
-> El bot de Telegram V3 (diseño completo, nunca desplegado en producción)
-> se retiró de este repositorio. La única vía activa del proyecto es esta
-> app web/PWA — sin backend, sin bot, sin intermediarios.
+`app/` no forma parte de la app web activa — es el registro histórico bot → wrapper TWA → app nativa, sin binarios publicados. Ver [`app/README.md`](app/README.md) para el detalle, y la sección [V3.1 — Del bot a la app nativa](#v31--del-bot-a-la-app-nativa) más arriba para el resumen.
 
 ---
 

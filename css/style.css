@@ -118,6 +118,12 @@ header {
   transition: opacity 0.2s, transform 0.15s;
 }
 .btn-primary:hover { opacity: 0.88; transform: scale(1.02); }
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+.btn-primary:disabled:hover { opacity: 0.45; transform: none; }
 
 .btn-secondary {
   display: inline-flex;
@@ -773,6 +779,14 @@ main.container { padding-top: 36px; padding-bottom: 80px; }
   transition: color 0.2s;
 }
 .tool-card:hover .tool-arrow { color: var(--accent); }
+.tool-card--static {
+  cursor: default;
+}
+.tool-card--static:hover {
+  transform: none;
+  border-color: var(--border);
+  box-shadow: none;
+}
 
 /* ── Steps (Publicar tab) ────────────────────────────────────── */
 .steps-container {
@@ -3024,6 +3038,16 @@ footer {
   background: rgba(48,209,88,0.08);
   border-color: rgba(48,209,88,0.25);
   color: #30d158;
+}
+.badge-beta {
+  background: rgba(247,147,26,0.1);
+  border-color: rgba(247,147,26,0.3);
+  color: var(--btc);
+}
+.badge-proximamente {
+  background: rgba(255,255,255,0.04);
+  border-color: var(--border);
+  color: var(--t-3);
 }
 .guia-desc {
   font: 400 0.8rem/1.55 var(--font-body);

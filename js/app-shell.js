@@ -11,7 +11,7 @@ export const GROUPS = {
   explorar:  { tabs: ['feed', 'articulos', 'eventos', 'comunidades', 'herramientas', 'multimedia', 'bitcoin'], default: 'feed' },
   publicar:  { tabs: ['publicar'], default: 'publicar' },
   actividad: { external: 'publicar.html' },
-  perfil:    { tabs: ['acerca', 'nostr', 'relays'], default: 'acerca' },
+  perfil:    { tabs: ['acerca', 'nostr', 'relays', 'app-android'], default: 'acerca' },
 };
 
 const CHIP_LABELS = {
@@ -19,7 +19,7 @@ const CHIP_LABELS = {
   vendedores: '👥 Vendedores', conversor: '💱 Conversor',
   feed: '💬 Feed', articulos: '📄 Artículos', eventos: '📅 Eventos', comunidades: '🏘 Comunidades',
   herramientas: '🔧 Herramientas', multimedia: '🎙 Multimedia', bitcoin: '₿ Bitcoin',
-  acerca: '📋 Acerca', nostr: '⚡ Nostr', relays: '🔗 Relays',
+  acerca: '📋 Acerca', nostr: '⚡ Nostr', relays: '🔗 Relays', 'app-android': '📱 App',
 };
 
 const ALL_TABS = Object.values(GROUPS).flatMap(g => g.tabs || []);
