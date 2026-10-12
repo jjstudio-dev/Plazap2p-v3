@@ -45,10 +45,11 @@ export function validateSignedEvent(ev) {
 }
 
 /**
- * Matching mínimo de filtros NIP-01: kinds, authors e ids cuando el filtro
- * los declara. Basta con que UN filtro de la suscripción encaje. No cubre
- * #tags/since/until (deuda documentada) — kinds+authors cierran el vector
- * principal: inyectar kinds inesperados en callbacks que asumen estructura.
+ * Matching de filtros NIP-01: kinds, authors, ids, #etiquetas, since y until
+ * cuando el filtro los declara. Basta con que UN filtro de la suscripción
+ * encaje. Un relay defectuoso o malicioso puede devolver eventos reales y
+ * bien firmados pero de otro tema: aquí se descartan, para que ningún
+ * callback dependa de acordarse de volver a comprobarlo.
  */
 export function matchesFilters(ev, filters) {
   if (!Array.isArray(filters) || filters.length === 0) return true;
@@ -57,6 +58,14 @@ export function matchesFilters(ev, filters) {
     if (Array.isArray(f.kinds) && !f.kinds.includes(ev.kind)) return false;
     if (Array.isArray(f.authors) && !f.authors.includes(ev.pubkey)) return false;
     if (Array.isArray(f.ids) && !f.ids.includes(ev.id)) return false;
+    if (Number.isInteger(f.since) && ev.created_at < f.since) return false;
+    if (Number.isInteger(f.until) && ev.created_at > f.until) return false;
+    for (const [key, values] of Object.entries(f)) {
+      if (key[0] !== '#' || !Array.isArray(values)) continue;
+      const name = key.slice(1);
+      const tags = Array.isArray(ev.tags) ? ev.tags : [];
+      if (!tags.some(t => t[0] === name && values.includes(t[1]))) return false;
+    }
     return true;
   });
 }

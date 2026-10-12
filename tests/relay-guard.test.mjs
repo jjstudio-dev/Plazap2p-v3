@@ -66,3 +66,23 @@ test('matchesFilters: kinds y authors', () => {
   assert.equal(matchesFilters(ev, []), true)      // sin filtros: pasa
   assert.equal(matchesFilters(ev, null), true)
 })
+
+test('matchesFilters: etiquetas — una valoración sobre otra persona no pasa', () => {
+  const sobreX = signWith(SK1, { kind: 1985, tags: [['p', PK1], ['L', 'plazap2p.reputation']] })
+  const sobreOtro = signWith(SK1, { kind: 1985, tags: [['p', 'b'.repeat(64)], ['L', 'plazap2p.reputation']] })
+  const filtro = [{ kinds: [1985], '#p': [PK1], '#L': ['plazap2p.reputation'] }]
+  assert.equal(matchesFilters(sobreX, filtro), true)
+  assert.equal(matchesFilters(sobreOtro, filtro), false)
+  // todas las etiquetas del filtro tienen que encajar, no solo una
+  assert.equal(matchesFilters(sobreX, [{ kinds: [1985], '#p': [PK1], '#L': ['otro.espacio'] }]), false)
+  // campos que no son condiciones sobre el evento se ignoran
+  assert.equal(matchesFilters(sobreX, [{ kinds: [1985], '#p': [PK1], limit: 1 }]), true)
+})
+
+test('matchesFilters: since y until', () => {
+  const ev = signWith(SK1, { kind: 1, created_at: 1_700_000_000 })
+  assert.equal(matchesFilters(ev, [{ since: 1_700_000_000 }]), true)
+  assert.equal(matchesFilters(ev, [{ since: 1_700_000_001 }]), false)
+  assert.equal(matchesFilters(ev, [{ until: 1_700_000_000 }]), true)
+  assert.equal(matchesFilters(ev, [{ until: 1_699_999_999 }]), false)
+})
