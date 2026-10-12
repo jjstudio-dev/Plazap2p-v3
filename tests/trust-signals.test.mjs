@@ -1,7 +1,7 @@
 // SPAM-001/REP-001 — niveles de confianza explicados (no una protección real)
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { trustLevel } from '../js/trust-signals.js'
+import { trustLevel, compareSellersByRating } from '../js/trust-signals.js'
 
 test('trustLevel: umbrales sin_datos/bajo/medio/alto', () => {
   assert.equal(trustLevel(0).level, 'sin_datos')
@@ -27,4 +27,19 @@ test('trustLevel: cada nivel trae label y note no vacíos (nunca promete "seguro
     assert.ok(r.note.length > 0)
     assert.doesNotMatch(r.note.toLowerCase(), /\bseguro\b|\bgarantizado\b|\bverificado\b/, 'nunca debe sonar a garantía')
   }
+})
+
+test('compareSellersByRating: muchas valoraciones buenas van antes que una sola perfecta', () => {
+  const muchas = { rating: { avg: 4.8, n: 50 } }
+  const una = { rating: { avg: 5, n: 1 } }
+  const sin = { rating: null }
+  const pocasMalas = { rating: { avg: 1, n: 2 } }
+  const orden = [sin, una, pocasMalas, muchas].sort(compareSellersByRating)
+  assert.deepEqual(orden, [muchas, una, pocasMalas, sin])
+})
+
+test('compareSellersByRating: a igual número de valoraciones gana la nota más alta', () => {
+  const a = { rating: { avg: 4.9, n: 10 } }
+  const b = { rating: { avg: 4.2, n: 10 } }
+  assert.deepEqual([b, a].sort(compareSellersByRating), [a, b])
 })

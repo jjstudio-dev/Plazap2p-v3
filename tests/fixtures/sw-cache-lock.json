@@ -1,12 +1,12 @@
 {
-  "cache": "plazap2p-v3-r58",
+  "cache": "plazap2p-v3-r59",
   "files": {
     "./": "4d6690778c247d0c",
     "./index.html": "4d6690778c247d0c",
     "./publicar.html": "2315b6f69f19b67a",
     "./css/style.css?v=42": "a81b3271ad755421",
     "./css/publicar.css?v=42": "c72c4d028ff566ad",
-    "./js/app.js?v=42": "28580ba0889734e7",
+    "./js/app.js?v=42": "7d9a5673d961e2e8",
     "./js/app-shell.js?v=42": "aed353b01c5f956e",
     "./js/router.js?v=42": "137b6a020caec0aa",
     "./js/publicar-app.js?v=42": "b1f91322f8e3711e",
@@ -32,7 +32,7 @@
     "./js/drafts.js": "661b2e630388d9e2",
     "./js/media-upload.js": "c162a4562652c025",
     "./js/moderation.js": "ecc414d58acec1c7",
-    "./js/trust-signals.js": "e72ef1ab4c3505e5",
+    "./js/trust-signals.js": "0653e69b3e9b8459",
     "./js/profile.js": "08ff59fd34dd968f",
     "./js/zaps.js": "be1a7187824578f9",
     "./js/favorites.js": "0d66c88ab3f7a408",

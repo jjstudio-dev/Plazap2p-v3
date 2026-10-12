@@ -39,3 +39,24 @@ export function trustLevel(count) {
     note: 'Muchos valoradores distintos a lo largo del tiempo — una señal más sólida, aunque nunca una certificación.',
   }
 }
+
+// Nota "prudente" de un vendedor para ordenar el directorio: su media
+// mezclada con PRIOR_COUNT valoraciones imaginarias de nota neutra. Con pocas
+// valoraciones pesa el punto de partida; con muchas, la media real. Así una
+// sola valoración de 5 no queda por delante de cincuenta con media 4,8.
+const PRIOR_COUNT = 5
+const PRIOR_AVG = 3
+
+function prudentScore(rating) {
+  const n = Number(rating?.n) || 0
+  if (n <= 0) return 0
+  const avg = Number(rating?.avg) || 0
+  return (n * avg + PRIOR_COUNT * PRIOR_AVG) / (n + PRIOR_COUNT)
+}
+
+/** Para Array.sort: primero quien tiene mejor nota teniendo en cuenta cuántas valoraciones la respaldan. */
+export function compareSellersByRating(a, b) {
+  const diff = prudentScore(b?.rating) - prudentScore(a?.rating)
+  if (diff !== 0) return diff
+  return (Number(b?.rating?.n) || 0) - (Number(a?.rating?.n) || 0)
+}

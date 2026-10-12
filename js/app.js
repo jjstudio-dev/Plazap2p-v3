@@ -3,7 +3,7 @@ import { RelayPool } from './relay-pool.js';
 import { fetchReputacionBatch } from './reputacion.js';
 import { parseAnuncioHash, anuncioRoute, routeForTab } from './router.js';
 import { isBlocked, blockPubkey, unblockPubkey, listBlocked, exportBlocked, importBlocked } from './moderation.js';
-import { trustLevel } from './trust-signals.js';
+import { trustLevel, compareSellersByRating } from './trust-signals.js';
 import { fetchZapReceipts } from './zaps.js';
 import { isFavorite, toggleFavorite } from './favorites.js';
 import { channelTagFilters, isExpired, expirationTs, isItemExpired, parseCalendarDate, calDate, detectCategory, detectPayment, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts } from './listing-utils.js';
@@ -610,12 +610,7 @@ function renderSellersDirectory() {
     return;
   }
 
-  sellers.sort((a, b) => {
-    const aAvg = a.rating?.avg || 0;
-    const bAvg = b.rating?.avg || 0;
-    if (bAvg !== aAvg) return bAvg - aAvg;
-    return (b.rating?.n || 0) - (a.rating?.n || 0);
-  });
+  sellers.sort(compareSellersByRating);
 
   grid.innerHTML = sellers.map(s => {
     const stars = s.rating ? renderStarDisplay(s.rating.avg, s.rating.n, true) : '<span class="no-rating">Sin valoraciones aún</span>';
