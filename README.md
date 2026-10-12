@@ -177,7 +177,7 @@ plazap2p-v3/
 ├── icons/
 ├── app/                    # APK de PlazaP2P Android v1 + su SHA-256, e historia bot → TWA → app nativa (ver app/README.md)
 └── .github/
-    ├── workflows/app.yml   # CI: sintaxis, JSON, tests, enlaces, versión de assets
+    ├── workflows/app.yml   # CI: sintaxis, JSON, tests, enlaces, versión de assets; publica en Pages solo si todo pasa
     └── ISSUE_TEMPLATE/     # plantillas para contribuciones al JSON
         ├── comunidad.yml
         ├── herramienta.yml

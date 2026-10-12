@@ -1,5 +1,6 @@
-# CI de la app pura (TST-001): sintaxis, JSON y tests.
-# Un push no puede desplegar si falla una prueba crítica.
+# CI de la app pura (TST-001): sintaxis, JSON y tests, y publicación en Pages.
+# Un push no puede desplegar si falla una prueba crítica: el trabajo `deploy`
+# (al final) depende de `checks`. Es el único flujo que publica.
 name: App CI
 
 on:
@@ -110,3 +111,33 @@ jobs:
             }
             console.log('OK versión', v, 'consistente en HTML/app.js/sw.js');
           "
+
+  # Publicación en GitHub Pages. Solo desde main, y solo si `checks` pasó.
+  deploy:
+    needs: checks
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    # Una sola publicación a la vez; la que está en curso no se cancela.
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Upload entire repository
+          path: '.'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
