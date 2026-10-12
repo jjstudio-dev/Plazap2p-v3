@@ -11,7 +11,7 @@
 //      archivo de STATICS y CACHE no)
 // Regla: cada entrada de STATICS es EXACTAMENTE una URL que el navegador
 // pide de verdad. Los imports internos de ES modules van SIN query.
-const CACHE    = 'plazap2p-v3-r64';
+const CACHE    = 'plazap2p-v3-r65';
 const STATICS  = [
   './',
   './index.html',
@@ -19,6 +19,7 @@ const STATICS  = [
   // Assets versionados (los pide el HTML / versioned() con ?v=)
   './css/style.css?v=42',
   './css/publicar.css?v=42',
+  './css/fonts.css?v=42',
   './js/app.js?v=42',
   './js/app-shell.js?v=42',
   './js/router.js?v=42',
@@ -67,6 +68,10 @@ const STATICS  = [
   './js/vendor/nostr-crypto.js',
   './js/vendor/qrcode.js',
   // Estáticos sin versionar
+  './fonts/inter-latin.woff2',
+  './fonts/inter-latin-ext.woff2',
+  './fonts/orbitron-latin.woff2',
+  './fonts/share-tech-mono-latin.woff2',
   './docs/bitcoin-whitepaper-es.pdf',
   './manifest.json',
   './icons/icon-192.svg',

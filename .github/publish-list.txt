@@ -15,5 +15,6 @@ css
 js
 data
 icons
+fonts
 app
 docs/bitcoin-whitepaper-es.pdf

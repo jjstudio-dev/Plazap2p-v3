@@ -11,6 +11,20 @@ const mundo = () => [
 
 export const tests = [
   {
+    name: 'las tipografías se cargan desde la propia web, sin pedir nada a Google',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: { events: mundo() } })
+      for (const html of ['/index.html', '/publicar.html']) {
+        await page.goto(server.origin + html)
+        await page.evaluate(`Promise.all([document.fonts.load('700 16px Orbitron'), document.fonts.load('400 16px Inter'), document.fonts.load('16px "Share Tech Mono"')])`)
+        const cargadas = await page.evaluate(`[...document.fonts].filter(f => f.status === 'loaded').map(f => f.family.replace(/"/g, ''))`)
+        for (const familia of ['Orbitron', 'Inter', 'Share Tech Mono']) t.assert.ok(cargadas.includes(familia), `${html}: ${familia} no cargó (${cargadas})`)
+        t.assert.equal(server.hits.some(h => h.startsWith('/fonts/')), true, 'los archivos salen de /fonts/')
+      }
+    },
+  },
+  {
     name: 'index.html arranca sin errores y pinta lo que entregan los relays',
     async run(t) {
       const server = await t.server()
