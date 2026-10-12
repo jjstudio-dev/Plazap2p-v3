@@ -197,11 +197,13 @@ export async function requestZapInvoice(params, signedZapRequest, amountMsats) {
  * LNURL del receptor (haría falta pedir su lud16 a un servidor que él
  * controla, cada vez que alguien abre su anuncio). Sin eso, firma y formato
  * son válidos pero cualquiera puede publicar un recibo: la interfaz debe
- * presentarlo como "recibos públicos", nunca como pagos verificados.
- * @returns {Promise<{totalMsats:number, receipts:Array}>}
+ * presentarlo como "recibos públicos", nunca como pagos verificados. Por eso
+ * no se devuelve ninguna suma: el propio receptor puede publicar un recibo
+ * con la factura que quiera, y una cifra de dinero daría a entender un pago.
+ * @returns {Promise<{receipts:Array}>}
  */
 export async function fetchZapReceipts(pool, recipientHex, timeoutMs = 6000) {
-  if (!pool || !recipientHex) return { totalMsats: 0, receipts: [] }
+  if (!pool || !recipientHex) return { receipts: [] }
   const valid = []
   const seenIds = new Set()
   await collectUntilEose(pool, [{ kinds: [9735], '#p': [recipientHex], limit: 200 }], {
@@ -214,8 +216,7 @@ export async function fetchZapReceipts(pool, recipientHex, timeoutMs = 6000) {
       if (r) valid.push(r)
     },
   })
-  const totalMsats = valid.reduce((sum, r) => sum + r.amountMsats, 0)
-  return { totalMsats, receipts: valid }
+  return { receipts: valid }
 }
 
 /**

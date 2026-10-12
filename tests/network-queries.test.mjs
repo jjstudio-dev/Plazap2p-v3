@@ -211,7 +211,7 @@ function zapReceipt({ senderSk = SK1, recipient = PK2, providerSk = SK2, amountM
   })
 }
 
-test('fetchZapReceipts: suma recibos de todos los relays, sin duplicar el mismo recibo', async () => {
+test('fetchZapReceipts: junta recibos de todos los relays, sin duplicar el mismo recibo', async () => {
   const pool = fakePool(['wss://rapido', 'wss://lento'])
   const p = fetchZapReceipts(pool, PK2, 2000)
   pool.eose('wss://rapido')
@@ -222,9 +222,11 @@ test('fetchZapReceipts: suma recibos de todos los relays, sin duplicar el mismo 
   pool.emit(r1, 'wss://lento')         // duplicado
   pool.emit(r2, 'wss://lento')
   pool.eose('wss://lento')
-  const { totalMsats, receipts } = await p
-  assert.equal(receipts.length, 2)
-  assert.equal(totalMsats, 2_100_000 + 21_000)
+  const result = await p
+  assert.equal(result.receipts.length, 2)
+  // Nadie comprueba quién firma el recibo: el propio vendedor puede publicar
+  // uno con la factura que quiera. No se ofrece ninguna suma de dinero.
+  assert.equal('totalMsats' in result, false)
 })
 
 test('fetchZapReceipts: descarta recibos que no se pueden contar', async () => {
@@ -239,7 +241,6 @@ test('fetchZapReceipts: descarta recibos que no se pueden contar', async () => {
   // factura sin importe
   pool.emit(zapReceipt({ invoiceHrp: 'lnbc' }), 'wss://a')
   pool.eose('wss://a')
-  const { totalMsats, receipts } = await p
+  const { receipts } = await p
   assert.equal(receipts.length, 0)
-  assert.equal(totalMsats, 0)
 })

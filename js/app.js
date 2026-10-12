@@ -1344,16 +1344,16 @@ window.openModal = function(naddr, options = {}) {
     if (window.location.hash !== hash) window.history.pushState(null, '', hash);
   }
 
-  // ZAP-002: suma de recibos de zap bien formados (countableZapReceipt en
-  // zaps.js). No se presenta como "verificado": sin contrastar el emisor con
-  // el proveedor LNURL del vendedor, un recibo no prueba que hubo pago.
+  // ZAP-002: número de recibos de zap bien formados (countableZapReceipt en
+  // zaps.js). Sin contrastar el emisor con el proveedor LNURL del vendedor, un
+  // recibo no prueba que hubo pago: se enseña cuántos hay, nunca una suma.
   modal.dataset.naddr = naddr;
-  fetchZapReceipts(pool, l.pubkeyHex).then(({ totalMsats, receipts }) => {
+  fetchZapReceipts(pool, l.pubkeyHex).then(({ receipts }) => {
     if (modal.classList.contains('hidden') || modal.dataset.naddr !== naddr) return; // ya se cerró o cambió de anuncio
     const el = document.getElementById('modal-zap-total');
     if (!el) return;
     el.textContent = receipts.length > 0
-      ? `⚡ ${Math.floor(totalMsats / 1000).toLocaleString('es-ES')} sats en zaps públicos (${receipts.length} recibo${receipts.length === 1 ? '' : 's'} con firma válida — el pago en sí no se puede comprobar desde aquí)`
+      ? `⚡ ${receipts.length} recibo${receipts.length === 1 ? '' : 's'} de zap público${receipts.length === 1 ? '' : 's'} (no se puede comprobar desde aquí que se pagaran)`
       : '';
   }).catch(() => { /* sin zaps o relay caído: no mostrar nada, no es un error visible */ });
 };
