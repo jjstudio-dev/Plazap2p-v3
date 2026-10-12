@@ -8,7 +8,7 @@ node tests/browser/run.mjs 06-wallet    # solo los archivos o pruebas cuyo nombr
 node tests/browser/run.mjs --shots dir  # dónde dejar las capturas (por defecto, carpeta temporal)
 ```
 
-Requisitos: Node 22 o superior y Chrome o Edge instalado (o la variable `CHROME_PATH`). Sin dependencias npm. No forma parte del CI (`tests/*.test.mjs` no incluye esta carpeta).
+Requisitos: Node 22 o superior y Chrome o Edge instalado (o la variable `CHROME_PATH`). Sin dependencias npm. En el CI corre como trabajo aparte (`browser` en `.github/workflows/app.yml`), y la web no se publica si falla.
 
 | Archivo | Qué comprueba |
 |---|---|
@@ -31,4 +31,4 @@ Requisitos: Node 22 o superior y Chrome o Edge instalado (o la variable `CHROME_
 
 Cada `*.spec.mjs` exporta `tests = [{ name, async run(t) { … } }]`. Dentro: `t.server()` levanta el repo, `t.open({ scenario })` abre una página, y `page.goto/click/fill/type/waitFor/evaluate` la manejan. `t.appErrors(page)` devuelve las excepciones y errores de consola de la app (sin el ruido de los recursos externos bloqueados).
 
-Un fallo que se pueda reproducir con lógica pura va mejor en `tests/*.test.mjs`: es más rápido y sí corre en el CI.
+Un fallo que se pueda reproducir con lógica pura va mejor en `tests/*.test.mjs`: es más rápido.

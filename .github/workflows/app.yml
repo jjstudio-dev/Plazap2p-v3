@@ -1,6 +1,6 @@
 # CI de la app pura (TST-001): sintaxis, JSON y tests, y publicación en Pages.
 # Un push no puede desplegar si falla una prueba crítica: el trabajo `deploy`
-# (al final) depende de `checks`. Es el único flujo que publica.
+# (al final) depende de `checks` y de `browser`. Es el único flujo que publica.
 name: App CI
 
 on:
@@ -112,9 +112,31 @@ jobs:
             console.log('OK versión', v, 'consistente en HTML/app.js/sw.js');
           "
 
-  # Publicación en GitHub Pages. Solo desde main, y solo si `checks` pasó.
+  # Pruebas en navegador real (tests/browser/README.md): las únicas que cubren
+  # app.js y publicar-app.js. Chrome ya viene en la imagen; no sale a la red.
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # Ubuntu 24.04 impide por defecto el sandbox de Chrome a procesos sin
+      # privilegios; sin esto Chrome no arranca.
+      - name: Permitir el sandbox de Chrome
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Pruebas en navegador
+        run: node tests/browser/run.mjs
+
+  # Publicación en GitHub Pages. Solo desde main, y solo si los dos trabajos de control pasaron.
   deploy:
-    needs: checks
+    needs: [checks, browser]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
