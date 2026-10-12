@@ -136,6 +136,7 @@ export function decodeNpub(npub) {
   const decoded = bech32Decode(npub);
   if (!decoded || decoded.hrp !== 'npub') throw new Error('Not an npub');
   const bytes = convertBits(decoded.data, 5, 8, false);
+  if (bytes.length !== 32) throw new Error('Not an npub');
   return bytes.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
@@ -143,6 +144,7 @@ export function decodeNote(note) {
   const decoded = bech32Decode(note);
   if (!decoded || decoded.hrp !== 'note') throw new Error('Not a note');
   const bytes = convertBits(decoded.data, 5, 8, false);
+  if (bytes.length !== 32) throw new Error('Not a note');
   return bytes.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
