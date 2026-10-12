@@ -224,6 +224,19 @@ export const tests = [
     },
   },
   {
+    name: 'al abrir un anuncio se piden las valoraciones de su autor, sin pasar por «Vendedores»',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: { events: [listing(), historial(SK2), rating({ sk: SK2, stars: 4 })] } })
+      await page.goto(server.origin + '/index.html')
+      await page.waitFor(`document.querySelectorAll('#channel-mercado .listing-card:not(.skeleton)').length === 1`)
+      await page.click('#channel-mercado .listing-card')
+      await page.waitFor(`document.querySelector('#listing-modal .star-count-full')`, { timeout: 9000, label: 'estrellas del vendedor en la ficha' })
+      t.assert.match(await page.text('#listing-modal .star-count-full'), /^4\.0 · 1 valoración$/)
+      t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
+  {
     name: 'un valorador no puede inflar ni romper la reputación con etiquetas mal formadas',
     async run(t) {
       const server = await t.server()
@@ -267,7 +280,7 @@ export const tests = [
       await page.evaluate(`window.openReputacionModal(${JSON.stringify(PK1)})`)
       await page.waitFor(`document.querySelector('#listing-modal .star-count-full')`, { timeout: 9000 })
       t.assert.match(await page.text('#listing-modal .star-count-full'), /^2.0 · 1 valoración$/)
-      t.assert.match(await page.text('#rep-excluded-note'), /^2 valoraciones de cuentas con menos de 30 días .* no se cuentan.$/)
+      t.assert.match(await page.text('#rep-excluded-note'), /^2 valoraciones de cuentas con menos de 30 días .* no se cuentan\. Es un filtro orientativo/)
       const comentarios = await page.evaluate(`[...document.querySelectorAll('#listing-modal .modal-notice')].map(e => e.innerText)`)
       t.assert.ok(comentarios.some(c => c.includes('Tardó mucho')) && !comentarios.some(c => c.includes('Genial')), 'solo se muestran los comentarios que cuentan')
       t.assert.ok(PK2)

@@ -1270,7 +1270,7 @@ window.openModal = function(naddr, options = {}) {
   // tag 'a' opcional, ignorándolo si llega roto.
   const valorarUrl = `publicar.html?valorar=${l.npub}&ref=${encodeURIComponent(l.naddr)}`;
 
-  const ratingBlock = rating
+  const ratingBlockFor = rating => rating
     ? `<div class="modal-rating-section">
         <div class="modal-rating-header">Reputación del vendedor</div>
         ${renderStarDisplay(rating.avg, rating.n, false)}
@@ -1281,6 +1281,7 @@ window.openModal = function(naddr, options = {}) {
         <span class="no-rating-text">Sin valoraciones aún</span>
         <a href="${esc(valorarUrl)}" class="btn-ghost btn-sm modal-rate-btn">⭐ Ser el primero en valorar</a>
       </div>`;
+  const ratingBlock = ratingBlockFor(rating);
 
   const modalFavActive = isFavorite(l.naddr);
   modal.innerHTML = `
@@ -1298,7 +1299,7 @@ window.openModal = function(naddr, options = {}) {
       </div>
       ${l.price ? `<div class="modal-meta"><span><strong>Precio:</strong> ${esc(l.price)} ${esc(l.currency || '')}</span>
         <button class="card-share-btn" onclick="closeModal();switchTab('conversor')" title="Convertir a sats/otras monedas">🧮 Convertir</button></div>` : ''}
-      ${ratingBlock}
+      <div id="modal-rating-slot">${ratingBlock}</div>
       <div class="modal-notice">
         <span>🔒</span>
         <span>La información completa y el contacto están en la red Nostr. La interacción ocurre fuera de esta interfaz.</span>
@@ -1343,6 +1344,22 @@ window.openModal = function(naddr, options = {}) {
   // zaps.js). Sin contrastar el emisor con el proveedor LNURL del vendedor, un
   // recibo no prueba que hubo pago: se enseña cuántos hay, nunca una suma.
   modal.dataset.naddr = naddr;
+
+  // Valoraciones en vivo del autor: sin esto la ficha solo enseñaba lo que ya
+  // hubiera en memoria, y decía "Sin valoraciones aún" de un vendedor que en
+  // la pestaña «Vendedores» tenía veinte.
+  if (pool && !(l.pubkeyHex in liveRatings)) {
+    fetchReputacionBatch(pool, [l.pubkeyHex]).then(results => {
+      const r = results[l.pubkeyHex];
+      liveRatings[l.pubkeyHex] = (r && r.count > 0)
+        ? { avg: r.avg, n: r.count, aspects: r.aspects, comments: r.comments }
+        : null;
+      if (modal.classList.contains('hidden') || modal.dataset.naddr !== naddr) return;
+      const slot = document.getElementById('modal-rating-slot');
+      if (slot) slot.innerHTML = ratingBlockFor(getSellerRating(l.pubkeyHex));
+    }).catch(() => { /* relay caído: se queda lo que ya se enseñaba */ });
+  }
+
   fetchZapReceipts(pool, l.pubkeyHex).then(({ receipts }) => {
     if (modal.classList.contains('hidden') || modal.dataset.naddr !== naddr) return; // ya se cerró o cambió de anuncio
     const el = document.getElementById('modal-zap-total');
