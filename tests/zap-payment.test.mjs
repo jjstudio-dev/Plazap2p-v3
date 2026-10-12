@@ -25,7 +25,7 @@ test('verifyZapInvoice: acepta solo el importe exacto, con importe y sin caducar
 })
 
 /** Sustituye globalThis.fetch por un servidor LNURL simulado que devuelve `invoice`. */
-function withLnurlServer(t, invoice) {
+function withLnurlServer(t, invoice, { allowsNostr = true } = {}) {
   const original = globalThis.fetch
   t.after(() => { globalThis.fetch = original })
   const calls = []
@@ -33,7 +33,7 @@ function withLnurlServer(t, invoice) {
     const u = String(url)
     calls.push(u)
     const json = u.includes('/.well-known/lnurlp/')
-      ? { tag: 'payRequest', callback: 'https://ln.example/cb', minSendable: 1000, maxSendable: 10_000_000_000, allowsNostr: true, nostrPubkey: PK2 }
+      ? { tag: 'payRequest', callback: 'https://ln.example/cb', minSendable: 1000, maxSendable: 10_000_000_000, ...(allowsNostr ? { allowsNostr: true, nostrPubkey: PK2 } : {}) }
       : { pr: invoice }
     return { ok: true, status: 200, json: async () => json }
   }
@@ -77,6 +77,19 @@ test('sendZap: con la factura correcta paga exactamente esa factura', async (t) 
   const cb = new URL(calls[1])
   assert.equal(cb.searchParams.get('amount'), '21000')
   assert.ok(cb.searchParams.get('nostr'), 'el zap request firmado viaja en el callback')
+})
+
+test('sendZap: si el servidor no admite zaps, no se pide firma ni se paga', async (t) => {
+  const calls = withLnurlServer(t, buildInvoice({ hrp: 'lnbc210n' }), { allowsNostr: false })
+  let signed = 0
+  let paid = 0
+  await assert.rejects(
+    sendZap(zapArgs, PK1, async u => { signed++; return sign(u) }, null, async () => { paid++; return { preimage: 'x' } }),
+    /no admite zaps/,
+  )
+  assert.equal(signed, 0, 'no se pide una firma que no serviría para nada')
+  assert.equal(paid, 0, 'no se paga como si fuera un zap')
+  assert.equal(calls.length, 1, 'tampoco se pide la factura')
 })
 
 test('lnAddressToInvoice: rechaza una factura que no coincide con el importe pedido', async (t) => {

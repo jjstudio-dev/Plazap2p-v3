@@ -229,6 +229,11 @@ export async function sendZap({ recipientHex, recipientLud16, amountMsats, relay
   if (amountMsats < params.minSendable || amountMsats > params.maxSendable) {
     throw new Error(`importe fuera de rango (${Math.ceil(params.minSendable / 1000)}-${Math.floor(params.maxSendable / 1000)} sats)`)
   }
+  // Sin soporte de zaps el servidor cobraría un pago normal, sin recibo público:
+  // se avisa antes de pedir una firma que no serviría y de mover dinero.
+  if (!params.allowsNostr) {
+    throw new Error('el servidor de esta lightning address no admite zaps: no habría recibo público. Puedes pagarle desde tu wallet como un pago normal.')
+  }
   const unsigned = buildZapRequest({ recipientHex, amountMsats, relays, comment, eventRef, addressableRef }, senderPubHex)
   const signed = await sign(unsigned)
   const bolt11 = await requestZapInvoice(params, signed, amountMsats)
