@@ -108,7 +108,8 @@ export function detectPayment(tTags) {
 
 /**
  * Texto de vista previa (resumen de un anuncio, nota del feed): sin teléfonos,
- * correos ni enlaces, y recortado a 200 caracteres. El contacto completo está
+ * correos, enlaces (con o sin https), usuarios @ ni direcciones nostr:, y
+ * recortado a 200 caracteres. El contacto completo está
  * en el evento Nostr; aquí solo se evita que la tarjeta sirva de escaparate
  * para sacar la conversación a un canal de phishing.
  *
@@ -123,6 +124,12 @@ export function maskContacts(text) {
     .replace(/\(?\+?\d[\d\s().-]{6,}\d/g, (m, offset) => looksLikePhone(m, src.slice(offset + m.length)) ? '···' : m)
     .replace(/[\w.+-]+@[\w.-]+\.\w+/g, '···')
     .replace(/https?:\/\/\S+/g, '[enlace]')
+    .replace(/nostr:\S+/gi, '[enlace]')
+    .replace(/www\.\S+/gi, '[enlace]')
+    // dominio sin https seguido de una ruta: t.me/usuario, tienda.example/pago
+    .replace(/(?:[a-z0-9-]+\.)+[a-z]{2,}\/\S+/gi, '[enlace]')
+    // @usuario (Telegram, X…): la arroba pegada a un nombre, no una suelta
+    .replace(/(^|\s)@\w{3,}/g, '$1···')
     .slice(0, 200);
 }
 

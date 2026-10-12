@@ -192,3 +192,17 @@ test('reviveCachedItem: acepta la forma exacta de cada kind y rechaza lo demás'
   ]
   for (const item of malos) assert.equal(reviveCachedItem(item), null, JSON.stringify(item)?.slice(0, 90))
 })
+
+test('maskContacts: tampoco deja pasar contactos sin https, usuarios ni direcciones nostr', () => {
+  assert.equal(maskContacts('Háblame en t.me/estafa_bot ya'), 'Háblame en [enlace] ya')
+  assert.equal(maskContacts('Web: www.tienda-falsa.example'), 'Web: [enlace]')
+  assert.equal(maskContacts('Entra en tienda-falsa.example/pago?x=1'), 'Entra en [enlace]')
+  assert.equal(maskContacts('Telegram @vendedor_btc o Signal'), 'Telegram ··· o Signal')
+  assert.equal(maskContacts('Perfil nostr:npub1qqqsyqcyq5rqwzqfpg9scrgwpugpzysn y más'), 'Perfil [enlace] y más')
+})
+
+test('maskContacts: los puntos y arrobas normales de un texto no se tocan (regresión)', () => {
+  for (const texto of ['Vendo p.ej. una radio. Funciona.', 'Cambio 2 @ 3 piezas', 'Versión 2.0 del firmware', 'Acepto BTC/EUR y sats/kWh']) {
+    assert.equal(maskContacts(texto), texto)
+  }
+})

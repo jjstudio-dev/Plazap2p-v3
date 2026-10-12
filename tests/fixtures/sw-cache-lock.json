@@ -1,5 +1,5 @@
 {
-  "cache": "plazap2p-v3-r55",
+  "cache": "plazap2p-v3-r56",
   "files": {
     "./": "0dfd19ea9d69ddd0",
     "./index.html": "0dfd19ea9d69ddd0",
@@ -36,7 +36,7 @@
     "./js/profile.js": "08ff59fd34dd968f",
     "./js/zaps.js": "be1a7187824578f9",
     "./js/favorites.js": "0d66c88ab3f7a408",
-    "./js/listing-utils.js": "2a2f38a63614dcc3",
+    "./js/listing-utils.js": "a39a742b735ec369",
     "./js/btc-rates.js": "cc9e87dfcc1137ab",
     "./js/reputacion.js": "b44efc6af4ef52a4",
     "./js/nostr.js": "2c16959e191b75d8",
