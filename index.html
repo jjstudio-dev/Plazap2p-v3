@@ -1500,9 +1500,22 @@
   initRouter();
   initMiniConverter();
   initBtcStats();
-  initPriceChart();
-  initConverter();
-  initBtcMarket();
+
+  // La gráfica, los datos de mercado y el conversor grande piden datos a
+  // servicios ajenos: no arrancan hasta que se abre su pestaña.
+  function whenTabOpens(panelId, start) {
+    const panel = document.getElementById(panelId);
+    if (!panel) return;
+    if (panel.classList.contains('active')) { start(); return; }
+    const observer = new MutationObserver(() => {
+      if (!panel.classList.contains('active')) return;
+      observer.disconnect();
+      start();
+    });
+    observer.observe(panel, { attributes: true, attributeFilter: ['class'] });
+  }
+  whenTabOpens('tab-bitcoin', () => { initPriceChart(); initBtcMarket(); });
+  whenTabOpens('tab-conversor', () => initConverter());
 
   // Scroll-to-top visibility
   const scrollTopBtn = document.getElementById('btn-scroll-top');

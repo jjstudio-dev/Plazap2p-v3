@@ -173,6 +173,23 @@ export const tests = [
     },
   },
   {
+    name: 'la pestaña Bitcoin y el conversor grande no piden nada a servicios ajenos hasta que se abren',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: { fetch: rutas(validas()) } })
+      await page.goto(server.origin + '/index.html')
+      await page.waitFor(`document.getElementById('relay-status-list').children.length > 0`)
+      await new Promise(r => setTimeout(r, 1500))
+      const externas = () => page.evaluate(`window.__fetchLog.filter(f => !f.url.startsWith(location.origin)).map(f => f.url)`)
+      const alCargar = await externas()
+      t.assert.ok(alCargar.length > 0 && alCargar.length <= 8, `peticiones externas al cargar la portada: ${alCargar.length}`)
+      t.assert.equal(alCargar.filter(u => /market_chart|coins\/bitcoin\?|fng|\/global/.test(u)).length, 0, 'gráfica y datos de mercado no arrancan solos')
+      await page.click('.nav-tab[data-tab="bitcoin"]')
+      await page.waitFor(`window.__fetchLog.some(f => /market_chart/.test(f.url))`, { label: 'la gráfica se pide al abrir la pestaña' })
+      t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
+  {
     name: 'el conversor de cabecera se vacía al elegir una moneda sin tasa',
     async run(t) {
       const server = await t.server()
