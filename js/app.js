@@ -668,7 +668,7 @@ window.openReputacionModal = async function(hex) {
   // para que la cifra no parezca arbitraria frente a otros clientes Nostr.
   const excluded = Number(rep?.excludedRecent) || 0;
   const excludedHtml = excluded > 0
-    ? `<p class="no-rating-text" id="rep-excluded-note">${excluded} ${plural(excluded, 'valoración', 'valoraciones')} de cuentas con menos de 30 días de actividad en Nostr no se cuenta${excluded === 1 ? '' : 'n'}.</p>`
+    ? `<p class="no-rating-text" id="rep-excluded-note">${excluded} ${plural(excluded, 'valoración', 'valoraciones')} de cuentas con menos de 30 días de actividad en Nostr no se cuenta${excluded === 1 ? '' : 'n'}. Es un filtro orientativo: esa fecha la declara cada cuenta y no se puede comprobar.</p>`
     : '';
 
   const staticR = ratingsIndex[hex];

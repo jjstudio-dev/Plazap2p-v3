@@ -57,3 +57,12 @@ test('el README no anuncia como disponible lo que ninguna página carga', () => 
       'backup.js no lo carga ninguna página: el README no puede listarlo como función disponible')
   }
 })
+
+test('la web no presenta el filtro de 30 días como una protección de la reputación', () => {
+  // La fecha de un evento Nostr la escribe quien lo firma: una clave creada hoy
+  // pasa el filtro con una nota de fecha atrasada (auditoría 2026-10, W4-01).
+  const visible = index.replace(/<!--[\s\S]*?-->/g, '')
+  assert.doesNotMatch(visible, /solo cuenta en la reputación/i)
+  const nota = read('js/app.js').split('\n').find(l => l.includes('rep-excluded-note')) ?? ''
+  assert.match(nota, /orientativo/, 'el aviso de valoraciones excluidas debe decir que el filtro es orientativo')
+})
