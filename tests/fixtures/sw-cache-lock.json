@@ -1,5 +1,5 @@
 {
-  "cache": "plazap2p-v3-r56",
+  "cache": "plazap2p-v3-r57",
   "files": {
     "./": "0dfd19ea9d69ddd0",
     "./index.html": "0dfd19ea9d69ddd0",
@@ -14,7 +14,7 @@
     "./js/btc-chart.js?v=42": "6e8e9d2983e7dae4",
     "./js/btc-market.js?v=42": "ab60bb4766e56d7f",
     "./js/converter.js?v=42": "52719cad69cd475a",
-    "./js/mini-converter.js?v=42": "28de5942bed26bc6",
+    "./js/mini-converter.js?v=42": "482126a2fdde1709",
     "./data/config.json?v=42": "57d5c10afc4be37f",
     "./data/comunidades.json?v=42": "9c5af14ded6a0c57",
     "./data/herramientas.json?v=42": "5bb7cf3eede3ccb3",

@@ -173,6 +173,20 @@ export const tests = [
     },
   },
   {
+    name: 'el conversor de cabecera se vacía al elegir una moneda sin tasa',
+    async run(t) {
+      const server = await t.server()
+      const r = validas()
+      r.yadio = { BTC: { CNY: 470000 } }                 // sin tasa para el oro
+      const page = await t.open({ scenario: { fetch: rutas(r) } })
+      await page.goto(server.origin + '/index.html')
+      await page.fill('#hc-left', '1')
+      await page.waitFor(`Number(document.getElementById('hc-right').value) > 1000`, { label: 'importe en EUR' })
+      await page.evaluate(`(() => { const s = document.getElementById('hc-right-cur'); s.value = 'XAU'; s.dispatchEvent(new Event('change')) })()`)
+      t.assert.equal(await page.evaluate(`document.getElementById('hc-right').value`), '', 'no queda la cifra en euros con la etiqueta del oro')
+    },
+  },
+  {
     name: 'tasas negativas, nulas o absurdas no se usan para convertir',
     async run(t) {
       const server = await t.server()

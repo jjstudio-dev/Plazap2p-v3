@@ -86,7 +86,9 @@ function recalcFromLeft() {
   if (rate && btc > 0) {
     const decimals = cur === 'XAU' ? 6 : 2;
     right.value = (btc * rate).toFixed(decimals);
-  } else if (btc === 0) {
+  } else {
+    // Sin importe o sin tasa para esa moneda: vacío, nunca la cifra de la
+    // moneda anterior con la etiqueta de la nueva.
     right.value = '';
   }
   updatePriceBadge();
