@@ -61,6 +61,52 @@ export function matchesFilters(ev, filters) {
   });
 }
 
+/**
+ * Consulta puntual: entrega eventos a `onEvent` hasta que TODOS los relays
+ * de los que cabe esperar respuesta han enviado EOSE, o vence el timeout.
+ *
+ * Terminar con el PRIMER EOSE (lo que hacían reputacion.js, zaps.js y
+ * profile.js) da resultados falsos: el relay más rápido puede no tener el
+ * dato — p.ej. un relay que solo guarda perfiles responde EOSE vacío a una
+ * consulta de valoraciones antes que nadie.
+ *
+ * @returns {Promise<{complete:boolean, answered:number}>} complete=false si se
+ *   cortó por timeout (el resultado puede ser parcial: no cachearlo como
+ *   definitivo); answered = cuántos relays llegaron a contestar (0 = no se
+ *   sabe nada: quien llama no debe tomar el vacío por una respuesta).
+ */
+export function collectUntilEose(pool, filters, { onEvent, timeoutMs = 6000, prefix = 'q' } = {}) {
+  return new Promise(resolve => {
+    const subId = `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+    const eoseFrom = new Set();
+    let settled = false;
+    let timer = null;
+    let tick = null;
+
+    const finish = (complete) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      clearInterval(tick);
+      pool.unsubscribe(subId);
+      resolve({ complete, answered: eoseFrom.size });
+    };
+    // Pools sin expectedCount (dobles de test mínimos): se espera un solo EOSE.
+    const expected = () => Number.isInteger(pool.expectedCount) ? pool.expectedCount : 1;
+    const check = () => { if (eoseFrom.size > 0 && eoseFrom.size >= expected()) finish(true); };
+
+    timer = setTimeout(() => finish(false), timeoutMs);
+    // Un relay que se cae a mitad de consulta reduce expectedCount sin emitir
+    // nada: re-evaluar periódicamente evita esperar al timeout completo.
+    tick = setInterval(check, 300);
+
+    pool.subscribe(subId, filters, {
+      onEvent: (ev, url) => { if (!settled) onEvent?.(ev, url); },
+      onEose: (url) => { eoseFrom.add(url ?? `anon-${eoseFrom.size}`); check(); },
+    });
+  });
+}
+
 export class RelayPool {
   #relays = {};
   #subs = {};
@@ -119,6 +165,14 @@ export class RelayPool {
           sub.onEvent?.(payload, url);
         }
         else if (type === 'EOSE') this.#subs[subId]?.onEose?.(url);
+        // CLOSED: el relay rechaza la suscripción (auth-required, rate-limited…)
+        // y no va a mandar EOSE. Para quien espera respuestas equivale a "este
+        // relay ya ha contestado": sin esto, un solo relay que exija
+        // autenticación hacía agotar el timeout completo en cada consulta.
+        else if (type === 'CLOSED') {
+          console.warn(`[relay] ${url} cerró la suscripción ${subId}:`, typeof payload === 'string' ? payload : '');
+          this.#subs[subId]?.onEose?.(url);
+        }
         else if (type === 'OK') {
           const [, eventId, accepted, message] = msg;
           this.#publishCallbacks.get(eventId)?.(url, !!accepted, message || '');
@@ -167,6 +221,17 @@ export class RelayPool {
 
   get connectedCount() {
     return Object.values(this.#relays).filter(r => r.status === 'connected').length;
+  }
+
+  /**
+   * Relays de los que aún cabe esperar un EOSE: los conectados más los que
+   * están en su PRIMER intento de conexión. Un relay caído (ya falló al menos
+   * una vez) no cuenta — si no, un solo relay muerto obligaría a agotar el
+   * timeout en cada consulta.
+   */
+  get expectedCount() {
+    return Object.values(this.#relays)
+      .filter(r => r.status === 'connected' || (r.status === 'connecting' && r.failCount === 0)).length;
   }
 
   publish(event) {

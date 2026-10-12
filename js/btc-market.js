@@ -1,6 +1,8 @@
 // btc-market.js — Fear & Greed, market cap, volumen, supply, ATH, halving, Lightning, hashrate
 // Fuentes: alternative.me · CoinGecko · mempool.space
 
+import { finiteNumber, onlyNumbers } from './btc-rates.js';
+
 const FNG_URL    = 'https://api.alternative.me/fng/?limit=1';
 const CGK_URL    = 'https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&market_data=true&community_data=true&developer_data=false';
 const GLOBAL_URL = 'https://api.coingecko.com/api/v3/global';
@@ -28,15 +30,23 @@ async function fetchAndRender() {
     fetchJson(`${MEMPOOL}/v1/difficulty-adjustment`,       6000),
   ]);
 
-  const fngData   = fng.status      === 'fulfilled' ? fng.value?.data?.[0]                       : null;
-  const fallback  = prices.status   === 'fulfilled' ? marketFromMempoolPrices(prices.value)       : null;
-  const mkt       = cgk.status      === 'fulfilled' ? cgk.value?.market_data || fallback          : fallback;
-  const sentUp    = cgk.status      === 'fulfilled' ? cgk.value?.sentiment_votes_up_percentage    : null;
-  const dominance = glb.status      === 'fulfilled' ? glb.value?.data?.market_cap_percentage?.btc : null;
-  const blockNum  = blockH.status   === 'fulfilled' ? blockH.value                                : null;
-  const ln        = lightning.status=== 'fulfilled' ? lightning.value?.latest                     : null;
-  const hrData    = hashrate.status === 'fulfilled' ? hashrate.value                              : null;
-  const diff      = diffAdj.status  === 'fulfilled' ? diffAdj.value                               : null;
+  // Todo lo que llega de estas APIs acaba dentro de innerHTML. Se deja pasar
+  // SOLO lo numérico (onlyNumbers/finiteNumber): un texto donde se espera un
+  // número llegaba intacto a la página a través de .toLocaleString() — con la
+  // altura de bloque como texto, una API comprometida ejecutaba código aquí.
+  const ok = r => r.status === 'fulfilled' ? r.value : null;
+  const obj = v => (v && typeof v === 'object' && !Array.isArray(v)) ? v : null;
+
+  const fngData   = obj(ok(fng)?.data?.[0]);
+  const fallback  = marketFromMempoolPrices(onlyNumbers(obj(ok(prices))));
+  const rawMkt    = obj(obj(ok(cgk))?.market_data);
+  const mkt       = rawMkt ? marketData(rawMkt) : fallback;
+  const sentUp    = finiteNumber(obj(ok(cgk))?.sentiment_votes_up_percentage);
+  const dominance = finiteNumber(ok(glb)?.data?.market_cap_percentage?.btc);
+  const blockNum  = finiteNumber(ok(blockH));
+  const ln        = onlyNumbers(obj(obj(ok(lightning))?.latest));
+  const hrData    = hashrateData(obj(ok(hashrate)));
+  const diff      = onlyNumbers(obj(ok(diffAdj)));
 
   // Una API devolviendo un tipo inesperado (p.ej. un campo numérico como
   // string) puede hacer que un .toFixed() interno lance — sin este try/catch
@@ -58,6 +68,24 @@ async function fetchJson(url, timeoutMs) {
   const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
   if (!res.ok) throw new Error(`${url} ${res.status}`);
   return res.json();
+}
+
+/** market_data de CoinGecko reducido a números, más la fecha del máximo histórico (único texto que se usa). */
+function marketData(raw) {
+  const mkt = onlyNumbers(raw);
+  const athDate = raw.ath_date?.eur;
+  mkt.ath_date = { eur: (typeof athDate === 'string' && !Number.isNaN(Date.parse(athDate))) ? athDate : null };
+  return mkt;
+}
+
+/** Serie de hashrate: solo puntos con valores numéricos. */
+function hashrateData(raw) {
+  if (!raw) return null;
+  const clean = onlyNumbers(raw);
+  clean.hashrates = Array.isArray(clean.hashrates)
+    ? clean.hashrates.filter(h => h && h.avgHashrate != null && h.timestamp != null) : [];
+  clean.difficulty = Array.isArray(clean.difficulty) ? clean.difficulty : [];
+  return clean;
 }
 
 function marketFromMempoolPrices(prices) {

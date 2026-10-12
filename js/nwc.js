@@ -83,17 +83,36 @@ export function isValidNwcResponse(ev, { reqId, clientPubkey, walletPubkey }) {
 // El relay de la wallet es independiente del pool de la app. Una conexión
 // corta por petición evita estado colgante (patrón del bot en CF Workers).
 
+// Los rechazos de nwcRequest llevan:
+//   .code  TIMEOUT | CONNECTION_LOST | RELAY_UNREACHABLE | RELAY_REJECTED |
+//          WALLET_ERROR | UNREADABLE | INTERNAL
+//   .sent  true si la petición YA había salido hacia el relay. Para
+//          pay_invoice esa es la frontera: antes de salir no hubo pago; después,
+//          y sin una respuesta explícita de la wallet, el resultado se
+//          DESCONOCE (ver payInvoiceSafely).
 function nwcRequest(conn, method, params = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
   return new Promise((resolve, reject) => {
     let ws
     let settled = false
+    let sent = false
     const secretBytes = hexToBytes(conn.secret)
     const clientPubkey = getPublicKey(secretBytes)
     const useNip44 = conn.encryption === 'nip44_v2'
 
-    const fail = (msg) => { if (!settled) { settled = true; try { ws?.close() } catch {} ; reject(new Error(msg)) } }
-    const done = (val) => { if (!settled) { settled = true; try { ws?.close() } catch {} ; resolve(val) } }
-    const timer = setTimeout(() => fail('wallet no alcanzable (timeout) — fondos intactos'), timeoutMs)
+    const fail = (msg, code = 'INTERNAL') => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      try { ws?.close() } catch {}
+      reject(Object.assign(new Error(msg), { code, sent }))
+    }
+    const done = (val) => { if (!settled) { settled = true; clearTimeout(timer); try { ws?.close() } catch {} ; resolve(val) } }
+    // "Fondos intactos" solo es verdad si la operación no mueve dinero: un
+    // pay_invoice sin respuesta puede haberse pagado igualmente.
+    const timeoutMsg = method === 'pay_invoice'
+      ? 'la wallet no respondió (timeout)'
+      : 'wallet no alcanzable (timeout) — fondos intactos'
+    const timer = setTimeout(() => fail(timeoutMsg, 'TIMEOUT'), timeoutMs)
 
     const encrypt = async (plaintext) => {
       if (useNip44) return nip44.encrypt(plaintext, nip44.getConversationKey(secretBytes, conn.walletPubkey))
@@ -123,25 +142,28 @@ function nwcRequest(conn, method, params = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
           tags,
           content,
         }, secretBytes)
-      } catch (e) { clearTimeout(timer); fail('error cifrando la petición: ' + e.message); return }
+      } catch (e) { fail('error cifrando la petición: ' + e.message); return }
 
-      try { ws = new WebSocket(conn.relay) } catch (e) { clearTimeout(timer); fail('relay de wallet inválido'); return }
+      try { ws = new WebSocket(conn.relay) } catch (e) { fail('relay de wallet inválido', 'RELAY_UNREACHABLE'); return }
 
       const subId = 'nwc-' + reqEvent.id.slice(0, 8)
       ws.onopen = () => {
         try {
           ws.send(JSON.stringify(['REQ', subId, { kinds: [23195], '#e': [reqEvent.id], '#p': [clientPubkey] }]))
           ws.send(JSON.stringify(['EVENT', reqEvent]))
-        } catch (e) { clearTimeout(timer); fail('error enviando al relay: ' + e.message) }
+          sent = true
+        } catch (e) { fail('error enviando al relay: ' + e.message, 'RELAY_UNREACHABLE') }
       }
-      ws.onerror = () => { clearTimeout(timer); fail('no se pudo conectar con el relay de la wallet') }
+      ws.onerror = () => fail('no se pudo conectar con el relay de la wallet', 'RELAY_UNREACHABLE')
+      // El relay corta sin que haya llegado respuesta: no esperar al timeout.
+      ws.onclose = () => fail('se perdió la conexión con el relay de la wallet', 'CONNECTION_LOST')
       ws.onmessage = async ({ data }) => {
         let msg
         try { msg = JSON.parse(data) } catch { return }
         if (!Array.isArray(msg)) return
         if (msg[0] === 'OK' && msg[1] === reqEvent.id && msg[2] === false) {
-          clearTimeout(timer)
-          fail('el relay rechazó la petición: ' + (msg[3] || ''))
+          // El relay no aceptó la petición: la wallet nunca la recibió.
+          fail('el relay rechazó la petición: ' + (msg[3] || ''), 'RELAY_REJECTED')
           return
         }
         if (msg[0] !== 'EVENT' || msg[1] !== subId) return
@@ -153,14 +175,13 @@ function nwcRequest(conn, method, params = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
           // result_type debe corresponder al método pedido. Algunas wallets lo
           // omiten → solo rechazar (seguir esperando) si está presente y difiere.
           if (payload.result_type && payload.result_type !== method) return
-          clearTimeout(timer)
           if (payload.error) {
             const code = payload.error.code || 'OTHER'
-            fail(ERROR_ES[code] || payload.error.message || ERROR_ES.OTHER)
+            fail(ERROR_ES[code] || payload.error.message || ERROR_ES.OTHER, 'WALLET_ERROR')
           } else {
             done(payload.result)
           }
-        } catch (e) { clearTimeout(timer); fail('respuesta ilegible de la wallet: ' + e.message) }
+        } catch (e) { fail('respuesta ilegible de la wallet: ' + e.message, 'UNREADABLE') }
       }
     })()
   })
@@ -218,6 +239,42 @@ export const payInvoice   = (conn, bolt11) =>
 export const lookupInvoice = (conn, { paymentHash = null, invoice = null } = {}) =>
   nwcRequest(conn, 'lookup_invoice', paymentHash ? { payment_hash: paymentHash } : { invoice })
 
+export const PAYMENT_STATE_UNKNOWN_MSG =
+  '⚠️ No se pudo confirmar el pago — VERIFICA EN TU WALLET antes de reintentar (riesgo de doble pago)'
+
+/**
+ * pay_invoice con el resultado dicho con verdad. Tres desenlaces:
+ *   - pagado          → { preimage, … } (o { recovered:true } si la respuesta
+ *                       se perdió pero lookup_invoice confirma el pago)
+ *   - NO pagado       → lanza el error de la wallet / del relay (se puede reintentar)
+ *   - no se sabe      → lanza un Error con code 'PAYMENT_STATE_UNKNOWN'
+ *
+ * El tercero es el que importa: si la petición salió y la respuesta no llegó
+ * (timeout, conexión cortada, respuesta ilegible), decir "fondos intactos"
+ * invita a repetir el pago. En un zap cada intento pide una factura NUEVA,
+ * así que repetir es pagar dos veces.
+ */
+export async function payInvoiceSafely(conn, bolt11) {
+  try {
+    return await payInvoice(conn, bolt11)
+  } catch (e) {
+    const explicitNo = e.code === 'WALLET_ERROR' || e.code === 'RELAY_REJECTED'
+    if (explicitNo || !e.sent) throw e   // la wallet dijo que no, o la petición no llegó a salir
+
+    let paymentHash = null
+    try { paymentHash = decodeBolt11(bolt11).paymentHash } catch { /* sin hash no se puede consultar */ }
+    if (paymentHash) {
+      try {
+        const st = await lookupInvoice(conn, { paymentHash })
+        if (st?.preimage || st?.settled_at || st?.state === 'settled') {
+          return { ...st, preimage: st.preimage ?? null, recovered: true }
+        }
+      } catch { /* la consulta tampoco respondió: sigue sin saberse */ }
+    }
+    throw Object.assign(new Error(PAYMENT_STATE_UNKNOWN_MSG), { code: 'PAYMENT_STATE_UNKNOWN', cause: e })
+  }
+}
+
 // ── Decodificador BOLT11 mínimo (W4) ─────────────────────────────────────────
 // Solo extrae lo necesario para la pantalla de confirmación: importe,
 // descripción, timestamp y expiración. Sin verificación de firma (la hace la
@@ -247,7 +304,7 @@ function b32HrpExpand(hrp) {
 
 /**
  * Decodifica una factura BOLT11 (solo campos de UI).
- * @returns {{ amountSats:number|null, description:string, timestamp:number, expiry:number, expired:boolean, paymentHash:string|null }}
+ * @returns {{ amountSats:number|null, amountMsats:number|null, description:string, timestamp:number, expiry:number, expired:boolean, paymentHash:string|null }}
  * @throws si el formato o el checksum no son válidos
  */
 export function decodeBolt11(invoice) {
@@ -267,15 +324,24 @@ export function decodeBolt11(invoice) {
   const m = /^ln(bc|tb|tbs|bcrt)(\d*)([munp]?)$/.exec(hrp)
   if (!m) throw new Error('no es una factura Lightning')
 
-  // Importe: hrp → sats (m=milli, u=micro, n=nano, p=pico de BTC)
+  // Importe: hrp → msats exactos (m=milli, u=micro, n=nano, p=pico de BTC).
+  // 1 BTC = 1e11 msat; se opera en enteros para poder comparar con el
+  // importe solicitado sin errores de coma flotante.
+  let amountMsats = null
   let amountSats = null
   if (m[2]) {
-    const mult = { '': 1, m: 1e-3, u: 1e-6, n: 1e-9, p: 1e-12 }[m[3] ?? '']
-    amountSats = Math.round(Number(m[2]) * mult * 1e8)
+    const msatPerUnit = { '': 1e11, m: 1e8, u: 1e5, n: 1e2, p: 0.1 }[m[3] ?? '']
+    amountMsats = m[3] === 'p' ? Number(m[2]) / 10 : Number(m[2]) * msatPerUnit
+    amountSats = Math.round(amountMsats / 1000)
   }
 
-  const payload = data.slice(0, -6)   // sin checksum
-  if (payload.length < 7) throw new Error('factura truncada')
+  // Los últimos 104 words son la firma (520 bits): NO son campos etiquetados.
+  // Leerlos como tales corrompía expiry/descripción/payment hash cuando los
+  // primeros words de la firma coincidían con un tipo conocido.
+  const SIG_WORDS = 104
+  const withSig = data.slice(0, -6)   // sin checksum
+  if (withSig.length < 7 + SIG_WORDS) throw new Error('factura truncada')
+  const payload = withSig.slice(0, -SIG_WORDS)
   let timestamp = 0
   for (let i = 0; i < 7; i++) timestamp = timestamp * 32 + payload[i]
 
@@ -300,7 +366,7 @@ export function decodeBolt11(invoice) {
   }
 
   return {
-    amountSats, description, timestamp, expiry, paymentHash,
+    amountSats, amountMsats, description, timestamp, expiry, paymentHash,
     expired: (timestamp + expiry) * 1000 < Date.now(),
   }
 }
@@ -335,11 +401,17 @@ export async function lnAddressToInvoice(lud16, amountSats, comment = '') {
   if (msats < meta.minSendable || msats > meta.maxSendable)
     throw new Error(`importe fuera de rango (${Math.ceil(meta.minSendable / 1000)}–${Math.floor(meta.maxSendable / 1000)} sats)`)
   const cbUrl = new URL(meta.callback)
+  // Solo https: por http en claro, cualquiera en la ruta de red podría cambiar
+  // la factura por una suya del mismo importe (misma regla que zaps.js y Android).
+  if (cbUrl.protocol !== 'https:') throw new Error('callback LNURL inválido')
   cbUrl.searchParams.set('amount', String(msats))
   if (comment && meta.commentAllowed) cbUrl.searchParams.set('comment', comment.slice(0, meta.commentAllowed))
   const invRes = await fetch(cbUrl)
   if (!invRes.ok) throw new Error('el servidor LNURL no emitió la factura')
   const inv = await invRes.json()
   if (inv.status === 'ERROR' || !inv.pr) throw new Error(inv.reason || 'el servidor LNURL no emitió la factura')
+  // El servidor es de la otra parte: nunca devolver una factura cuyo importe
+  // no sea exactamente el solicitado.
+  if (decodeBolt11(inv.pr).amountMsats !== msats) throw new Error('la factura recibida no coincide con el importe solicitado')
   return inv.pr
 }

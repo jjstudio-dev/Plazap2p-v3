@@ -22,7 +22,7 @@
     { "id": "articulos",    "kinds": [30023],         "label": "Artículos",    "icon": "📄" },
     { "id": "eventos",      "kinds": [31922, 31923],  "label": "Eventos",      "icon": "📅" },
     { "id": "intercambio",  "kinds": [38383],         "label": "Intercambio",  "icon": "🔄", "noTagFilter": true },
-    { "id": "directorio",   "kinds": [30402],         "label": "Directorio",   "icon": "📒", "tagFilter": "plazap2p-directorio" }
+    { "id": "directorio",   "kinds": [30402],         "label": "Directorio",   "icon": "📒", "tagFilter": "plazap2p-directorio", "tagFilters": ["plazap2p-servicio"] }
   ],
   "intercambio": {
     "_note": "trustedMostroInstances: lista de pubkeys (hex o npub) de instancias Mostro de confianza para la comunidad. Si está vacía, 'modo comunidad' muestra todas las órdenes de la red. Añade aquí los pubkeys de los bots Mostro que uses en la comunidad.",

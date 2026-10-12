@@ -18,6 +18,8 @@
 // Verificación de recibos (ZAP-002): validateZapReceipt().
 
 import { verifyEvent } from './vendor/nostr-crypto.js'
+import { decodeBolt11 } from './nwc.js'
+import { collectUntilEose } from './relay-pool.js'
 
 const WELL_KNOWN_TIMEOUT_MS = 8000
 
@@ -111,6 +113,48 @@ export function validateZapReceipt(receipt, { expectedRecipientHex, expectedSend
   }
 }
 
+/**
+ * Comprueba que la factura devuelta por el servidor LNURL es EXACTAMENTE por
+ * el importe pedido y que no ha caducado. Ese servidor lo elige el receptor
+ * (su lud16): sin esta comprobación podría devolver una factura mayor y la
+ * wallet la pagaría hasta agotar el presupuesto de la conexión NWC.
+ * @returns {{ok:true} | {ok:false, error:string}}
+ */
+export function verifyZapInvoice(bolt11, expectedMsats) {
+  let dec
+  try { dec = decodeBolt11(bolt11) } catch { return { ok: false, error: 'el servidor devolvió una factura ilegible — pago cancelado' } }
+  if (dec.amountMsats == null) return { ok: false, error: 'el servidor devolvió una factura sin importe — pago cancelado' }
+  if (dec.amountMsats !== expectedMsats) {
+    return { ok: false, error: `el servidor devolvió una factura de ${Math.ceil(dec.amountMsats / 1000).toLocaleString('es-ES')} sats en vez de los ${Math.floor(expectedMsats / 1000).toLocaleString('es-ES')} solicitados — pago cancelado` }
+  }
+  if (dec.expired) return { ok: false, error: 'el servidor devolvió una factura caducada — pago cancelado' }
+  return { ok: true }
+}
+
+/**
+ * Recibo contable: además de validateZapReceipt(), exige lo necesario para
+ * poder sumarlo — zap request incrustado dirigido al mismo receptor, e importe
+ * de la factura coherente con el declarado. (Sin conocer el pubkey del
+ * proveedor LNURL esto NO prueba el pago: ver el aviso en fetchZapReceipts.)
+ * @returns {object|null} el recibo validado con amountMsats fiable, o null
+ */
+export function countableZapReceipt(receipt, recipientHex) {
+  const r = validateZapReceipt(receipt, { expectedRecipientHex: recipientHex })
+  if (!r.ok || !r.senderHex) return null
+  const descriptionRaw = receipt.tags.find(t => t[0] === 'description')?.[1]
+  let zapRequest
+  try { zapRequest = JSON.parse(descriptionRaw) } catch { return null }
+  if (zapRequest?.kind !== 9734) return null
+  const reqP = zapRequest.tags?.find(t => t[0] === 'p')?.[1]
+  if (!reqP || reqP.toLowerCase() !== String(recipientHex).toLowerCase()) return null
+  if (!r.bolt11) return null
+  let invoiceMsats
+  try { invoiceMsats = decodeBolt11(r.bolt11).amountMsats } catch { return null }
+  if (!Number.isInteger(invoiceMsats) || invoiceMsats <= 0) return null
+  if (r.amountMsats != null && r.amountMsats !== invoiceMsats) return null
+  return { ...r, amountMsats: invoiceMsats }
+}
+
 // ── Orquestación de red (no testeable con node:test sin mocks — ver el
 //    resto del proyecto, que tampoco simula relays/HTTP reales) ──────────────
 
@@ -146,37 +190,32 @@ export async function requestZapInvoice(params, signedZapRequest, amountMsats) {
 }
 
 /**
- * ZAP-002 — trae y valida los recibos (kind 9735) recibidos por una pubkey.
- * Cada evento pasa por validateZapReceipt() antes de contarse: un relay
- * podría entregar un 9735 falso o mal dirigido, y esta función nunca lo
- * suma al total ni lo devuelve como válido.
+ * ZAP-002 — trae los recibos (kind 9735) dirigidos a una pubkey y devuelve
+ * solo los que pasan countableZapReceipt().
+ *
+ * LÍMITE CONOCIDO: aquí no se contrasta que el recibo lo firmó el proveedor
+ * LNURL del receptor (haría falta pedir su lud16 a un servidor que él
+ * controla, cada vez que alguien abre su anuncio). Sin eso, firma y formato
+ * son válidos pero cualquiera puede publicar un recibo: la interfaz debe
+ * presentarlo como "recibos públicos", nunca como pagos verificados.
  * @returns {Promise<{totalMsats:number, receipts:Array}>}
  */
-export function fetchZapReceipts(pool, recipientHex, timeoutMs = 6000) {
-  return new Promise(resolve => {
-    if (!pool || !recipientHex) { resolve({ totalMsats: 0, receipts: [] }); return }
-    const valid = []
-    const seenIds = new Set()
-    const subId = `zaps-${recipientHex.slice(0, 8)}-${Math.random().toString(36).slice(2, 6)}`
-    let settled = false
-    const finish = () => {
-      if (settled) return
-      settled = true
-      pool.unsubscribe(subId)
-      const totalMsats = valid.reduce((sum, r) => sum + (r.amountMsats || 0), 0)
-      resolve({ totalMsats, receipts: valid })
-    }
-    pool.subscribe(subId, [{ kinds: [9735], '#p': [recipientHex], limit: 200 }], {
-      onEvent(ev) {
-        if (seenIds.has(ev.id)) return
-        seenIds.add(ev.id)
-        const r = validateZapReceipt(ev, { expectedRecipientHex: recipientHex })
-        if (r.ok) valid.push(r)
-      },
-      onEose: finish,
-    })
-    setTimeout(finish, timeoutMs)
+export async function fetchZapReceipts(pool, recipientHex, timeoutMs = 6000) {
+  if (!pool || !recipientHex) return { totalMsats: 0, receipts: [] }
+  const valid = []
+  const seenIds = new Set()
+  await collectUntilEose(pool, [{ kinds: [9735], '#p': [recipientHex], limit: 200 }], {
+    timeoutMs,
+    prefix: 'zaps',
+    onEvent(ev) {
+      if (seenIds.has(ev.id)) return
+      seenIds.add(ev.id)
+      const r = countableZapReceipt(ev, recipientHex)
+      if (r) valid.push(r)
+    },
   })
+  const totalMsats = valid.reduce((sum, r) => sum + r.amountMsats, 0)
+  return { totalMsats, receipts: valid }
 }
 
 /**
@@ -192,6 +231,9 @@ export async function sendZap({ recipientHex, recipientLud16, amountMsats, relay
   const unsigned = buildZapRequest({ recipientHex, amountMsats, relays, comment, eventRef, addressableRef }, senderPubHex)
   const signed = await sign(unsigned)
   const bolt11 = await requestZapInvoice(params, signed, amountMsats)
+  // A partir de aquí se mueve dinero: la factura viene de un servidor ajeno.
+  const invoiceCheck = verifyZapInvoice(bolt11, amountMsats)
+  if (!invoiceCheck.ok) throw new Error(invoiceCheck.error)
   const payResult = await payInvoice(nwcConn, bolt11)
   return { bolt11, payResult, zapRequest: signed }
 }

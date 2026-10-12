@@ -47,8 +47,11 @@ export function save(conn, { remember = false } = {}) {
 /** Conexión activa: sesión actual, o persistida con opt-in, o null. */
 export function load() {
   migrateLegacy()
-  for (const [storage, key] of [[sessionStorage, SS_KEY], [localStorage, LS_KEY]]) {
+  // El acceso a sessionStorage/localStorage va DENTRO del try: con el
+  // almacenamiento bloqueado por el navegador, solo nombrarlos ya lanza.
+  for (const [getStorage, key] of [[() => sessionStorage, SS_KEY], [() => localStorage, LS_KEY]]) {
     try {
+      const storage = getStorage()
       const raw = storage.getItem(key)
       if (!raw) continue
       const c = JSON.parse(raw)

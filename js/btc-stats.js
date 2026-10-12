@@ -1,5 +1,7 @@
 // btc-stats.js — Bitcoin network stats via mempool.space (no API key required)
 
+import { finiteNumber, fetchJson } from './btc-rates.js';
+
 const API = 'https://mempool.space/api';
 const REFRESH_MS = 5 * 60 * 1000;
 
@@ -16,28 +18,32 @@ export function destroyBtcStats() {
 }
 
 async function fetchAndRender() {
+  // fetchJson trata como fallo cualquier respuesta que no sea 2xx: antes, un
+  // error 500 con cuerpo JSON se pintaba tal cual ("#[object Object]").
   const [r0, r1, r2, r3, r4] = await Promise.allSettled([
-    fetch(`${API}/blocks/tip/height`).then(r => r.json()),
-    fetch(`${API}/v1/prices`).then(r => r.json()),
-    fetch(`${API}/v1/mining/hashrate/3d`).then(r => r.json()),
-    fetch(`${API}/v1/fees/recommended`).then(r => r.json()),
-    fetch(`${API}/mempool`).then(r => r.json()),
+    fetchJson(`${API}/blocks/tip/height`),
+    fetchJson(`${API}/v1/prices`),
+    fetchJson(`${API}/v1/mining/hashrate/3d`),
+    fetchJson(`${API}/v1/fees/recommended`),
+    fetchJson(`${API}/mempool`),
   ]);
 
+  // Solo números: un campo con otro tipo se trata como "sin dato".
   const val = (res) => res.status === 'fulfilled' ? res.value : null;
-  const blockHeight = val(r0);
-  const prices      = val(r1);
-  const miningInfo  = val(r2);
-  const fees        = val(r3);
-  const mempool     = val(r4);
+  const blockHeight = finiteNumber(val(r0));
+  const priceUsd    = finiteNumber(val(r1)?.USD);
+  const hashrate    = finiteNumber(val(r2)?.currentHashrate);
+  const difficulty  = finiteNumber(val(r2)?.currentDifficulty);
+  const fastestFee  = finiteNumber(val(r3)?.fastestFee);
+  const mempoolTxs  = finiteNumber(val(r4)?.count);
 
   let anyOk = false;
-  if (blockHeight != null)        { set('stat-block-val',      `#${blockHeight.toLocaleString('es')}`); anyOk = true; }
-  if (prices?.USD != null)        { set('stat-price-val',      `$${prices.USD.toLocaleString('en-US', { maximumFractionDigits: 0 })}`); anyOk = true; }
-  if (miningInfo?.currentHashrate != null)   { set('stat-hashrate-val',   fmtHashrate(miningInfo.currentHashrate)); anyOk = true; }
-  if (miningInfo?.currentDifficulty != null) { set('stat-difficulty-val', fmtDifficulty(miningInfo.currentDifficulty)); anyOk = true; }
-  if (fees?.fastestFee != null)   { set('stat-fees-val',       `${fees.fastestFee} sat/vB`); anyOk = true; }
-  if (mempool?.count != null)     { set('stat-mempool-val',    `${mempool.count.toLocaleString('es')} txs`); anyOk = true; }
+  if (blockHeight != null) { set('stat-block-val',      `#${blockHeight.toLocaleString('es')}`); anyOk = true; }
+  if (priceUsd != null)    { set('stat-price-val',      `$${priceUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`); anyOk = true; }
+  if (hashrate != null)    { set('stat-hashrate-val',   fmtHashrate(hashrate)); anyOk = true; }
+  if (difficulty != null)  { set('stat-difficulty-val', fmtDifficulty(difficulty)); anyOk = true; }
+  if (fastestFee != null)  { set('stat-fees-val',       `${fastestFee} sat/vB`); anyOk = true; }
+  if (mempoolTxs != null)  { set('stat-mempool-val',    `${mempoolTxs.toLocaleString('es')} txs`); anyOk = true; }
 
   const ts = document.getElementById('btc-stats-updated');
   if (ts) ts.textContent = anyOk

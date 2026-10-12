@@ -57,9 +57,11 @@ const FALLBACK_RELAYS = [
 
 let pool = null
 let config = null
+let ready = Promise.resolve()   // se resuelve cuando config y pool existen (ver DOMContentLoaded)
 let selectedType = null      // solo de VALID_TYPES — nunca de input de usuario
 let editingDTag = null       // d-tag si estamos editando un anuncio existente
 let editingPublishedAt = null // published_at original al editar (PROT-002)
+let editingOriginal = null   // evento que se está editando (solo vale mientras su d-tag sea editingDTag)
 let userPubkey = signer.getStoredPubkey()
 let lastSignedEvent = null   // para el botón Reintentar sin re-firmar
 let broadcasting = false     // evita reintentos concurrentes (RelayPool indexa por eventId)
@@ -92,9 +94,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   const params = new URL(location.href).searchParams
   devMode = params.get('dev') === '1'
 
-  await loadConfig()
-  pool = new RelayPool(config.relays)
-  pool.connect()
+  // La interfaz se activa YA; config.json y los relays llegan en segundo
+  // plano. Antes se esperaba a la red para cablear los botones: con conexión
+  // lenta la página se veía pero no respondía a los toques. Lo que necesita
+  // red (pool/config) espera a `ready`.
+  ready = (async () => {
+    await loadConfig()
+    pool = new RelayPool(config.relays)
+    pool.connect()
+  })()
 
   wireUi()
   updateIdentityUi()
@@ -193,12 +201,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 })
 
 async function loadConfig() {
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), 6000)   // red colgada: seguir con los relays por defecto
   try {
-    const res = await fetch('data/config.json')
-    config = await res.json()
-    if (!Array.isArray(config.relays) || config.relays.length === 0) config.relays = FALLBACK_RELAYS
+    const res = await fetch('data/config.json', { signal: ctrl.signal })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const loaded = await res.json()
+    if (!loaded || typeof loaded !== 'object') throw new Error('config ilegible')
+    if (!Array.isArray(loaded.relays) || loaded.relays.length === 0) loaded.relays = FALLBACK_RELAYS
+    config = loaded
   } catch {
     config = { relays: FALLBACK_RELAYS, ratings: { aspects: [] } }
+  } finally {
+    clearTimeout(timer)
   }
 }
 
@@ -393,7 +408,7 @@ function openActividad(chipId = 'misanuncios') {
     $('btn-publicar').textContent = '⭐ Enviar valoración'
   } else {
     showSection('sec-misanuncios')
-    refreshMisAnuncios()
+    ready.then(() => { if (!$('sec-misanuncios').classList.contains('hidden')) refreshMisAnuncios() })
   }
 }
 
@@ -515,28 +530,19 @@ function onPastePubkey() {
 }
 
 /** Perfil kind 0 para la tarjeta de identidad (nombre + avatar). */
-function fetchProfile(hex) {
+async function fetchProfile(hex) {
+  await ready
   if (!pool) return
-  let done = false
-  const subId = 'perfil-propio'
-  pool.subscribe(subId, [{ kinds: [0], authors: [hex], limit: 1 }], {
-    onEvent(ev) {
-      if (done || ev.pubkey !== hex) return
-      done = true
-      try {
-        const meta = JSON.parse(ev.content)
-        if (meta.name) $('id-name').textContent = String(meta.name).slice(0, 40)
-        if (meta.picture && /^https:\/\//.test(meta.picture)) {
-          const img = document.createElement('img')
-          img.src = meta.picture
-          img.alt = ''
-          $('id-avatar').replaceChildren(img)
-        }
-      } catch { /* perfil ilegible: dejar placeholder */ }
-      pool.unsubscribe(subId)
-    },
-  })
-  setTimeout(() => { if (!done) { $('id-name').textContent = 'Sin perfil publicado'; pool.unsubscribe(subId) } }, 6000)
+  const profile = await fetchProfileMeta(pool, hex)
+  if (hex !== userPubkey) return   // la identidad cambió mientras llegaba la respuesta
+  const name = profile?.displayName || profile?.name
+  $('id-name').textContent = name ? String(name).slice(0, 40) : 'Sin perfil publicado'
+  if (profile?.picture) {
+    const img = document.createElement('img')
+    img.src = profile.picture
+    img.alt = ''
+    $('id-avatar').replaceChildren(img)
+  }
 }
 
 // ── Callback de Amber ─────────────────────────────────────────────────────────
@@ -620,16 +626,58 @@ async function handleSubmit() {
   }
   if (devMode) built.unsignedEvent.tags.push(['t', 'plazap2p-test'])
 
+  const original = currentOriginal()
+  if (original) built.unsignedEvent.created_at = newerThan(original)
+  const queue = original ? kindChangeCleanup(original, built.unsignedEvent) : []
+
   // UX-001: ninguna firma empieza sin que el usuario vea antes exactamente
   // qué va a firmar — signAndPublish() ahora solo lo llama el botón
   // "Confirmar y firmar" de renderPreview(), nunca este handler directamente.
-  renderPreview(built.unsignedEvent, { type: selectedType, dTag: built.dTag })
+  renderPreview(built.unsignedEvent, { type: selectedType, dTag: built.dTag, editing: !!editingDTag }, queue)
+}
+
+/** El evento que se está editando, o null (publicación nueva o referencia obsoleta). */
+function currentOriginal() {
+  return (editingDTag && editingOriginal && getTagValue(editingOriginal.tags, 'd') === editingDTag)
+    ? editingOriginal : null
+}
+
+/**
+ * created_at para una versión que SUSTITUYE a `ev` (editar, vendido, retirar).
+ * Entre dos versiones de un evento reemplazable gana la más reciente: si el
+ * reloj de este dispositivo va por detrás del que publicó el original, o todo
+ * ocurre en el mismo segundo, los relays se quedarían con la versión antigua
+ * mientras la app dice "actualizado".
+ */
+function newerThan(ev) {
+  return Math.max(Math.floor(Date.now() / 1000), (Number(ev?.created_at) || 0) + 1)
+}
+
+/**
+ * Un evento de calendario cambia de kind al marcar/desmarcar "todo el día"
+ * (31922 ↔ 31923). Con el mismo d-tag pero otro kind es OTRA dirección: la
+ * versión anterior seguiría publicada como un evento distinto. Devuelve los
+ * eventos que la retiran (status:inactive para quien lo lee así, y kind 5
+ * para el resto de clientes), a firmar después del principal.
+ */
+function kindChangeCleanup(original, next) {
+  if (original.kind === next.kind) return []
+  const inactive = {
+    kind: original.kind,
+    created_at: newerThan(original),
+    tags: original.tags.map(t => t[0] === 'status' ? ['status', 'inactive'] : t),
+    content: original.content,
+    pubkey: userPubkey,
+  }
+  if (!inactive.tags.some(t => t[0] === 'status')) inactive.tags.push(['status', 'inactive'])
+  const del = buildRetirada({ kind: original.kind, dTag: editingDTag, eventId: original.id }, userPubkey)
+  return [inactive, ...(del.ok ? [del.unsignedEvent] : [])]
 }
 
 /** UX-001 — resumen antes de firmar. Reutiliza el mismo #res-box/.res-card
  * que renderResult() (Firmando.../Publicado): mismo contenedor, se
  * sobrescribe con box.replaceChildren() en ambos, sin solapamiento. */
-function renderPreview(unsignedEvent, meta) {
+function renderPreview(unsignedEvent, meta, queue = []) {
   const box = $('res-box')
   box.replaceChildren()
 
@@ -670,6 +718,7 @@ function renderPreview(unsignedEvent, meta) {
   addRow('Contacto', getTagValue(unsignedEvent.tags, 'contact'))
   addRow('Imagen', getTagValue(unsignedEvent.tags, 'image') ? 'adjunta' : null)
   addRow('Relays', `${(config?.relays || []).length} configurados`)
+  if (queue.length) addRow('Firmas', `${1 + queue.length} — el evento cambia de tipo y hay que retirar la versión anterior`)
   card.appendChild(fields)
 
   const summary = getTagValue(unsignedEvent.tags, 'summary')
@@ -702,7 +751,7 @@ function renderPreview(unsignedEvent, meta) {
   confirmBtn.textContent = '🔑 Confirmar y firmar'
   confirmBtn.addEventListener('click', () => {
     confirmBtn.disabled = true
-    signAndPublish(unsignedEvent, meta)
+    signAndPublish(unsignedEvent, meta, queue)
   })
   actions.appendChild(confirmBtn)
 
@@ -733,6 +782,10 @@ async function signAndPublish(unsignedEvent, meta, queue = []) {
   const btn = $('btn-publicar')
   btn.disabled = true
   btn.innerHTML = '<span class="spinner"></span>Firmando…'
+
+  // Total de firmas de esta operación: se fija en el primer paso y viaja en
+  // meta para poder decir "Paso N de M" en los siguientes.
+  if (!meta.totalSteps) meta = { ...meta, totalSteps: 1 + queue.length }
 
   const pending = {
     step: 'sign',
@@ -806,6 +859,7 @@ async function broadcastAndReport(signedEvent, pending) {
 async function broadcastAndReportInner(signedEvent, pending) {
   renderResult({ ok: null, title: 'Publicando…', sub: 'Enviando a los relays de la red Nostr.' })
 
+  await ready
   const connected = await waitForRelays()
   if (!connected) {
     lastSignedEvent = { signedEvent, pending }
@@ -828,11 +882,15 @@ async function broadcastAndReportInner(signedEvent, pending) {
     // ¿Quedan eventos por firmar en cola? (retirada: inactive + kind 5)
     if (pending?.queue?.length) {
       const [next, ...rest] = pending.queue
+      const total = pending.meta?.totalSteps || (1 + pending.queue.length)
+      const done = total - pending.queue.length
       renderResult({
-        ok: true, title: 'Paso 1 de 2 publicado',
-        sub: 'Falta firmar la solicitud de borrado (kind 5) para completar la retirada.',
+        ok: true, title: `Paso ${done} de ${total} publicado`,
+        sub: next.kind === 5
+          ? 'Falta firmar la solicitud de borrado (kind 5) para completar la retirada.'
+          : 'Falta firmar la retirada de la versión anterior del evento.',
         results,
-        nextInQueue: { unsignedEvent: next, meta: pending.meta, queue: rest },
+        nextInQueue: { unsignedEvent: next, meta: pending.meta, queue: rest, label: `✍️ Firmar paso ${done + 1} de ${total}` },
       })
       return
     }
@@ -851,8 +909,8 @@ async function broadcastAndReportInner(signedEvent, pending) {
     renderResult({
       ok: true,
       title: signedEvent.kind === 1985 ? '⭐ Valoración publicada'
-           : signedEvent.kind === 5    ? '🗑 Solicitud de borrado enviada'
            : editingDTagWas(pending)   ? '💾 Anuncio actualizado'
+           : signedEvent.kind === 5    ? '🗑 Solicitud de borrado enviada'
            : '🎉 ¡Publicado en Nostr!',
       sub: `Aceptado por ${accepted.length} de ${results.length} relays.`,
       results, naddr,
@@ -956,7 +1014,7 @@ function renderResult({ ok, title, sub, results = [], naddr = null, retry = fals
   if (nextInQueue) {
     const btn = document.createElement('button')
     btn.className = 'btn-primary'
-    btn.textContent = '✍️ Firmar paso 2 de 2'
+    btn.textContent = nextInQueue.label || '✍️ Firmar paso 2 de 2'
     btn.addEventListener('click', () => signAndPublish(nextInQueue.unsignedEvent, nextInQueue.meta, nextInQueue.queue))
     actions.appendChild(btn)
   }
@@ -1047,6 +1105,10 @@ function checkUrl(errors, id) {
 /** F12: precio numérico (el wizard del bot lo garantizaba por flujo). */
 function checkPrice(errors, priceId, negociarId) {
   if ($(negociarId)?.checked) return
+  // Campo numérico con texto que el navegador no entiende ("12e", "doce"):
+  // .value llega vacío, así que sin esto el anuncio se publicaba SIN precio
+  // aunque el usuario viera el suyo escrito.
+  if ($(priceId)?.validity?.badInput) { errors.set(priceId, 'Precio inválido — solo números (p.ej. 25 o 0.5)'); return }
   const raw = $(priceId)?.value.trim()
   if (!raw) return   // opcional
   if (normalizePrice(raw) === null) errors.set(priceId, 'Precio inválido — solo números (p.ej. 25 o 0.5)')
@@ -1180,6 +1242,7 @@ function buildPayload(type) {
 function renderAspects() {
   const wrap = $('v-aspects')
   if (wrap.childElementCount > 0) return   // ya renderizado
+  if (!config) { ready.then(renderAspects); return }   // config.json aún en camino
   const aspects = config?.ratings?.aspects || []
   for (const a of aspects) {
     const row = document.createElement('div')
@@ -1215,11 +1278,12 @@ async function onValoradoChange() {
   setErr('err-v-npub', '')
   if (!hex) return
   try {
+    await ready
     const rep = await fetchReputacion(pool, hex)
     if (rep.count > 0) {
       setErr('err-v-npub', '')
       const errEl = $('err-v-npub')
-      errEl.textContent = `ℹ️ Reputación actual: ${rep.avg.toFixed(1)}/5 (${rep.count} valoraciones firmadas)`
+      errEl.textContent = `ℹ️ Reputación actual: ${rep.avg.toFixed(1)}/5 (${rep.count} ${rep.count === 1 ? 'valoración firmada' : 'valoraciones firmadas'})`
       errEl.classList.add('show')
     }
   } catch { /* informativo — no bloquear */ }
@@ -1293,6 +1357,7 @@ async function openZap(recipientHex, refTag) {
   }
 
   $('zap-target-info').textContent += ' — consultando su perfil…'
+  await ready
   const profile = await fetchProfileMeta(pool, recipientHex)
   if (!profile?.lud16) {
     $('zap-no-lud16').classList.remove('hidden')
@@ -1420,7 +1485,13 @@ function startEdit(ev) {
   const type = detectTypeFromEvent(ev)
   if (!type) { alert('Este anuncio no se puede editar desde la app (tipo desconocido).'); return }
 
+  // Formulario limpio antes de precargar: populateFormFromEvent() solo
+  // escribe los campos que el anuncio trae, así que un valor residual de otro
+  // formulario a medias (una imagen, un contacto) se publicaría dentro de
+  // ESTE anuncio al guardar.
+  resetFormsAfterSuccess()
   editingDTag = getTagValue(ev.tags, 'd')
+  editingOriginal = ev
   // PROT-002: conservar el published_at original (si no existe, created_at)
   const pubAtRaw = Number(getTagValue(ev.tags, 'published_at'))
   editingPublishedAt = (Number.isInteger(pubAtRaw) && pubAtRaw > 0) ? pubAtRaw : ev.created_at
@@ -1435,8 +1506,7 @@ function startEdit(ev) {
 function startDuplicar(ev) {
   const type = detectTypeFromEvent(ev)
   if (!type) { alert('Este anuncio no se puede duplicar desde la app (tipo desconocido).'); return }
-  editingDTag = null
-  editingPublishedAt = null
+  resetFormsAfterSuccess()   // mismo motivo que en startEdit(): sin restos de otro formulario
   populateFormFromEvent(ev, type)
   // skipDraft: los campos ya vienen rellenados desde el anuncio original —
   // si navigateTo() aplicara aquí su restauración de borrador (UX-002) podría
@@ -1451,7 +1521,7 @@ function startMarcarVendido(ev) {
   if (!confirm('¿Marcar este anuncio como vendido? Dejará de aparecer como activo en el mercado.')) return
   const soldEvent = {
     kind: ev.kind,
-    created_at: Math.floor(Date.now() / 1000),
+    created_at: newerThan(ev),
     tags: ev.tags.map(t => t[0] === 'status' ? ['status', 'sold'] : t),
     content: ev.content,
     pubkey: userPubkey,
@@ -1467,7 +1537,7 @@ function startRetirada(ev) {
 
   const inactiveEvent = {
     kind: ev.kind,
-    created_at: Math.floor(Date.now() / 1000),
+    created_at: newerThan(ev),
     tags: ev.tags.map(t => t[0] === 'status' ? ['status', 'inactive'] : t),
     content: ev.content,
     pubkey: userPubkey,
@@ -1512,6 +1582,7 @@ function restoreFormSnapshot(snap) {
     const cb = document.querySelector(`input[name="h-platform"][value="${CSS.escape(p)}"]`)
     if (cb) cb.checked = true
   }
+  syncNegociarState()
   selectedType = VALID_TYPES.includes(snap.selectedType) ? snap.selectedType : null
   editingDTag = snap.editingDTag || null
   editingPublishedAt = (Number.isInteger(snap.editingPublishedAt) && snap.editingPublishedAt > 0)
@@ -1528,8 +1599,10 @@ function resetFormsAfterSuccess() {
   }
   document.querySelectorAll('.pill.active').forEach(p => p.classList.remove('active'))
   document.querySelectorAll('input[name="h-platform"]').forEach(cb => { cb.checked = false })
+  syncNegociarState()
   editingDTag = null
   editingPublishedAt = null
+  editingOriginal = null
   selectedType = null
 }
 
@@ -1546,6 +1619,8 @@ function setupCounter(fieldId, max) {
   })
 }
 
+const NEGOCIAR_GROUPS = [['s-negociar', 's-price', 's-currency'], ['tx-negociar', 'tx-price', 'tx-currency']]
+
 function setupNegociar(checkId, priceId, currId) {
   const cb = $(checkId)
   const price = $(priceId)
@@ -1556,6 +1631,18 @@ function setupNegociar(checkId, priceId, currId) {
     curr.disabled = cb.checked
     if (cb.checked) { price.value = ''; price.classList.remove('invalid') }
   })
+}
+
+/** Marcar/desmarcar "A negociar" por código (reset tras publicar, restaurar un
+ * borrador) no dispara 'change': sin esto, precio y moneda se quedaban
+ * deshabilitados para la siguiente publicación. */
+function syncNegociarState() {
+  for (const [checkId, priceId, currId] of NEGOCIAR_GROUPS) {
+    const cb = $(checkId), price = $(priceId), curr = $(currId)
+    if (!cb || !price || !curr) continue
+    price.disabled = cb.checked
+    curr.disabled = cb.checked
+  }
 }
 
 /**

@@ -38,9 +38,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800&family=Inter:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=41" />
+  <link rel="stylesheet" href="css/style.css?v=42" />
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg" />
+  <link rel="icon" type="image/png" href="icons/icon-192.png" />
   <meta name="theme-color" content="#f7931a" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -385,8 +387,8 @@
       <span class="section-hint">kind:30402 · ofertas fijas</span>
     </div>
     <p class="dir-intro">
-      Servicios y establecimientos locales con oferta estable, publicados en Nostr con el tag <code>#plazap2p-directorio</code>.
-      ¿Tienes un negocio? Publica tu ficha desde la <a href="publicar.html">sección Publicar</a> o desde tu cliente Nostr habitual con ese tag.
+      Servicios y establecimientos locales con oferta estable, publicados en Nostr.
+      ¿Tienes un negocio? Publica tu ficha como <strong>Servicio</strong> desde la <a href="publicar.html?type=servicio">sección Publicar</a>, o desde tu cliente Nostr habitual con el tag <code>#plazap2p-directorio</code>.
     </p>
     <div class="tab-search-bar">
       <input type="search" class="tab-search" id="search-directorio" placeholder="Buscar en el directorio…" autocomplete="off">
@@ -886,8 +888,11 @@
 
     <div class="about-block">
       <h2 class="subsection-title">Descarga</h2>
-      <p>PlazaP2P Android está en desarrollo activo y su código todavía no se ha publicado. La descarga se habilitará aquí en cuanto esté lista para distribución pública.</p>
-      <button class="btn-primary" disabled aria-disabled="true">📱 Descarga próximamente</button>
+      <p>Primera versión pública (v1, julio de 2026). Es un APK de instalación directa: no está en Google Play. El código fuente todavía no se ha publicado.</p>
+      <a class="btn-primary" id="apk-download" href="app/PlazaP2P-3.1-Android-App-v1.apk" download>📱 Descargar APK · v1 · 14,5 MB</a>
+      <p class="about-note">Antes de instalarlo, comprueba que el archivo descargado es el original. Su huella SHA-256 debe ser exactamente:<br>
+        <code id="apk-sha256" style="word-break:break-all">29636A90E2F5D54FBA1CB2E1CD02B449E7BEB2AF44DD1285AFB8D6B680EBED89</code><br>
+        (en Android, con cualquier gestor de archivos que muestre la suma SHA-256; en un ordenador, <code>sha256sum</code> o <code>Get-FileHash</code>).</p>
     </div>
 
     <p class="about-note">Esta es una presentación breve — no profundiza en detalles técnicos ni de implementación, eso llegará junto con la publicación del código. Las funciones marcadas Beta pueden cambiar mientras se terminan de pulir. Dudas o sugerencias, vía <a href="https://github.com/jjstudio-dev/Plazap2p-v3/issues/new?title=[APP+ANDROID]" target="_blank" rel="noopener noreferrer">GitHub Issue</a>.</p>
@@ -1330,7 +1335,7 @@
         </div>
         <div class="faq-item">
           <h3 class="faq-q">¿Por qué importa la antigüedad de un npub?</h3>
-          <p class="faq-a">Un npub con semanas o meses de historial y actividad real tiene más credibilidad que uno recién creado. Desconfía de claves nuevas que venden artículos de alto valor: reducen el coste de crear cuentas expresamente para estafar. Como referencia, el bot de PlazaP2P exige 30+ días de antigüedad para publicar ventas.</p>
+          <p class="faq-a">Un npub con semanas o meses de historial y actividad real tiene más credibilidad que uno recién creado. Desconfía de claves nuevas que venden artículos de alto valor: reducen el coste de crear cuentas expresamente para estafar. Como referencia, PlazaP2P solo cuenta en la reputación las valoraciones de cuentas con más de 30 días de actividad en Nostr.</p>
         </div>
         <div class="faq-item">
           <h3 class="faq-q">¿Quién es responsable del contenido?</h3>
@@ -1481,15 +1486,15 @@
 <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <!-- ESM module — app.js imports nostr.js and relay-pool.js -->
-<script type="module" src="js/app.js?v=41"></script>
+<script type="module" src="js/app.js?v=42"></script>
 <script type="module">
-  import { initBtcStats }      from './js/btc-stats.js?v=41';
-  import { initPriceChart }    from './js/btc-chart.js?v=41';
-  import { initConverter }     from './js/converter.js?v=41';
-  import { initMiniConverter } from './js/mini-converter.js?v=41';
-  import { initBtcMarket }     from './js/btc-market.js?v=41';
-  import { initAppShell }      from './js/app-shell.js?v=41';
-  import { initRouter }        from './js/router.js?v=41';
+  import { initBtcStats }      from './js/btc-stats.js?v=42';
+  import { initPriceChart }    from './js/btc-chart.js?v=42';
+  import { initConverter }     from './js/converter.js?v=42';
+  import { initMiniConverter } from './js/mini-converter.js?v=42';
+  import { initBtcMarket }     from './js/btc-market.js?v=42';
+  import { initAppShell }      from './js/app-shell.js?v=42';
+  import { initRouter }        from './js/router.js?v=42';
 
   initAppShell();
   initRouter();

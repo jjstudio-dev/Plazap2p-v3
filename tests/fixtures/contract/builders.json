@@ -1,0 +1,955 @@
+{
+  "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "cases": [
+    {
+      "name": "servicio completo",
+      "builder": "servicio",
+      "input": {
+        "title": "Clases de guitarra",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario.",
+        "catId": "educacion",
+        "imageUrl": "https://ejemplo.test/g.png",
+        "price": "25",
+        "currency": "EUR",
+        "contact": "@profe"
+      },
+      "expected": {
+        "kind": 30402,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Clases de guitarra"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-servicio"
+          ],
+          [
+            "service_type",
+            "educacion"
+          ],
+          [
+            "image",
+            "https://ejemplo.test/g.png"
+          ],
+          [
+            "price",
+            "25",
+            "EUR"
+          ],
+          [
+            "contact",
+            "@profe"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ],
+          [
+            "expiration",
+            "<ahora+60d>"
+          ]
+        ],
+        "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📢 Publicado vía PlazaP2P",
+        "category": "servicio"
+      }
+    },
+    {
+      "name": "servicio mínimo",
+      "builder": "servicio",
+      "input": {
+        "title": "Diseño web",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario."
+      },
+      "expected": {
+        "kind": 30402,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Diseño web"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-servicio"
+          ],
+          [
+            "service_type",
+            "otros"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ],
+          [
+            "expiration",
+            "<ahora+60d>"
+          ]
+        ],
+        "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📢 Publicado vía PlazaP2P",
+        "category": "servicio"
+      }
+    },
+    {
+      "name": "servicio a negociar",
+      "builder": "servicio",
+      "input": {
+        "title": "Consultoría Lightning",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario.",
+        "catId": "consultoria",
+        "contact": "ana@correo.test"
+      },
+      "expected": {
+        "kind": 30402,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Consultoría Lightning"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-servicio"
+          ],
+          [
+            "service_type",
+            "consultoria"
+          ],
+          [
+            "contact",
+            "ana@correo.test"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ],
+          [
+            "expiration",
+            "<ahora+60d>"
+          ]
+        ],
+        "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📢 Publicado vía PlazaP2P",
+        "category": "servicio"
+      }
+    },
+    {
+      "name": "evento con hora",
+      "builder": "evento",
+      "input": {
+        "title": "Meetup Bitcoin",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario.",
+        "allDay": false,
+        "dateTs": 4081000000,
+        "endTs": 4081010000,
+        "tzid": "Europe/Madrid",
+        "location": "Valencia",
+        "contact": "@org",
+        "imageUrl": "https://ejemplo.test/e.png"
+      },
+      "expected": {
+        "kind": 31923,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Meetup Bitcoin"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-evento"
+          ],
+          [
+            "start",
+            "4081000000"
+          ],
+          [
+            "end",
+            "4081010000"
+          ],
+          [
+            "D",
+            "47233"
+          ],
+          [
+            "start_tzid",
+            "Europe/Madrid"
+          ],
+          [
+            "location",
+            "Valencia"
+          ],
+          [
+            "image",
+            "https://ejemplo.test/e.png"
+          ],
+          [
+            "contact",
+            "@org"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ]
+        ],
+        "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📢 Publicado vía PlazaP2P",
+        "category": null
+      }
+    },
+    {
+      "name": "evento de día completo",
+      "builder": "evento",
+      "input": {
+        "title": "Feria de dos días",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario.",
+        "allDay": true,
+        "startDate": "2099-05-01",
+        "endDate": "2099-05-03",
+        "location": "Madrid"
+      },
+      "expected": {
+        "kind": 31922,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Feria de dos días"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-evento"
+          ],
+          [
+            "start",
+            "2099-05-01"
+          ],
+          [
+            "end",
+            "2099-05-03"
+          ],
+          [
+            "location",
+            "Madrid"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ]
+        ],
+        "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📢 Publicado vía PlazaP2P",
+        "category": null
+      }
+    },
+    {
+      "name": "comunidad",
+      "builder": "comunidad",
+      "input": {
+        "title": "Bitcoin Sevilla",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario.",
+        "platId": "telegram",
+        "accessUrl": "https://t.me/bitcoinsevilla",
+        "imageUrl": "https://ejemplo.test/c.png"
+      },
+      "expected": {
+        "kind": 30402,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Bitcoin Sevilla"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-comunidad"
+          ],
+          [
+            "t",
+            "telegram"
+          ],
+          [
+            "r",
+            "https://t.me/bitcoinsevilla"
+          ],
+          [
+            "image",
+            "https://ejemplo.test/c.png"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ]
+        ],
+        "content": "Bitcoin Sevilla\n\nDescripción suficientemente larga para pasar la validación del formulario.\n\n---\n📢 Publicado vía PlazaP2P",
+        "category": "comunidad"
+      }
+    },
+    {
+      "name": "comunidad mínima",
+      "builder": "comunidad",
+      "input": {
+        "title": "Grupo",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario."
+      },
+      "expected": {
+        "kind": 30402,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Grupo"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-comunidad"
+          ],
+          [
+            "t",
+            "otro"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ]
+        ],
+        "content": "Grupo\n\nDescripción suficientemente larga para pasar la validación del formulario.\n\n---\n📢 Publicado vía PlazaP2P",
+        "category": "comunidad"
+      }
+    },
+    {
+      "name": "herramienta",
+      "builder": "herramienta",
+      "input": {
+        "title": "Mi wallet",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario.",
+        "catId": "wallet",
+        "officialUrl": "https://ejemplo.test/wallet",
+        "platforms": [
+          "android",
+          "IOS",
+          "inventada"
+        ],
+        "imageUrl": "https://ejemplo.test/h.png"
+      },
+      "expected": {
+        "kind": 30402,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Mi wallet"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-herramienta"
+          ],
+          [
+            "t",
+            "wallet"
+          ],
+          [
+            "r",
+            "https://ejemplo.test/wallet"
+          ],
+          [
+            "image",
+            "https://ejemplo.test/h.png"
+          ],
+          [
+            "platform",
+            "android"
+          ],
+          [
+            "platform",
+            "ios"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ]
+        ],
+        "content": "Mi wallet\n\nDescripción suficientemente larga para pasar la validación del formulario.\n\n---\n📢 Publicado vía PlazaP2P",
+        "category": "herramienta"
+      }
+    },
+    {
+      "name": "venta",
+      "builder": "transaccion",
+      "input": {
+        "tipoTag": "plazap2p-venta",
+        "title": "Vendo bicicleta",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario.",
+        "price": "120.50",
+        "currency": "EUR",
+        "alcanceId": "local",
+        "contact": "@vendedor",
+        "imageUrl": "https://ejemplo.test/b.png"
+      },
+      "expected": {
+        "kind": 30402,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Vendo bicicleta"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-venta"
+          ],
+          [
+            "price",
+            "120.50",
+            "EUR"
+          ],
+          [
+            "location",
+            "local"
+          ],
+          [
+            "image",
+            "https://ejemplo.test/b.png"
+          ],
+          [
+            "contact",
+            "@vendedor"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ],
+          [
+            "expiration",
+            "<ahora+60d>"
+          ]
+        ],
+        "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📦 Venta publicado vía PlazaP2P\nPrecio: 120.50 EUR\nZona: local\n⚠️ Verifica la reputación antes de operar",
+        "category": "venta"
+      }
+    },
+    {
+      "name": "compra sin moneda",
+      "builder": "transaccion",
+      "input": {
+        "tipoTag": "plazap2p-compra",
+        "title": "Busco portátil",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario.",
+        "price": "300",
+        "alcanceId": "nacional"
+      },
+      "expected": {
+        "kind": 30402,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Busco portátil"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-compra"
+          ],
+          [
+            "price",
+            "300"
+          ],
+          [
+            "location",
+            "nacional"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ],
+          [
+            "expiration",
+            "<ahora+60d>"
+          ]
+        ],
+        "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n🛒 Compra publicado vía PlazaP2P\nPrecio: 300\nZona: nacional\n⚠️ Verifica la reputación antes de operar",
+        "category": "compra"
+      }
+    },
+    {
+      "name": "intercambio a negociar",
+      "builder": "transaccion",
+      "input": {
+        "tipoTag": "plazap2p-intercambio",
+        "title": "Cambio libros",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario.",
+        "alcanceId": "online"
+      },
+      "expected": {
+        "kind": 30402,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Cambio libros"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-intercambio"
+          ],
+          [
+            "location",
+            "online"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ],
+          [
+            "expiration",
+            "<ahora+60d>"
+          ]
+        ],
+        "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n🔄 Intercambio publicado vía PlazaP2P\nZona: online\n⚠️ Verifica la reputación antes de operar",
+        "category": "trueque"
+      }
+    },
+    {
+      "name": "contacto con enlace (se sanea)",
+      "builder": "transaccion",
+      "input": {
+        "tipoTag": "plazap2p-venta",
+        "title": "Vendo mesa",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario.",
+        "contact": "escribe a https://t.me/estafa o t.me/otra"
+      },
+      "expected": {
+        "kind": 30402,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Vendo mesa"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-venta"
+          ],
+          [
+            "contact",
+            "escribe a [url] o [url]"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ],
+          [
+            "expiration",
+            "<ahora+60d>"
+          ]
+        ],
+        "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📦 Venta publicado vía PlazaP2P\n⚠️ Verifica la reputación antes de operar",
+        "category": "venta"
+      }
+    },
+    {
+      "name": "URL de imagen no válida (se descarta)",
+      "builder": "servicio",
+      "input": {
+        "title": "Servicio con imagen rara",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario.",
+        "imageUrl": "javascript:alert(1)"
+      },
+      "expected": {
+        "kind": 30402,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Servicio con imagen rara"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-servicio"
+          ],
+          [
+            "service_type",
+            "otros"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ],
+          [
+            "expiration",
+            "<ahora+60d>"
+          ]
+        ],
+        "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📢 Publicado vía PlazaP2P",
+        "category": "servicio"
+      }
+    },
+    {
+      "name": "valoración con aspectos",
+      "builder": "valoracion",
+      "input": {
+        "rateeHex": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "rating": 4,
+        "comment": "Todo correcto",
+        "aspects": {
+          "comunicacion": 5,
+          "rapidez": 3
+        }
+      },
+      "expected": {
+        "kind": 1985,
+        "tags": [
+          [
+            "L",
+            "plazap2p.reputation"
+          ],
+          [
+            "l",
+            "rating:4",
+            "plazap2p.reputation"
+          ],
+          [
+            "p",
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "l",
+            "aspecto/comunicacion:5",
+            "plazap2p.reputation"
+          ],
+          [
+            "l",
+            "aspecto/rapidez:3",
+            "plazap2p.reputation"
+          ]
+        ],
+        "content": "Todo correcto",
+        "category": null
+      }
+    },
+    {
+      "name": "valoración mínima",
+      "builder": "valoracion",
+      "input": {
+        "rateeHex": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "rating": 1
+      },
+      "expected": {
+        "kind": 1985,
+        "tags": [
+          [
+            "L",
+            "plazap2p.reputation"
+          ],
+          [
+            "l",
+            "rating:1",
+            "plazap2p.reputation"
+          ],
+          [
+            "p",
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ]
+        ],
+        "content": "",
+        "category": null
+      }
+    },
+    {
+      "name": "retirada",
+      "builder": "retirada",
+      "input": {
+        "kind": 30402,
+        "dTag": "plazap2p-app-1-abcd",
+        "eventId": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "expected": {
+        "kind": 5,
+        "tags": [
+          [
+            "a",
+            "30402:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:plazap2p-app-1-abcd"
+          ],
+          [
+            "k",
+            "30402"
+          ],
+          [
+            "e",
+            "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          ]
+        ],
+        "content": "Anuncio retirado por el autor (PlazaP2P)",
+        "category": null
+      }
+    }
+  ]
+}

@@ -2,17 +2,18 @@ import { encodeNaddr, hexToNpub, hexToNote, getTagValue, getTagValues, decodeNpu
 import { RelayPool } from './relay-pool.js';
 import { fetchReputacionBatch } from './reputacion.js';
 import { parseAnuncioHash, anuncioRoute, routeForTab } from './router.js';
-import { isBlocked, blockPubkey, unblockPubkey, listBlocked } from './moderation.js';
+import { isBlocked, blockPubkey, unblockPubkey, listBlocked, exportBlocked, importBlocked } from './moderation.js';
 import { trustLevel } from './trust-signals.js';
 import { fetchZapReceipts } from './zaps.js';
 import { isFavorite, toggleFavorite } from './favorites.js';
+import { channelTagFilters, isExpired, expirationTs, isItemExpired, parseCalendarDate, calDate, detectCategory, detectPayment, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts } from './listing-utils.js';
 
 // ── Constants ──────────────────────────────────────────────────
 const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '41';
+const ASSET_VERSION  = '42';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -45,14 +46,23 @@ const limits     = {};  // { [channelId]: number }
 const eoseCounts = {};  // { [channelId]: number } — relays that sent EOSE
 const eoseSettled = {}; // { [channelId]: boolean } — UI already settled
 const eoseRelays  = {}; // { [channelId]: Set<url> } — deduplicar EOSE por relay
+const tombstones  = {}; // { [channelId]: Map<key, created_at> } — retirados/vendidos/caducados ya vistos
+const unconfirmed = {}; // { [channelId]: Set<key> } — vienen de la caché y ningún relay los ha vuelto a entregar
+const settleChecks = []; // funciones que re-evalúan si un canal ya puede darse por cargado
+const MAX_TOASTS  = 3;
 
 // ── Bootstrap ──────────────────────────────────────────────────
 async function init() {
   try {
+    // Las pestañas no dependen de la configuración: con la red lenta, los
+    // clics hechos antes de que llegara config.json se perdían.
+    initTabs();
     await loadConfig();
     resolveIntercambioConfig();
     for (const ch of config.channels) {
       channels[ch.id]    = new Map();
+      tombstones[ch.id]  = new Map();
+      unconfirmed[ch.id] = new Set();
       limits[ch.id]      = PAGE_SIZE;
       eoseCounts[ch.id]  = 0;
       eoseSettled[ch.id] = false;
@@ -62,9 +72,8 @@ async function init() {
     initPool();
     initUI();
     initAnuncioDeepLink();
-    renderActiveChannel();
+    renderActiveChannel();   // pinta la caché, o los esqueletos si aún no hay nada
     updateAllBadges();
-    showSkeletons(activeTab);
     isInitialLoad = true;
     subscribeAll();
     loadStaticData();
@@ -106,8 +115,12 @@ async function loadConfig() {
 
 function initPool() {
   pool = new RelayPool(config.relays, {
-    onConnect()    { updateRelayStatus(); },
-    onDisconnect() { updateRelayStatus(); }
+    onConnect() {
+      updateRelayStatus();
+      // Volvió la conexión con la pestaña en "Sin conexión a relays": repintar.
+      if (channels[activeTab]?.size === 0) renderActiveChannel();
+    },
+    onDisconnect() { updateRelayStatus(); settleChecks.forEach(fn => fn()); }
   });
   pool.connect();
   renderRelayList();
@@ -142,41 +155,90 @@ function saveSortPrefs() {
   try { localStorage.setItem(SORT_PREF_KEY, JSON.stringify(sortPrefs)); } catch {}
 }
 
+// La caché es solo un arranque en caliente: lo que no tenga exactamente la
+// forma esperada se descarta entrada a entrada (reviveCachedItem), y solo se
+// aceptan canales configurados y kinds de ese canal. Antes, un único item mal
+// formado dejaba la pestaña en blanco en cada visita.
 function loadFromCache() {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return false;
-    const { ts, data } = JSON.parse(raw);
-    if (Date.now() - ts > CACHE_TTL) return false;
-    for (const [id, entries] of Object.entries(data)) {
-      if (!channels[id]) channels[id] = new Map();
-      for (const [k, v] of entries) channels[id].set(k, v);
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return false;
+    const { ts, data } = parsed;
+    if (!Number.isFinite(ts) || Date.now() - ts > CACHE_TTL) return false;
+    if (!data || typeof data !== 'object') return false;
+    const blocked = blockedIndex();
+    for (const chCfg of config.channels) {
+      const entries = data[chCfg.id];
+      if (!Array.isArray(entries)) continue;
+      for (const entry of entries) {
+        if (!Array.isArray(entry) || typeof entry[0] !== 'string') continue;
+        const item = reviveCachedItem(entry[1]);
+        if (!item || !chCfg.kinds.includes(item.kind)) continue;
+        if (isItemExpired(item)) continue;        // caducó mientras estaba en caché
+        if (isItemBlocked(item, blocked)) continue; // su autor se ocultó después de guardarse
+        channels[chCfg.id].set(entry[0], item);
+        unconfirmed[chCfg.id].add(entry[0]);
+      }
     }
     lastUpdated = new Date(ts);
     return true;
   } catch { return false; }
 }
 
+// ── Moderación local aplicada a lo ya cargado ──────────────────────────────
+// Los items parseados no guardan todos la pubkey en hex (feed/artículos/
+// eventos solo llevan npub), así que se compara por ambas formas.
+function blockedIndex() {
+  const hexes = listBlocked();
+  return { hexes: new Set(hexes), npubs: new Set(hexes.map(hexToNpub)) };
+}
+
+function isItemBlocked(item, blocked) {
+  return blocked.npubs.has(item.npub) || blocked.hexes.has(item.pubkeyHex) || blocked.hexes.has(item.botPubkey);
+}
+
+/** Quita de todos los canales lo publicado por autores ocultos. */
+function purgeBlocked() {
+  const blocked = blockedIndex();
+  for (const ch of Object.values(channels)) {
+    for (const [key, item] of ch) {
+      if (isItemBlocked(item, blocked)) ch.delete(key);
+    }
+  }
+  saveToCache();
+  renderActiveChannel();
+  updateAllBadges();
+}
+
 // ── Subscriptions ──────────────────────────────────────────────
 function subscribeAll() {
   const tags       = config.community_tags || ['plazap2p'];
   const refreshMs  = config.refresh_interval_ms || 300000;
-  const relayCount = config.relays.length;
 
-  function settleChannel(chId, kinds, noTagFilter, specificTag) {
+  // `complete`: contestó la mayoría de los relays configurados, así que lo
+  // que venía de la caché y nadie ha vuelto a entregar ya no existe en la red
+  // (borrado por su autor, o expulsado por los relays). Sin esto seguía en
+  // pantalla indefinidamente: cada visita lo volvía a guardar en la caché.
+  function settleChannel(chId, kinds, noTagFilter, specificTags, complete = false) {
     if (eoseSettled[chId]) return;
     eoseSettled[chId] = true;
-    hideSkeletons(chId);
-    if (channels[chId].size === 0 && activeTab === chId) {
-      if (pool && pool.connectedCount === 0) showNoRelays(chId);
-      else showEmpty(chId);
+    if (complete && unconfirmed[chId].size > 0) {
+      for (const key of unconfirmed[chId]) channels[chId].delete(key);
+      saveToCache();
+      updateAllBadges();
     }
+    unconfirmed[chId].clear();
+    // Siempre repintar el canal activo: decide entre datos, "sin contenido" o
+    // "sin conexión" (ver renderActiveChannelInner).
+    if (activeTab === chId) renderActiveChannel();
     setTimeout(() => {
       if (!pool) return;
       pool.unsubscribe(chId);
       const sinceTs = Math.floor(Date.now() / 1000);
-      const refreshFilter = specificTag
-        ? { kinds, '#t': [specificTag], since: sinceTs }
+      const refreshFilter = specificTags
+        ? { kinds, '#t': specificTags, since: sinceTs }
         : noTagFilter
           ? { kinds, since: sinceTs }
           : { kinds, '#t': tags, since: sinceTs };
@@ -189,15 +251,29 @@ function subscribeAll() {
 
   for (const ch of config.channels) {
     const noTagFilter  = ch.noTagFilter === true;
-    const specificTag  = ch.tagFilter || null;   // e.g. "plazap2p-directorio"
+    const specificTags = channelTagFilters(ch);   // e.g. ["plazap2p-directorio", ...] o null
     const filters = noTagFilter
       ? [{ kinds: ch.kinds, limit: 100 }]
-      : specificTag
-        ? [{ kinds: ch.kinds, '#t': [specificTag], limit: 200 }]
+      : specificTags
+        ? [{ kinds: ch.kinds, '#t': specificTags, limit: 200 }]
         : [{ kinds: ch.kinds, '#t': tags, limit: 100 }];
 
     // Fallback: settle after 6s even if some relays never send EOSE
-    setTimeout(() => settleChannel(ch.id, ch.kinds, noTagFilter, specificTag), 6000);
+    setTimeout(() => settleChannel(ch.id, ch.kinds, noTagFilter, specificTags), 6000);
+
+    // El canal está cargado cuando han contestado todos los relays de los que
+    // cabe esperar respuesta (pool.expectedCount), no "todos los configurados":
+    // con un relay caído eso nunca se cumplía y cada pestaña esperaba los 6 s.
+    const checkSettled = () => {
+      const got = eoseCounts[ch.id] || 0;
+      const expected = pool.expectedCount;
+      // Nadie va a contestar (todos los relays caídos): no esperar los 6 s.
+      if (expected === 0) settleChannel(ch.id, ch.kinds, noTagFilter, specificTags, false);
+      else if (got > 0 && got >= expected) {
+        settleChannel(ch.id, ch.kinds, noTagFilter, specificTags, got * 2 >= config.relays.length);
+      }
+    };
+    settleChecks.push(checkSettled);
 
     pool.subscribe(ch.id, filters, {
       onEvent: (ev) => addEvent(ch.id, ev),
@@ -206,22 +282,10 @@ function subscribeAll() {
         if (eoseRelays[ch.id].has(url)) return; // ignorar EOSE duplicado del mismo relay
         eoseRelays[ch.id].add(url);
         eoseCounts[ch.id] = (eoseCounts[ch.id] || 0) + 1;
-        if (eoseCounts[ch.id] >= relayCount) settleChannel(ch.id, ch.kinds, noTagFilter, specificTag);
+        checkSettled();
       }
     });
   }
-}
-
-// ── NIP-40 ─────────────────────────────────────────────────────
-// Tag opcional ['expiration', '<unix segs>']. Timestamp inválido (no
-// numérico, negativo) se ignora en vez de tratarse como "ya caducado" —
-// un tag malformado no debe ocultar un anuncio válido.
-function isExpired(event) {
-  const raw = getTagValue(event.tags, 'expiration');
-  if (!raw) return false;
-  const ts = parseInt(raw, 10);
-  if (!Number.isFinite(ts) || ts <= 0) return false;
-  return ts < Math.floor(Date.now() / 1000);
 }
 
 // ── Event ingestion ────────────────────────────────────────────
@@ -236,23 +300,27 @@ function addEvent(channelId, event) {
     if (chCfg) {
       if (Array.isArray(chCfg.kinds) && !chCfg.kinds.includes(event.kind)) return;
       if (chCfg.noTagFilter !== true) {
-        const required = chCfg.tagFilter ? [chCfg.tagFilter] : (config.community_tags || ['plazap2p']);
+        const required = channelTagFilters(chCfg) || (config.community_tags || ['plazap2p']);
         if (!event.tags?.some(t => t[0] === 't' && required.includes(t[1]))) return;
       }
     }
-
-    // ADS-002 (NIP-40): un anuncio caducado no debe listarse como activo.
-    // Solo afecta a lectura/render — el evento sigue existiendo en los relays,
-    // esto no es un borrado.
-    if (isExpired(event)) return;
 
     // MOD-001: moderación LOCAL — el autor sigue publicando normalmente en
     // Nostr, esta app simplemente no le muestra su contenido EN ESTE navegador.
     if (isBlocked(event.pubkey)) return;
 
     const key      = eventKey(event);
+    unconfirmed[channelId]?.delete(key);   // un relay lo sigue sirviendo: no es un resto de la caché
     const existing = ch.get(key);
     if (existing && event.created_at <= existing.created_at) return;
+
+    // Lápida: ya se vio una versión retirada/vendida/caducada de esta misma
+    // publicación. Una versión MÁS ANTIGUA que llegue después desde un relay
+    // desactualizado no debe resucitarla (el orden de llegada entre relays
+    // no está garantizado).
+    const tombs = tombstones[channelId] || (tombstones[channelId] = new Map());
+    const buriedAt = tombs.get(key);
+    if (buriedAt != null && event.created_at <= buriedAt) return;
 
     // Eventos de prueba de la app (tag plazap2p-test): nunca mostrarlos
     if (event.tags?.some(t => t[0] === 't' && t[1] === 'plazap2p-test')) return;
@@ -265,15 +333,21 @@ function addEvent(channelId, event) {
     // Remove listings that are sold/deleted/inactive, or Mostro orders that are no longer pending
     // ('inactive' es el estado que usa la retirada de anuncios de publicar.html)
     const statusLower = parsed.status?.toLowerCase() || '';
+    // ADS-002 (NIP-40): un anuncio caducado no se lista como activo. Solo
+    // afecta a lectura/render — el evento sigue existiendo en los relays.
     const shouldRemove =
+      isExpired(event) ||
       statusLower === 'sold' ||
       statusLower === 'deleted' ||
       statusLower === 'inactive' ||
       (event.kind === 38383 && statusLower !== 'pending');
 
     if (shouldRemove) {
+      tombs.set(key, event.created_at);
+      if (!existing) return;   // nada que quitar de pantalla: solo recordar la lápida
       ch.delete(key);
     } else {
+      tombs.delete(key);       // versión activa más reciente que la lápida (republicado)
       ch.set(key, parsed);
       if (channelId === 'mercado' && pendingAnuncioNaddr === parsed.naddr) tryOpenPendingAnuncio();
     }
@@ -311,13 +385,6 @@ function parseEvent(event) {
   }
 }
 
-// Tag published_at malformado (relay/evento hostil) → NaN se colaba en
-// fmtAge(), en la comparación de "reciente" y en el sort de items.
-function parsePublishedAt(tags, created_at) {
-  const ts = parseInt(getTagValue(tags, 'published_at') || created_at, 10);
-  return Number.isFinite(ts) ? ts : created_at;
-}
-
 function parseListing(event) {
   const { tags, pubkey, created_at } = event;
   const title       = getTagValue(tags, 'title') || 'Sin título';
@@ -327,14 +394,14 @@ function parseListing(event) {
   const category    = detectCategory(tTags);
   const payment     = detectPayment(tTags);
   const dTag        = getTagValue(tags, 'd') || event.id;
-  const publishedAt = parsePublishedAt(tags, created_at);
+  const publishedAt = publishedAtOf(tags, created_at);
   const status      = getTagValue(tags, 'status') || 'active';
   const naddr       = encodeNaddr({ kind: 30402, pubkey, identifier: dTag });
   const npub        = hexToNpub(pubkey);
   const priceTag    = tags.find(t => t[0] === 'price');
   const price       = priceTag?.[1] || '';
   const currency    = priceTag?.[2] || '';
-  return { kind: 30402, title, summary, location, category, payment, price, currency, publishedAt, status, naddr, npub, pubkeyHex: pubkey, created_at };
+  return { kind: 30402, title, summary, location, category, payment, price, currency, publishedAt, status, naddr, npub, pubkeyHex: pubkey, created_at, expiresAt: expirationTs(event) };
 }
 
 function parseFeedPost(event) {
@@ -351,7 +418,7 @@ function parseFeedPost(event) {
 function parseArticle(event) {
   const { tags, pubkey, created_at } = event;
   const dTag        = getTagValue(tags, 'd') || event.id;
-  const publishedAt = parsePublishedAt(tags, created_at);
+  const publishedAt = publishedAtOf(tags, created_at);
   return {
     kind:        30023,
     title:       getTagValue(tags, 'title') || 'Sin título',
@@ -388,66 +455,24 @@ function parseCalendarEvent(event) {
     tzid,
     links,
     naddr,
+    status: getTagValue(tags, 'status') || 'active',   // la retirada desde publicar.html republica con status:inactive
     npub: hexToNpub(pubkey),
     publishedAt: start?.ts || created_at,
     created_at
   };
 }
 
-function parseCalendarDate(kind, value) {
-  if (!value) return null;
-  if (kind === 31922) {
-    // Legado PROT-001: eventos 31922 antiguos publicados con timestamp Unix
-    // (bug corregido en el builder) — tolerarlos solo en lectura.
-    if (/^\d{9,}$/.test(value)) {
-      const ts = Number(value);
-      const date = new Date(ts * 1000);
-      return Number.isNaN(date.getTime()) ? null : { ts, date };
-    }
-    const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00`) : new Date(value);
-    if (Number.isNaN(date.getTime())) return null;
-    return { ts: Math.floor(date.getTime() / 1000), date };
-  }
-
-  const ts = Number(value);
-  if (!Number.isFinite(ts)) return null;
-  const date = new Date(ts * 1000);
-  if (Number.isNaN(date.getTime())) return null;
-  return { ts, date };
-}
-
 function parseOrder(event) {
   const { tags, pubkey, created_at } = event;
-  const orderType  = getTagValue(tags, 'k') || '';         // 'sell' | 'buy'
-  const fiat       = (getTagValue(tags, 'f') || '').toUpperCase();
-  const sats       = parseInt(getTagValue(tags, 'amt') || '0', 10);
-  const fiatAmts   = getTagValues(tags, 'fa');              // [min] or [min, max]
-  const payments   = getTagValues(tags, 'pm').filter(Boolean);
-  const premium    = parseFloat(getTagValue(tags, 'premium') || '0');
-  const status     = getTagValue(tags, 's') || 'pending';
-  const dTag       = getTagValue(tags, 'd') || event.id;
-  const naddr      = encodeNaddr({ kind: 38383, pubkey, identifier: dTag });
-  const fiatMin    = fiatAmts[0] != null ? parseFloat(fiatAmts[0]) : null;
-  const fiatMax    = fiatAmts[1] != null ? parseFloat(fiatAmts[1]) : null;
-
-  // Sanity-check ranges; discard events with impossible values from malicious relays
-  if (!['buy', 'sell'].includes(orderType.toLowerCase())) return null;
-  if (isNaN(sats) || sats < 0 || sats > 21_000_000_000_000) return null;
-  if (fiatMin != null && (isNaN(fiatMin) || fiatMin < 0)) return null;
-  if (fiatMax != null && (isNaN(fiatMax) || fiatMax < 0)) return null;
-  if (fiatMin != null && fiatMax != null && fiatMax < fiatMin) return null;
-  if (isNaN(premium) || premium < -99 || premium > 10000) return null;
+  // Rangos imposibles (relay malicioso) → null: ver parseOrderTags().
+  const fields = parseOrderTags(tags);
+  if (!fields) return null;
+  const dTag  = getTagValue(tags, 'd') || event.id;
+  const naddr = encodeNaddr({ kind: 38383, pubkey, identifier: dTag });
 
   return {
     kind: 38383,
-    orderType,
-    fiat,
-    sats,
-    fiatMin,
-    fiatMax,
-    payments,
-    premium,
-    status,
+    ...fields,
     dTag,
     botPubkey: pubkey,
     naddr,
@@ -512,7 +537,7 @@ function renderStarDisplay(avg, n, compact = true) {
   if (compact) {
     return `<div class="star-display-compact">${stars}<span class="star-count-compact">${safeAvg.toFixed(1)} (${safeN})</span></div>`;
   }
-  return `<div class="star-display-full">${stars}<span class="star-count-full">${safeAvg.toFixed(1)} · ${safeN} valoración${safeN !== 1 ? 'es' : ''}</span></div>`;
+  return `<div class="star-display-full">${stars}<span class="star-count-full">${safeAvg.toFixed(1)} · ${safeN} ${plural(safeN, 'valoración', 'valoraciones')}</span></div>`;
 }
 
 // REP-003: distribución 5★→1★, no solo la media — visible solo con datos en
@@ -539,7 +564,7 @@ function renderAspectsBar(aspects) {
       const safeV = Math.max(0, Math.min(5, Number(v) || 0));
       const pct = Math.round((safeV / 5) * 100);
       return `<div class="rating-aspect-item">
-        <span class="aspect-label">${LABELS[k] || k}</span>
+        <span class="aspect-label">${esc(LABELS[k] || k)}</span>
         <div class="aspect-bar-track"><div class="aspect-bar-fill" style="width:${pct}%"></div></div>
         <span class="aspect-val">${safeV.toFixed(1)}</span>
       </div>`;
@@ -639,10 +664,18 @@ window.openReputacionModal = async function(hex) {
   // vendedor, mientras llegaban estos datos — no pisar lo que se ve ahora.
   if (modal.classList.contains('hidden') || modal.dataset.repHex !== hex) return;
 
+  // Valoraciones que existen pero no cuentan (ver reputacion.js): se dice,
+  // para que la cifra no parezca arbitraria frente a otros clientes Nostr.
+  const excluded = Number(rep?.excludedRecent) || 0;
+  const excludedHtml = excluded > 0
+    ? `<p class="no-rating-text" id="rep-excluded-note">${excluded} ${plural(excluded, 'valoración', 'valoraciones')} de cuentas con menos de 30 días de actividad en Nostr no se cuenta${excluded === 1 ? '' : 'n'}.</p>`
+    : '';
+
   const staticR = ratingsIndex[hex];
   if ((!rep || rep.count === 0) && (!staticR || staticR.n < 1)) {
     modal.innerHTML = shell(`<div class="modal-rating-section modal-rating-none">
       <span class="no-rating-text">Sin valoraciones firmadas todavía. Las valoraciones son eventos Nostr (kind 1985) verificables por cualquiera.</span>
+      ${excludedHtml}
     </div>`);
     return;
   }
@@ -665,7 +698,7 @@ window.openReputacionModal = async function(hex) {
     : '';
 
   const distributionHtml = (rep && rep.count > 0 && rep.distribution)
-    ? `<div class="modal-rating-header" style="margin-top:12px">Distribución (${rep.count} valoración${rep.count !== 1 ? 'es' : ''})</div>` +
+    ? `<div class="modal-rating-header" style="margin-top:12px">Distribución (${rep.count} ${plural(rep.count, 'valoración', 'valoraciones')})</div>` +
       renderDistributionBars(rep.distribution, rep.count)
     : '';
 
@@ -681,6 +714,7 @@ window.openReputacionModal = async function(hex) {
     <div class="modal-rating-header">Reputación agregada${rep && rep.count > 0 ? ' (en vivo desde los relays)' : ' (índice histórico)'}</div>
     ${renderStarDisplay(avg, n, false)}
     ${trustHtml}
+    ${excludedHtml}
     ${Object.keys(aspects).length ? renderAspectsBar(aspects) : ''}
     ${distributionHtml}
     ${commentsHtml}
@@ -690,10 +724,21 @@ window.openReputacionModal = async function(hex) {
 // ── Rendering ──────────────────────────────────────────────────
 const CAT_COLORS = {
   venta: '#00d4ff', compra: '#30d158', servicio: '#bf5af2',
-  trueque: '#ffd60a', general: '#86868b', otro: '#86868b'
+  trueque: '#ffd60a', general: '#86868b', otro: '#86868b',
+  evento: '#86868b', comunidad: '#86868b', herramienta: '#86868b'
 };
+// Publicaciones que no son una oferta comercial: no tiene sentido pintarles
+// "medio de pago" (detectPayment() devuelve 'Bitcoin' por defecto).
+const NON_COMMERCE_CATS = new Set(['evento', 'comunidad', 'herramienta']);
+// Canales que enseñan esqueletos mientras cargan.
+const SKELETON_TABS = new Set(['mercado', 'feed', 'articulos', 'directorio']);
 
 function renderActiveChannel() {
+  try { renderActiveChannelInner(); }
+  catch (e) { console.error('[render]', activeTab, e); }
+}
+
+function renderActiveChannelInner() {
   if (activeTab === 'vendedores') { renderSellersDirectory(); return; }
   if (STATIC_TABS.has(activeTab)) return;
 
@@ -705,8 +750,19 @@ function renderActiveChannel() {
 
   document.getElementById('load-more-btn')?.remove();
 
+  // Canal sin nada que enseñar: mientras los relays no han contestado se está
+  // CARGANDO (esqueletos); después, "sin contenido" o "sin conexión". Antes,
+  // al entrar en una pestaña aún cargando salía "Sin resultados — prueba con
+  // otro filtro", que no era verdad. Eventos e Intercambio tienen su propio
+  // estado vacío más abajo.
+  if (ch.size === 0 && SKELETON_TABS.has(activeTab)) {
+    if (!eoseSettled[activeTab]) { showSkeletons(activeTab); return; }
+    if (pool && pool.connectedCount === 0) { showNoRelays(activeTab); return; }
+    if (activeTab !== 'directorio') { showEmpty(activeTab); return; }
+  }
+
   const sort = sortPrefs[activeTab] || 'newest';
-  let items = [...ch.values()];
+  let items = [...ch.values()].filter(item => !isItemExpired(item));
   if (activeTab === 'eventos') {
     items = sortCalendarEvents(items);
   } else {
@@ -803,15 +859,15 @@ function isCalendarEventPast(e, now = Math.floor(Date.now() / 1000)) {
 function renderCalendarEvents(grid, items) {
   if (items.length === 0) {
     if (staticEvents.length > 0) {
-      const now = Math.floor(Date.now() / 1000);
-      const upcoming = staticEvents.filter(e => {
-        const ts = e.start ? Math.floor(new Date(e.start).getTime() / 1000) : Infinity;
-        return ts >= now;
-      }).sort((a, b) => new Date(a.start) - new Date(b.start));
-      const past = staticEvents.filter(e => {
-        const ts = e.start ? Math.floor(new Date(e.start).getTime() / 1000) : 0;
-        return ts < now;
-      }).sort((a, b) => new Date(b.start) - new Date(a.start));
+      // Un evento recurrente (meetup mensual…) no "ha pasado" porque su última
+      // fecha anotada quede atrás: sigue vigente. Antes acababan todos en
+      // "Eventos anteriores" con la marca "Pasado".
+      const dated = staticEvents.filter(e => !isStaticEventStale(e));
+      const upcoming = [
+        ...dated.filter(e => !staticEventTs(e) || staticEventTs(e) >= Date.now() / 1000).sort((a, b) => new Date(a.start) - new Date(b.start)),
+        ...dated.filter(e => staticEventTs(e) && staticEventTs(e) < Date.now() / 1000),   // recurrentes sin fecha próxima anotada
+      ];
+      const past = staticEvents.filter(isStaticEventStale).sort((a, b) => new Date(b.start) - new Date(a.start));
 
       const html = [
         `<div class="event-static-notice">
@@ -875,20 +931,20 @@ function renderCalendarEvents(grid, items) {
 function renderListingCard(l) {
   const color    = CAT_COLORS[l.category] || '#86868b';
   const njumpUrl = `https://njump.me/${l.naddr}`;
-  const payment  = l.payment.slice(0, 2).join(' · ');
+  const payment  = l.payment.slice(0, 2).map(esc).join(' · ');
   const isNew    = (Date.now() / 1000 - l.publishedAt) < 3600;
   const rating   = getSellerRating(l.pubkeyHex);
   const ratingHtml = rating ? renderStarDisplay(rating.avg, rating.n, true) : '';
   const favActive = isFavorite(l.naddr);
   return `<article class="listing-card" onclick="openModal('${l.naddr}')" style="--card-accent:${color}">
     <div class="card-top-row">
-      <div class="card-badge" style="color:${color};border-color:${color}40">${l.category.toUpperCase()}</div>
+      <div class="card-badge" style="color:${color};border-color:${color}40">${esc(l.category.toUpperCase())}</div>
       ${isNew ? '<span class="card-new-badge">nuevo</span>' : ''}
       <button class="card-fav-btn${favActive ? ' active' : ''}" onclick="event.stopPropagation(); toggleFav('${l.naddr}', this)" title="${favActive ? 'Quitar de favoritos' : 'Guardar en favoritos'}" aria-pressed="${favActive}">${favActive ? '⭐' : '☆'}</button>
     </div>
     <h3 class="card-title">${esc(l.title)}</h3>
     ${l.location ? `<div class="card-location">📍 ${esc(l.location)}</div>` : ''}
-    <div class="card-payment">⚡ ${payment}</div>
+    ${NON_COMMERCE_CATS.has(l.category) ? '' : `<div class="card-payment">⚡ ${payment}</div>`}
     <div class="card-footer">
       <span class="card-age">${fmtAge(l.publishedAt)}</span>
       ${ratingHtml}
@@ -906,7 +962,7 @@ function renderDirectorio(grid, items) {
     grid.innerHTML = `<div class="empty-state">
       <div class="empty-icon">📒</div>
       <p class="empty-title">El directorio está vacío</p>
-      <p class="empty-sub">Los servicios y establecimientos publicados con el tag <code>#plazap2p-directorio</code> aparecerán aquí.</p>
+      <p class="empty-sub">Los servicios publicados desde <a href="publicar.html?type=servicio">Publicar</a>, y las fichas con el tag <code>#plazap2p-directorio</code>, aparecerán aquí.</p>
     </div>`;
     return;
   }
@@ -931,7 +987,7 @@ function renderDirectorioCard(l) {
   const priceTag = l.price ? `<span class="dir-price">${esc(l.price)} ${esc(l.currency || '')}</span>` : '';
   return `<article class="dir-card" onclick="window.open('${njumpUrl}','_blank','noopener noreferrer')" style="--card-accent:${color}">
     <div class="dir-card-header">
-      <div class="card-badge" style="color:${color};border-color:${color}40">${(l.category || 'servicio').toUpperCase()}</div>
+      <div class="card-badge" style="color:${color};border-color:${color}40">${esc((l.category || 'servicio').toUpperCase())}</div>
       ${priceTag}
     </div>
     <h3 class="dir-card-title">${esc(l.title)}</h3>
@@ -1006,7 +1062,7 @@ function renderCalendarEventCard(e) {
   const now      = Math.floor(Date.now() / 1000);
   const startTs  = e.start?.ts || e.publishedAt;
   const isPast   = (e.end?.ts || startTs) < now;
-  const date     = e.start?.date;
+  const date     = calDate(e.start);
   const day      = date ? date.toLocaleDateString('es-ES', { day: '2-digit' }) : '??';
   const month    = date ? date.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase() : '';
   const dateFmt  = fmtCalendarDate(e);
@@ -1035,12 +1091,27 @@ function renderCalendarEventCard(e) {
   </article>`;
 }
 
+/** Segundos Unix del inicio de un evento curado, o 0 si no tiene fecha legible. */
+function staticEventTs(e) {
+  const ms = e?.start ? new Date(e.start).getTime() : NaN;
+  return Number.isFinite(ms) ? Math.floor(ms / 1000) : 0;
+}
+
+/** Evento curado que ya pasó de verdad: con fecha atrás y NO recurrente. */
+function isStaticEventStale(e) {
+  const ts = staticEventTs(e);
+  return !e.recurrente && ts > 0 && ts < Math.floor(Date.now() / 1000);
+}
+
 function renderStaticEventCard(e) {
   const now    = Math.floor(Date.now() / 1000);
-  const startD = e.start ? new Date(e.start) : null;
-  const startTs = startD ? Math.floor(startD.getTime() / 1000) : 0;
-  const isPast  = startTs > 0 && startTs < now;
-  const day   = startD ? startD.toLocaleDateString('es-ES', { day: '2-digit' }) : '??';
+  const ts     = staticEventTs(e);
+  const isPast = isStaticEventStale(e);
+  // Recurrente con la última fecha ya pasada: la fecha anotada no es la
+  // próxima, así que no se enseña como si lo fuera.
+  const dateUnknown = !!e.recurrente && ts > 0 && ts < now;
+  const startD = (ts > 0 && !dateUnknown) ? new Date(ts * 1000) : null;
+  const day   = startD ? startD.toLocaleDateString('es-ES', { day: '2-digit' }) : (dateUnknown ? '↻' : '??');
   const month = startD ? startD.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase() : '';
   const primaryLink = (e.links || []).find(l => safeUrl(l)) || '';
   const recLabel = e.recurrente ? ' <span class="event-recurrent-badge">Recurrente</span>' : '';
@@ -1057,6 +1128,7 @@ function renderStaticEventCard(e) {
       <h3 class="event-title">${esc(e.title)}</h3>
       ${e.location ? `<div class="event-location">📍 ${esc(e.location)}</div>` : ''}
       ${startD ? `<div class="event-time">📅 ${startD.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</div>` : ''}
+      ${dateUnknown ? `<div class="event-time">📅 Se repite — consulta la próxima fecha en el enlace</div>` : ''}
       ${e.summary ? `<p class="event-desc">${esc(e.summary)}</p>` : ''}
       ${primaryLink ? `<div class="event-actions"><a href="${safeUrl(primaryLink)}" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-sm">Ver evento ↗</a></div>` : ''}
     </div>
@@ -1064,18 +1136,20 @@ function renderStaticEventCard(e) {
 }
 
 function fmtCalendarDate(e) {
-  if (!e.start?.date) return '';
+  const startDate = calDate(e.start);
+  const endDate   = calDate(e.end);
+  if (!startDate) return '';
   if (e.kind === 31922) {
     const opts = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
-    const start = e.start.date.toLocaleDateString('es-ES', opts);
-    if (!e.end?.date) return start;
-    return `${start} → ${e.end.date.toLocaleDateString('es-ES', opts)}`;
+    const start = startDate.toLocaleDateString('es-ES', opts);
+    if (!endDate) return start;
+    return `${start} → ${endDate.toLocaleDateString('es-ES', opts)}`;
   }
 
   const opts = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };
-  const start = e.start.date.toLocaleString('es-ES', opts);
-  if (!e.end?.date) return e.tzid ? `${start} · ${esc(e.tzid)}` : start;
-  const end = e.end.date.toLocaleString('es-ES', opts);
+  const start = startDate.toLocaleString('es-ES', opts);
+  if (!endDate) return e.tzid ? `${start} · ${esc(e.tzid)}` : start;
+  const end = endDate.toLocaleString('es-ES', opts);
   return `${start} → ${end}${e.tzid ? ` · ${esc(e.tzid)}` : ''}`;
 }
 
@@ -1122,9 +1196,9 @@ function showEmpty(channelId) {
   const ch   = config.channels.find(c => c.id === channelId);
   const tag  = (config.community_tags || ['plazap2p'])[0];
   grid.innerHTML = `<div class="empty-state">
-    <div class="empty-icon">${ch?.icon || '📡'}</div>
+    <div class="empty-icon">${esc(ch?.icon || '📡')}</div>
     <p class="empty-title">Sin contenido aún</p>
-    <p class="empty-sub">Publica en Nostr con el tag <code>#${tag}</code> y aparecerá aquí.</p>
+    <p class="empty-sub">Publica en Nostr con el tag <code>#${esc(tag)}</code> y aparecerá aquí.</p>
     <button class="btn-primary" onclick="switchTab('publicar')">¿Cómo aparecer?</button>
   </div>`;
 }
@@ -1133,6 +1207,10 @@ function showEmpty(channelId) {
 function showToast(msg) {
   const container = document.getElementById('toast-container');
   if (!container) return;
+  // Un mismo aviso repetido (p.ej. "Nuevo en Mercado" ×40 cuando un relay
+  // lento descarga de golpe) no se apila; y nunca más de MAX_TOASTS a la vez.
+  if ([...container.children].some(t => t.textContent === msg)) return;
+  while (container.children.length >= MAX_TOASTS) container.firstElementChild.remove();
   const toast = document.createElement('div');
   toast.className = 'toast';
   toast.textContent = msg;
@@ -1215,12 +1293,12 @@ window.openModal = function(naddr, options = {}) {
     <div class="modal-box">
       <button class="modal-close" onclick="closeModal()">✕</button>
       <button class="card-fav-btn${modalFavActive ? ' active' : ''}" style="position:absolute;top:14px;right:52px" onclick="toggleFav('${l.naddr}', this)" title="${modalFavActive ? 'Quitar de favoritos' : 'Guardar en favoritos'}" aria-pressed="${modalFavActive}">${modalFavActive ? '⭐' : '☆'}</button>
-      <div class="modal-category" style="color:${color}">${l.category.toUpperCase()}</div>
+      <div class="modal-category" style="color:${color}">${esc(l.category.toUpperCase())}</div>
       <h2 id="modal-title" class="modal-title">${esc(l.title)}</h2>
       ${l.location ? `<div class="modal-location">📍 ${esc(l.location)}</div>` : ''}
       ${l.summary  ? `<p class="modal-summary">${l.summary}</p>` : ''}
       <div class="modal-meta">
-        <span><strong>Pago:</strong> ${l.payment.join(', ')}</span>
+        ${NON_COMMERCE_CATS.has(l.category) ? '' : `<span><strong>Pago:</strong> ${l.payment.map(esc).join(', ')}</span>`}
         <span><strong>Publicado:</strong> ${fmtAge(l.publishedAt)}</span>
       </div>
       ${l.price ? `<div class="modal-meta"><span><strong>Precio:</strong> ${esc(l.price)} ${esc(l.currency || '')}</span>
@@ -1266,15 +1344,16 @@ window.openModal = function(naddr, options = {}) {
     if (window.location.hash !== hash) window.history.pushState(null, '', hash);
   }
 
-  // ZAP-002: total de zaps recibidos, solo con recibos verificados
-  // (validateZapReceipt en zaps.js) — nunca a partir de una cifra sin firmar.
+  // ZAP-002: suma de recibos de zap bien formados (countableZapReceipt en
+  // zaps.js). No se presenta como "verificado": sin contrastar el emisor con
+  // el proveedor LNURL del vendedor, un recibo no prueba que hubo pago.
   modal.dataset.naddr = naddr;
   fetchZapReceipts(pool, l.pubkeyHex).then(({ totalMsats, receipts }) => {
     if (modal.classList.contains('hidden') || modal.dataset.naddr !== naddr) return; // ya se cerró o cambió de anuncio
     const el = document.getElementById('modal-zap-total');
     if (!el) return;
     el.textContent = receipts.length > 0
-      ? `⚡ ${Math.floor(totalMsats / 1000).toLocaleString('es-ES')} sats recibidos en zaps (${receipts.length} verificado${receipts.length === 1 ? '' : 's'})`
+      ? `⚡ ${Math.floor(totalMsats / 1000).toLocaleString('es-ES')} sats en zaps públicos (${receipts.length} recibo${receipts.length === 1 ? '' : 's'} con firma válida — el pago en sí no se puede comprobar desde aquí)`
       : '';
   }).catch(() => { /* sin zaps o relay caído: no mostrar nada, no es un error visible */ });
 };
@@ -1296,18 +1375,8 @@ window.closeModal = function(options = {}) {
 window.hideSeller = function(pubkeyHex) {
   if (!confirm('¿Ocultar las publicaciones de este vendedor en este navegador? Puedes deshacerlo luego en Acerca → Moderación personal.')) return
   blockPubkey(pubkeyHex);
-  // Purga por `npub`: es el único campo que ponen TODOS los parseX() (mercado
-  // tiene además pubkeyHex, pero feed/artículos/eventos solo tienen npub).
-  const npub = hexToNpub(pubkeyHex);
-  for (const ch of Object.values(channels)) {
-    for (const [key, item] of ch) {
-      if (item.npub === npub) ch.delete(key);
-    }
-  }
   window.closeModal();
-  saveToCache();
-  renderActiveChannel();
-  updateAllBadges();
+  purgeBlocked();
 };
 
 // ── Focus trap (B.4): #listing-modal y #modal-donar-overlay son los únicos
@@ -1318,7 +1387,10 @@ const FOCUSABLE_SEL = 'a[href], button:not([disabled]), textarea, input, select,
 
 function trapFocus(container) {
   if (!container) return;
-  modalReturnFocus = document.activeElement;
+  // Reabrir sin cerrar antes (de un anuncio a otro por enlace directo): no
+  // acumular manejadores ni perder el elemento al que devolver el foco.
+  if (container._trapKeydown) container.removeEventListener('keydown', container._trapKeydown);
+  else modalReturnFocus = document.activeElement;
   const focusables = () => [...container.querySelectorAll(FOCUSABLE_SEL)];
   focusables()[0]?.focus();
   const onKeydown = e => {
@@ -1376,7 +1448,6 @@ function updateLocationSelect(items) {
 
 // ── UI init ────────────────────────────────────────────────────
 function initUI() {
-  initTabs();
   initFilters();
   initSort();
   initSearch();
@@ -1441,7 +1512,7 @@ function initModerationUI() {
     try {
       const added = importBlocked(raw);
       renderBlockedList();
-      renderActiveChannel();
+      purgeBlocked();   // lo ya cargado de esos autores desaparece ahora, no en la próxima visita
       showToast(`✅ ${added} vendedor${added === 1 ? '' : 'es'} añadido${added === 1 ? '' : 's'} a la lista`);
     } catch (e) {
       if (errEl) errEl.textContent = 'No se pudo importar: ' + (e?.message || 'formato inválido');
@@ -1525,7 +1596,9 @@ window.switchTab = function(tab, options = {}) {
 
 // ── Badges & counters ──────────────────────────────────────────
 function updateAllBadges() {
-  const total = Object.values(channels).reduce((s, m) => s + m.size, 0);
+  // Publicaciones distintas: un servicio está a la vez en Mercado y en
+  // Directorio (misma clave) y se contaba dos veces.
+  const total = new Set(Object.values(channels).flatMap(m => [...m.keys()])).size;
   const el    = document.getElementById('listing-count');
   if (el) {
     const current = parseInt(el.textContent) || 0;
@@ -1635,7 +1708,7 @@ window.shareOrCopy = async function(url, title = 'PlazaP2P') {
 function esc(str) {
   return String(str)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 function safeUrl(url) {
@@ -1650,6 +1723,11 @@ function safeUrl(url) {
     if (u.origin === window.location.origin) return esc(u.pathname + u.search + u.hash);
     return esc(url);
   } catch { return ''; }
+}
+
+/** Singular o plural según n. En español el plural no siempre es "+es": valoración → valoraciones (sin tilde). */
+function plural(n, one, many) {
+  return n === 1 ? one : many;
 }
 
 function versioned(path) {
@@ -1711,41 +1789,15 @@ function fmtAge(ts) {
   return m === 1 ? '1 mes' : `${m} meses`;
 }
 
+// Texto de vista previa: sin teléfonos/correos/enlaces (maskContacts, en
+// listing-utils.js, con sus tests) y escapado para insertarlo como HTML.
 function sanitize(text) {
-  return esc(String(text)
-    .replace(/\+?[\d\s().-]{8,}/g, '···')
-    .replace(/[\w.+-]+@[\w.-]+\.\w+/g, '···')
-    .replace(/https?:\/\/\S+/g, '[enlace]')
-    .slice(0, 200));
+  return esc(maskContacts(text));
 }
 
 function cityOnly(raw) {
   if (!raw) return null;
   return raw.split(',')[0].trim();
-}
-
-function detectCategory(tTags) {
-  // Sub-tags tienen prioridad — el tag define la categoría
-  if (tTags.includes('plazap2p-venta'))    return 'venta';
-  if (tTags.includes('plazap2p-compra'))   return 'compra';
-  if (tTags.includes('plazap2p-servicio')) return 'servicio';
-  if (tTags.includes('plazap2p-trueque'))  return 'trueque';
-  if (tTags.includes('plazap2p-evento'))   return 'evento';
-  // Compatibilidad: tags de categoría sueltos (NIP-99 legacy)
-  for (const cat of ['venta', 'compra', 'servicio', 'trueque']) {
-    if (tTags.includes(cat)) return cat;
-  }
-  // Sin sub-tag → General (aparece en "General" y en todos los demás)
-  return 'general';
-}
-
-function detectPayment(tTags) {
-  const methods = [];
-  if (tTags.some(t => ['bitcoin', 'btc', 'onchain'].includes(t)))   methods.push('Bitcoin');
-  if (tTags.some(t => ['lightning', 'ln', 'lnbc'].includes(t)))     methods.push('Lightning');
-  if (tTags.some(t => ['cashu', 'ecash'].includes(t)))              methods.push('Cashu');
-  if (tTags.some(t => ['efectivo', 'cash'].includes(t)))            methods.push('Efectivo');
-  return methods.length ? methods : ['Bitcoin'];
 }
 
 // ── Intercambio (Mostro kind:38383) ───────────────────────────

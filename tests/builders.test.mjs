@@ -82,7 +82,11 @@ test('buildRetirada referencia kind:pubkey:dTag y e opcional', () => {
   assert.equal(r.ok, true)
   assert.equal(r.unsignedEvent.kind, 5)
   assert.deepEqual(r.unsignedEvent.tags[0], ['a', `30402:${PK1}:d-1`])
-  assert.deepEqual(r.unsignedEvent.tags[1], ['e', 'a'.repeat(64)])
+  // NIP-09: el kind de lo que se borra va en una etiqueta `k` (igual que en Android)
+  assert.deepEqual(r.unsignedEvent.tags[1], ['k', '30402'])
+  assert.deepEqual(r.unsignedEvent.tags[2], ['e', 'a'.repeat(64)])
+  const sinEvento = buildRetirada({ kind: 31923, dTag: 'd-2' }, PK1)
+  assert.deepEqual(sinEvento.unsignedEvent.tags, [['a', `31923:${PK1}:d-2`], ['k', '31923']])
 })
 
 test('ADS-002: buildServicio y buildTransaccion añaden expiration ≈ 60 días; buildValoracion/buildRetirada no', () => {

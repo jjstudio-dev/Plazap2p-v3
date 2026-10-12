@@ -19,3 +19,6 @@ npm-debug.log*
 .dev.vars
 *.key
 *.pem
+
+# Código en cuarentena pendiente de revisión manual (no se publica)
+_CUARENTENA_*/

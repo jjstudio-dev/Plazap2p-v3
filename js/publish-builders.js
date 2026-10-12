@@ -157,6 +157,17 @@ export function buildServicio(data, userPubHex, dTag = null, publishedAt = null)
 //           dateTs?, endTs?, tzid? }        ← si con hora (Unix segs)
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+const SECONDS_PER_DAY = 86400
+const NIP52_MAX_DAY_TAGS = 366   // un evento de más de un año no necesita una etiqueta por día
+
+/** Días UTC (número de día desde 1970) que cubre un evento con hora; `end` es exclusivo. */
+export function nip52DayTags(startTs, endExclusiveTs = null) {
+  const first = Math.floor(startTs / SECONDS_PER_DAY)
+  const last = endExclusiveTs == null ? first : Math.floor((endExclusiveTs - 1) / SECONDS_PER_DAY)
+  const days = []
+  for (let d = first; d <= last && days.length < NIP52_MAX_DAY_TAGS; d++) days.push(d)
+  return days
+}
 
 export function buildEvento(data, userPubHex, dTag = null, publishedAt = null) {
   const pkErr = validatePubkey(userPubHex)
@@ -194,12 +205,17 @@ export function buildEvento(data, userPubHex, dTag = null, publishedAt = null) {
     if (!Number.isInteger(startTs) || startTs <= 0)
       return { ok: false, error: 'fecha y hora de inicio requeridas' }
     tags.push(['start', String(startTs)])
+    let endTs = null
     if (data.endTs != null && data.endTs !== '') {
-      const endTs = Number(data.endTs)
+      endTs = Number(data.endTs)
       if (!Number.isInteger(endTs) || endTs <= startTs)
         return { ok: false, error: 'el fin del evento debe ser posterior al inicio' }
       tags.push(['end', String(endTs)])
     }
+    // NIP-52 exige en los eventos con hora una etiqueta `D` por cada día (UTC)
+    // que cubren: es por lo que otros clientes los buscan por fecha. La app
+    // Android ya las ponía; la web no, y sus eventos no salían en esas búsquedas.
+    for (const day of nip52DayTags(startTs, endTs)) tags.push(['D', String(day)])
     // Zona horaria IANA (p.ej. Europe/Madrid) — solo caracteres esperables
     if (data.tzid && /^[\w+\-/]{1,64}$/.test(String(data.tzid)))
       tags.push(['start_tzid', String(data.tzid)])
@@ -403,7 +419,9 @@ export function buildRetirada({ kind, dTag, eventId }, userPubHex) {
   if (pkErr) return { ok: false, error: pkErr }
   if (!Number.isInteger(kind) || !dTag) return { ok: false, error: 'referencia de anuncio inválida' }
 
-  const tags = [['a', `${kind}:${String(userPubHex).toLowerCase()}:${dTag}`]]
+  // NIP-09: `k` declara el kind de lo que se pide borrar (los relays lo usan
+  // para indexar la petición). La app Android ya lo incluía.
+  const tags = [['a', `${kind}:${String(userPubHex).toLowerCase()}:${dTag}`], ['k', String(kind)]]
   if (eventId && /^[0-9a-f]{64}$/i.test(eventId)) tags.push(['e', String(eventId).toLowerCase()])
 
   return {

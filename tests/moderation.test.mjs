@@ -79,6 +79,11 @@ test('importBlocked: JSON roto o formato no reconocido lanza sin tocar la lista'
 
 test('importBlocked: filtra entradas que no son pubkeys hex válidas', () => {
   globalThis.localStorage = makeLocalStorageStub()
-  importBlocked(JSON.stringify({ plazap2p_blocked_pubkeys: [PK_A, 'basura', 123, null] }))
+  const added = importBlocked(JSON.stringify({ plazap2p_blocked_pubkeys: [PK_A, 'basura', 123, null] }))
   assert.deepEqual(listBlocked(), [PK_A])
+  // El número devuelto es el que se le dice al usuario ("N vendedores añadidos"):
+  // solo cuentan los válidos. (Sin esta aserción, quitar el filtro de
+  // importBlocked() no hacía fallar ningún test: load() filtra al leer.)
+  assert.equal(added, 1)
+  assert.equal(JSON.parse(globalThis.localStorage.getItem('plazap2p_blocked_pubkeys')).length, 1, 'tampoco se guarda la basura')
 })

@@ -36,7 +36,8 @@ export function hasWallet() { return !!conn }
 /** Paga una factura ya generada (zaps, LNURL directo) con la wallet conectada. Lanza si no hay wallet. */
 export async function payViaWallet(bolt11) {
   if (!conn) throw new Error('conecta tu wallet primero (pestaña Wallet)')
-  const res = await nwc.payInvoice(conn, bolt11)
+  // payInvoiceSafely: nunca dar por "no pagado" un pago cuyo resultado se desconoce.
+  const res = await nwc.payInvoiceSafely(conn, bolt11)
   refreshBalance()
   return res
 }
@@ -163,7 +164,9 @@ function renderQr(text) {
 async function onDecodeInvoice() {
   setErr('err-w-pay', '')
   $('w-confirm-box').classList.add('hidden')
-  const raw = $('w-pay-invoice').value.trim()
+  // Misma normalización que aplica decodeBolt11(): sin el prefijo "lightning:"
+  // de los QR/enlaces y en minúsculas — es lo que se envía después a la wallet.
+  const raw = $('w-pay-invoice').value.trim().replace(/^lightning:/i, '').toLowerCase()
   let dec
   try { dec = nwc.decodeBolt11(raw) }
   catch (e) { setErr('err-w-pay', e.message); return }
@@ -190,36 +193,24 @@ async function executePay(bolt11, dec) {
   btn.disabled = true
   btn.innerHTML = '<span class="spinner"></span>Pagando…'
   setErr('err-w-pay', '')
+  $('w-pay-result').classList.add('hidden')
   try {
-    const res = await nwc.payInvoice(conn, bolt11)
+    // W2: NUNCA reintentar pay_invoice a ciegas. payInvoiceSafely consulta el
+    // estado si la respuesta se pierde, y distingue "no pagado" de "no se sabe".
+    const res = await nwc.payInvoiceSafely(conn, bolt11)
     $('w-confirm-box').classList.add('hidden')
     $('w-pay-invoice').value = ''
-    $('w-pay-result').textContent = `✅ Pago enviado (${dec.amountSats.toLocaleString('es-ES')} sats)` +
-      (res?.preimage ? ` · preimage ${String(res.preimage).slice(0, 16)}…` : '')
+    $('w-pay-result').textContent = res?.recovered
+      ? '✅ El pago SÍ se completó (verificado tras perderse la respuesta)'
+      : `✅ Pago enviado (${dec.amountSats.toLocaleString('es-ES')} sats)` +
+        (res?.preimage ? ` · preimage ${String(res.preimage).slice(0, 16)}…` : '')
     $('w-pay-result').classList.remove('hidden')
     refreshBalance()
   } catch (e) {
     // El listener del botón es de un solo uso: ocultar la caja para que el
     // usuario re-verifique la factura (no dejar un botón visible sin efecto).
     $('w-confirm-box').classList.add('hidden')
-    // W2: NUNCA reintentar pay_invoice a ciegas — verificar estado primero
-    if (/timeout/i.test(e.message) && dec.paymentHash) {
-      try {
-        const st = await nwc.lookupInvoice(conn, { paymentHash: dec.paymentHash })
-        if (st?.preimage || st?.settled_at || st?.state === 'settled') {
-          $('w-confirm-box').classList.add('hidden')
-          $('w-pay-result').textContent = '✅ El pago SÍ se completó (verificado tras el timeout)'
-          $('w-pay-result').classList.remove('hidden')
-          refreshBalance()
-          return
-        }
-        setErr('err-w-pay', '⚠️ Timeout y estado desconocido — VERIFICA EN TU WALLET antes de reintentar (riesgo de doble pago)')
-      } catch {
-        setErr('err-w-pay', '⚠️ Timeout y estado desconocido — VERIFICA EN TU WALLET antes de reintentar (riesgo de doble pago)')
-      }
-    } else {
-      setErr('err-w-pay', e.message)
-    }
+    setErr('err-w-pay', e.message)
   } finally {
     btn.disabled = false
     btn.textContent = '⚡ Confirmar pago'

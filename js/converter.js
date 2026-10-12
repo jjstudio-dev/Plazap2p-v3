@@ -1,6 +1,8 @@
 // converter.js — BTC ↔ sats ↔ EUR · USD · CNY · USDT · USDC · CHF · XAU
 // mempool.space: USD/EUR/CHF · CoinGecko fallback · yadio.io: CNY/XAU · USDT/USDC derivadas de USD
 
+import { mergeRates, fetchJson } from './btc-rates.js';
+
 const MEMPOOL_URL   = 'https://mempool.space/api/v1/prices';
 const COINGECKO_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=eur,usd,cny,chf';
 const YADIO_URL     = 'https://api.yadio.io/exrates/BTC';
@@ -18,14 +20,8 @@ const FIATS = [
 
 let rates   = {};
 let lastBtc = 1;
+let lastRatesAt = null;   // última vez que alguna fuente dio una tasa válida
 let _intervalId = null;
-
-function withTimeout(ms) {
-  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
-    return { signal: AbortSignal.timeout(ms) };
-  }
-  return {};
-}
 
 export async function initConverter() {
   buildUI();
@@ -46,40 +42,16 @@ async function fetchRates() {
   if (el) el.classList.add('conv-loading');
 
   const [mp, cg, yd] = await Promise.allSettled([
-    fetch(MEMPOOL_URL, withTimeout(6000)).then(r => r.json()),
-    fetch(COINGECKO_URL, withTimeout(8000)).then(r => r.json()),
-    fetch(YADIO_URL, withTimeout(8000)).then(r => r.json()),
+    fetchJson(MEMPOOL_URL, 6000),
+    fetchJson(COINGECKO_URL, 8000),
+    fetchJson(YADIO_URL, 8000),
   ]);
+  const ok = r => r.status === 'fulfilled' ? r.value : null;
 
-  if (mp.status === 'fulfilled') {
-    const d = mp.value;
-    if (d.USD) rates.USD = d.USD;
-    if (d.EUR) rates.EUR = d.EUR;
-    if (d.CHF) rates.CHF = d.CHF;
-  }
-
-  if (cg.status === 'fulfilled') {
-    const d = cg.value?.bitcoin || {};
-    if (!rates.USD && d.usd) rates.USD = d.usd;
-    if (!rates.EUR && d.eur) rates.EUR = d.eur;
-    if (!rates.CNY && d.cny) rates.CNY = d.cny;
-    if (!rates.CHF && d.chf) rates.CHF = d.chf;
-  }
-
-  if (yd.status === 'fulfilled') {
-    const d   = yd.value;
-    const src = d.rates || d.BTC || d;
-    const cny = src.CNY;
-    if (cny != null && !rates.CNY) {
-      rates.CNY = typeof cny === 'object' ? (cny.rate || cny.ask || cny.bid) : cny;
-    }
-    const xau = src.XAU;
-    if (xau != null && !rates.XAU) {
-      rates.XAU = typeof xau === 'object' ? (xau.rate || xau.ask || xau.bid) : xau;
-    }
-  }
-
-  if (rates.USD) { rates.USDT = rates.USD; rates.USDC = rates.USD; }
+  // Validación y prioridad entre fuentes: ver btc-rates.js
+  const merged = mergeRates(rates, { mempool: ok(mp), coingecko: ok(cg), yadio: ok(yd) });
+  rates = merged.rates;
+  if (merged.refreshed.length) lastRatesAt = new Date();
 
   if (el) el.classList.remove('conv-loading');
 
@@ -244,8 +216,12 @@ function syncRateDisplay() {
   if (eurEl && rates.EUR) eurEl.textContent = `€${Math.round(rates.EUR).toLocaleString('es-ES')}`;
   if (usdEl && rates.USD) usdEl.textContent = `$${Math.round(rates.USD).toLocaleString('en-US')}`;
 
+  // La hora es la del último dato REAL: si esta ronda falló entera, las tasas
+  // en pantalla siguen siendo las de antes y hay que decirlo.
   const ts = document.getElementById('conv-ts');
-  if (ts) ts.textContent = `Actualizado ${new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}`;
+  if (ts) ts.textContent = lastRatesAt
+    ? `Actualizado ${lastRatesAt.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}`
+    : 'Sin tasas disponibles';
 
   FIATS.forEach(f => {
     const row   = document.querySelector(`.conv-fiat-row[data-id="${f.id}"]`);

@@ -5,8 +5,25 @@
 // valoración por autor (la más reciente gana) — un mismo rater no puede
 // inflar la media repitiendo eventos.
 
+import { collectUntilEose } from './relay-pool.js'
+
 const CACHE_TTL_MS = 5 * 60_000
+const NAMESPACE = 'plazap2p.reputation'
 const cache = new Map()   // rateeHex → { ts, result }
+
+// Antigüedad mínima del valorador para que su voto cuente (misma regla que la
+// app Android: ReputacionFetcher.kt). Nostr es abierto: cualquiera puede
+// publicar valoraciones desde otro cliente, así que la única defensa real
+// contra cuentas creadas para inflar o hundir una reputación está aquí, al
+// calcular lo que se enseña.
+const MIN_RATER_AGE_S = 30 * 24 * 60 * 60
+const MATURITY_FILTERS_PER_QUERY = 10   // los relays limitan cuántos filtros aceptan por petición
+const matureRaters = new Set()          // quien ya demostró antigüedad la conserva
+
+function cached(hex) {
+  const c = cache.get(hex)
+  return (c && Date.now() - c.ts < CACHE_TTL_MS) ? c.result : null
+}
 
 /**
  * Reputación agregada de una pubkey.
@@ -14,85 +31,50 @@ const cache = new Map()   // rateeHex → { ts, result }
  * @param {string} rateeHex — pubkey hex del valorado
  * @returns {Promise<{count:number, avg:number, aspects:Object, comments:Array}>}
  */
-export function fetchReputacion(pool, rateeHex, timeoutMs = 6000) {
-  const cached = cache.get(rateeHex)
-  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) return Promise.resolve(cached.result)
-
-  return new Promise(resolve => {
-    const byAuthor = new Map()   // author → evento 1985 más reciente
-    // Id aleatorio (no derivado de rateeHex): RelayPool.subscribe() indexa
-    // por id y sobrescribe sin avisar — dos llamadas para el MISMO rateeHex
-    // que se solapen en el tiempo (p.ej. reescribir el npub dos veces antes
-    // de que la primera consulta termine) se pisarían entre sí, igual que ya
-    // corrige fetchReputacionBatch() con su subId aleatorio.
-    const subId = `rep-${Math.random().toString(36).slice(2, 8)}`
-    let settled = false
-
-    const finish = () => {
-      if (settled) return
-      settled = true
-      pool.unsubscribe(subId)
-      const result = aggregate(byAuthor, rateeHex)
-      cache.set(rateeHex, { ts: Date.now(), result })
-      resolve(result)
-    }
-
-    pool.subscribe(subId, [{ kinds: [1985], '#p': [rateeHex], '#L': ['plazap2p.reputation'], limit: 200 }], {
-      onEvent(ev) {
-        // Verificaciones defensivas (el filtro del relay no es de fiar):
-        if (ev.kind !== 1985) return
-        if (!ev.tags.some(t => t[0] === 'L' && t[1] === 'plazap2p.reputation')) return
-        if (!ev.tags.some(t => t[0] === 'p' && t[1] === rateeHex)) return
-        if (ev.pubkey === rateeHex) return   // auto-valoración: ignorar
-        const prev = byAuthor.get(ev.pubkey)
-        if (!prev || ev.created_at > prev.created_at) byAuthor.set(ev.pubkey, ev)
-      },
-      onEose: finish,
-    })
-    setTimeout(finish, timeoutMs)
-  })
+export async function fetchReputacion(pool, rateeHex, timeoutMs = 6000) {
+  const results = await fetchReputacionBatch(pool, [rateeHex], timeoutMs)
+  return results[rateeHex]
 }
 
 /**
  * Reputación agregada de VARIAS pubkeys en una sola suscripción.
  * Pensada para el directorio de vendedores: evita abrir N suscripciones.
- * Respeta la misma caché y reglas anti-spam que fetchReputacion().
+ *
+ * Espera el EOSE de todos los relays disponibles (collectUntilEose): con el
+ * primer EOSE bastaba que el relay más rápido no tuviera las valoraciones
+ * para devolver "sin valoraciones". Un resultado cortado por timeout puede
+ * ser parcial, así que NO se cachea — la siguiente consulta lo reintenta.
+ *
  * @param {RelayPool} pool — pool ya conectado
  * @param {string[]} hexes — pubkeys hex de los valorados
  * @returns {Promise<{ [hex]: {count:number, avg:number, aspects:Object, comments:Array} }>}
  */
-export function fetchReputacionBatch(pool, hexes, timeoutMs = 6000) {
+export async function fetchReputacionBatch(pool, hexes, timeoutMs = 6000) {
   const results = {}
   const pending = []
-  for (const hex of hexes) {
-    const cached = cache.get(hex)
-    if (cached && Date.now() - cached.ts < CACHE_TTL_MS) results[hex] = cached.result
+  for (const hex of new Set(hexes)) {
+    const hit = cached(hex)
+    if (hit) results[hex] = hit
     else pending.push(hex)
   }
-  if (pending.length === 0) return Promise.resolve(results)
+  if (pending.length === 0) return results
 
-  return new Promise(resolve => {
-    const byRatee = new Map()   // rateeHex → Map(author → evento 1985 más reciente)
-    for (const hex of pending) byRatee.set(hex, new Map())
-    const subId = `repb-${Math.random().toString(36).slice(2, 8)}`
-    let settled = false
+  const byRatee = new Map()   // rateeHex → Map(author → evento 1985 más reciente CON rating válido)
+  for (const hex of pending) byRatee.set(hex, new Map())
 
-    const finish = () => {
-      if (settled) return
-      settled = true
-      pool.unsubscribe(subId)
-      for (const [hex, byAuthor] of byRatee) {
-        const result = aggregate(byAuthor, hex)
-        cache.set(hex, { ts: Date.now(), result })
-        results[hex] = result
-      }
-      resolve(results)
-    }
-
-    pool.subscribe(subId, [{ kinds: [1985], '#p': pending, '#L': ['plazap2p.reputation'], limit: 500 }], {
+  const { complete } = await collectUntilEose(
+    pool,
+    [{ kinds: [1985], '#p': pending, '#L': [NAMESPACE], limit: 500 }],
+    {
+      timeoutMs,
+      prefix: 'rep',
       onEvent(ev) {
+        // Verificaciones defensivas (el filtro del relay no es de fiar):
         if (ev.kind !== 1985) return
-        if (!ev.tags.some(t => t[0] === 'L' && t[1] === 'plazap2p.reputation')) return
+        if (!ev.tags.some(t => t[0] === 'L' && t[1] === NAMESPACE)) return
+        // Un evento sin puntuación válida no debe desplazar a la valoración
+        // real (más antigua) del mismo autor.
+        if (!hasValidRating(ev)) return
         for (const t of ev.tags) {
           if (t[0] !== 'p') continue
           const byAuthor = byRatee.get(t[1])
@@ -102,11 +84,76 @@ export function fetchReputacionBatch(pool, hexes, timeoutMs = 6000) {
           if (!prev || ev.created_at > prev.created_at) byAuthor.set(ev.pubkey, ev)
         }
       },
-      onEose: finish,
-    })
-    setTimeout(finish, timeoutMs)
-  })
+    },
+  )
+
+  const raters = new Set()
+  for (const byAuthor of byRatee.values()) for (const author of byAuthor.keys()) raters.add(author)
+  const age = await fetchMatureRaters(pool, raters, timeoutMs)
+
+  for (const [hex, byAuthor] of byRatee) {
+    const counted = new Map([...byAuthor].filter(([author]) => age.mature.has(author)))
+    const result = aggregate(counted, hex)
+    // Para poder decirlo en pantalla: cuántas valoraciones existen pero no cuentan.
+    result.excludedRecent = byAuthor.size - counted.size
+    if (complete && age.complete) cache.set(hex, { ts: Date.now(), result })
+    results[hex] = result
+  }
+  return results
 }
+
+/**
+ * ¿Qué valoradores llevan al menos MIN_RATER_AGE_S en Nostr? Basta una prueba
+ * de existencia: algún evento suyo, de cualquier kind, anterior al corte. (No
+ * se puede usar "cuándo publicó su perfil": los relays solo guardan la última
+ * versión del kind 0.) Un filtro POR autor con limit 1 — con un filtro común,
+ * un solo valorador muy activo agotaría el límite y los demás parecerían
+ * recién llegados.
+ *
+ * Falla abierto: si ningún relay contesta, no se descarta a nadie — un
+ * problema de red no debe dejar la reputación en blanco.
+ */
+async function fetchMatureRaters(pool, raters, timeoutMs) {
+  const mature = new Set()
+  const pending = []
+  for (const r of raters) {
+    if (matureRaters.has(r)) mature.add(r)
+    else pending.push(r)
+  }
+  let complete = true
+  const cutoff = Math.floor(Date.now() / 1000) - MIN_RATER_AGE_S
+
+  for (let i = 0; i < pending.length; i += MATURITY_FILTERS_PER_QUERY) {
+    const chunk = pending.slice(i, i + MATURITY_FILTERS_PER_QUERY)
+    const inChunk = new Set(chunk)
+    const found = new Set()
+    const res = await collectUntilEose(
+      pool,
+      chunk.map(author => ({ authors: [author], until: cutoff, limit: 1 })),
+      {
+        timeoutMs,
+        prefix: 'age',
+        // El relay puede ignorar `until`: se comprueba sobre el propio evento.
+        onEvent(ev) { if (inChunk.has(ev.pubkey) && ev.created_at <= cutoff) found.add(ev.pubkey) },
+      },
+    )
+    if (res.answered === 0) {            // nadie contestó: no se sabe nada de este lote
+      for (const r of chunk) mature.add(r)
+      complete = false
+      continue
+    }
+    if (!res.complete) complete = false
+    for (const r of found) { mature.add(r); matureRaters.add(r) }
+  }
+  return { mature, complete }
+}
+
+function hasValidRating(ev) {
+  return ev.tags.some(t => t[0] === 'l' && /^rating:[1-5]$/.test(t[1] || '') && t[2] === NAMESPACE)
+}
+
+/** Solo para tests: vacía la caché en memoria. */
+export function _clearReputacionCache() { cache.clear(); matureRaters.clear() }
 
 /**
  * Agrega los eventos 1985 ya filtrados/deduplicados de un valorado.

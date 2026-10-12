@@ -2,6 +2,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { parseConnectionString, isValidNwcResponse, decodeBolt11 } from '../js/nwc.js'
+import { buildInvoice, SIG_WORDS } from './fixtures/bolt11.mjs'
 import { SK2, PK1, PK2, signWith, tampered } from './fixtures/events.mjs'
 
 // ── isValidNwcResponse ────────────────────────────────────────────────────────
@@ -63,69 +64,13 @@ test('string NWC inválido → lanza', () => {
 })
 
 // ── decodeBolt11 ──────────────────────────────────────────────────────────────
-// Factura sintética con checksum bech32 real (mismo algoritmo del estándar),
-// construida aquí para no depender de facturas externas.
-
-const CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l'
-const GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3]
-function polymod(values) {
-  let c = 1
-  for (const v of values) {
-    const c0 = c >>> 25
-    c = ((c & 0x1ffffff) << 5) ^ v
-    for (let i = 0; i < 5; i++) if ((c0 >> i) & 1) c ^= GEN[i]
-  }
-  return c
-}
-function hrpExpand(hrp) {
-  const r = []
-  for (const ch of hrp) r.push(ch.charCodeAt(0) >> 5)
-  r.push(0)
-  for (const ch of hrp) r.push(ch.charCodeAt(0) & 31)
-  return r
-}
-function checksum(hrp, data) {
-  const mod = polymod([...hrpExpand(hrp), ...data, 0, 0, 0, 0, 0, 0]) ^ 1
-  return Array.from({ length: 6 }, (_, p) => (mod >> 5 * (5 - p)) & 31)
-}
-function bytesToWords(bytes) {
-  const words = []
-  let acc = 0, bits = 0
-  for (const b of bytes) {
-    acc = (acc << 8) | b
-    bits += 8
-    while (bits >= 5) { bits -= 5; words.push((acc >> bits) & 31) }
-  }
-  if (bits > 0) words.push((acc << (5 - bits)) & 31)
-  return words
-}
-function intToWords(n, count = null) {
-  const w = []
-  let x = n
-  while (x > 0) { w.unshift(x % 32); x = Math.floor(x / 32) }
-  if (w.length === 0) w.push(0)
-  while (count && w.length < count) w.unshift(0)
-  return w
-}
-function taggedField(type, words) {
-  return [type, ...intToWords(words.length, 2), ...words]
-}
-
-function buildTestInvoice() {
-  const hrp = 'lnbc21u'   // 21 micro-BTC = 2100 sats
-  const ts = 1750000000
-  const data = [
-    ...intToWords(ts, 7),
-    ...taggedField(1, bytesToWords(new Uint8Array(32).fill(1))),                    // p — payment hash
-    ...taggedField(13, bytesToWords(new TextEncoder().encode('Test PlazaP2P'))),    // d — descripción
-    ...taggedField(6, intToWords(7200)),                                            // x — expiry
-  ]
-  return hrp + '1' + [...data, ...checksum(hrp, data)].map(v => CHARSET[v]).join('')
-}
+// Facturas sintéticas con checksum bech32 real y la estructura completa
+// (campos + 104 words de firma): ver tests/fixtures/bolt11.mjs.
 
 test('decodeBolt11: factura válida → importe, descripción, hash y expiración', () => {
-  const dec = decodeBolt11(buildTestInvoice())
+  const dec = decodeBolt11(buildInvoice({ timestamp: 1750000000 }))
   assert.equal(dec.amountSats, 2100)
+  assert.equal(dec.amountMsats, 2_100_000)
   assert.equal(dec.description, 'Test PlazaP2P')
   assert.equal(dec.timestamp, 1750000000)
   assert.equal(dec.expiry, 7200)
@@ -133,8 +78,33 @@ test('decodeBolt11: factura válida → importe, descripción, hash y expiració
   assert.equal(dec.expired, (1750000000 + 7200) * 1000 < Date.now())
 })
 
+test('decodeBolt11: importe exacto en msats para cada multiplicador', () => {
+  assert.equal(decodeBolt11(buildInvoice({ hrp: 'lnbc1' })).amountMsats, 1e11)        // 1 BTC
+  assert.equal(decodeBolt11(buildInvoice({ hrp: 'lnbc2m' })).amountMsats, 2e8)        // 2 mBTC
+  assert.equal(decodeBolt11(buildInvoice({ hrp: 'lnbc2500u' })).amountMsats, 2.5e8)   // 250.000 sats
+  assert.equal(decodeBolt11(buildInvoice({ hrp: 'lnbc210n' })).amountMsats, 21_000)   // 21 sats
+  assert.equal(decodeBolt11(buildInvoice({ hrp: 'lnbc15n' })).amountMsats, 1500)      // 1,5 sats: no se redondea
+  assert.equal(decodeBolt11(buildInvoice({ hrp: 'lnbc10p' })).amountMsats, 1)         // 1 msat
+  const sinImporte = decodeBolt11(buildInvoice({ hrp: 'lnbc' }))
+  assert.equal(sinImporte.amountMsats, null)
+  assert.equal(sinImporte.amountSats, null)
+})
+
+test('decodeBolt11: la firma no se interpreta como campos etiquetados (regresión)', () => {
+  // Firma cuyos primeros words imitan un campo x (expiry) de valor 1 seguido
+  // de un campo d (descripción). Antes del fix el expiry salía 1 (factura
+  // "caducada" al instante) y la descripción quedaba pisada con basura.
+  const sigWords = [6, 0, 1, 1, 13, 0, 2, 12, 12, ...Array(SIG_WORDS - 9).fill(0)]
+  const sinExpiry = decodeBolt11(buildInvoice({ expiry: null, sigWords }))
+  assert.equal(sinExpiry.expiry, 3600, 'sin campo x rige el valor por defecto de BOLT11')
+  assert.equal(sinExpiry.description, 'Test PlazaP2P')
+  assert.equal(sinExpiry.expired, false)
+  const conExpiry = decodeBolt11(buildInvoice({ expiry: 7200, sigWords }))
+  assert.equal(conExpiry.expiry, 7200)
+})
+
 test('decodeBolt11: checksum corrupto y basura → lanza', () => {
-  const inv = buildTestInvoice()
+  const inv = buildInvoice()
   const corrupted = inv.slice(0, -1) + (inv.at(-1) === 'q' ? 'p' : 'q')
   assert.throws(() => decodeBolt11(corrupted))
   assert.throws(() => decodeBolt11('no-es-una-factura'))

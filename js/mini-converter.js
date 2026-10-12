@@ -1,5 +1,7 @@
 // mini-converter.js — 2 campos inline en la barra: [BTC/sats] ⇄ [fiat]
 
+import { mergeRates, fetchJson } from './btc-rates.js';
+
 const MEMPOOL_URL  = 'https://mempool.space/api/v1/prices';
 const COINGECKO_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=eur,usd,cny,chf';
 const YADIO_URL    = 'https://api.yadio.io/exrates/BTC';
@@ -8,73 +10,27 @@ const REFRESH_MS   = 5 * 60 * 1000;
 let _rates = {};        // { EUR, USD, CNY, USDT, USDC, CHF, XAU }
 let _leftIsBtc = true;  // false → left field is sats
 
-function withTimeout(ms) {
-  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
-    return { signal: AbortSignal.timeout(ms) };
-  }
-  return {};
-}
-
 export async function initMiniConverter() {
-  await fetchRates();
-  // Pausar el refresco con la página oculta (batería/datos en la PWA Android)
-  setInterval(() => { if (!document.hidden) fetchRates(); }, REFRESH_MS);
+  // Los controles primero: no dependen de las tasas. Antes se cableaban
+  // DESPUÉS de esperar a las APIs, y con una de ellas colgada el conversor de
+  // la cabecera no respondía durante varios segundos.
   wireInputs();
   wireSwap();
   wireCurrencySelect();
+  await fetchRates();
+  // Pausar el refresco con la página oculta (batería/datos en la PWA Android)
+  setInterval(() => { if (!document.hidden) fetchRates(); }, REFRESH_MS);
 }
 
 async function fetchRates() {
-  // Primary: mempool.space (fastest, no auth)
-  let mp;
-  let cg;
-  let yd;
-  try {
-    [mp, cg, yd] = await Promise.allSettled([
-      fetch(MEMPOOL_URL, withTimeout(6000)).then(r => r.json()),
-      fetch(COINGECKO_URL, withTimeout(8000)).then(r => r.json()),
-      fetch(YADIO_URL, withTimeout(8000)).then(r => r.json()),
-    ]);
-  } catch {
-    mp = { status: 'rejected' };
-    cg = { status: 'rejected' };
-    yd = { status: 'rejected' };
-  }
-
-  if (mp.status === 'fulfilled') {
-    const d = mp.value;
-    if (d.EUR) _rates.EUR = d.EUR;
-    if (d.USD) _rates.USD = d.USD;
-    if (d.CHF) _rates.CHF = d.CHF;
-  }
-
-  // CoinGecko as fallback for any missing rate
-  if (cg.status === 'fulfilled') {
-    const d = cg.value?.bitcoin || {};
-    if (!_rates.EUR && d.eur) _rates.EUR = d.eur;
-    if (!_rates.USD && d.usd) _rates.USD = d.usd;
-    if (!_rates.CNY && d.cny) _rates.CNY = d.cny;
-    if (!_rates.CHF && d.chf) _rates.CHF = d.chf;
-  }
-
-  // yadio for CNY and XAU
-  if (yd.status === 'fulfilled') {
-    const d   = yd.value;
-    const src = d.rates || d.BTC || d;
-    const cny = src['CNY'];
-    if (cny != null && !_rates.CNY) {
-      _rates.CNY = typeof cny === 'object' ? (cny.rate || cny.ask || cny.bid) : cny;
-    }
-    const xau = src['XAU'];
-    if (xau != null && !_rates.XAU) {
-      _rates.XAU = typeof xau === 'object' ? (xau.rate || xau.ask || xau.bid) : xau;
-    }
-  }
-
-  if (_rates.USD) {
-    _rates.USDT = _rates.USD;
-    _rates.USDC = _rates.USD;
-  }
+  const [mp, cg, yd] = await Promise.allSettled([
+    fetchJson(MEMPOOL_URL, 6000),
+    fetchJson(COINGECKO_URL, 8000),
+    fetchJson(YADIO_URL, 8000),
+  ]);
+  const ok = r => r.status === 'fulfilled' ? r.value : null;
+  // Validación y prioridad entre fuentes: ver btc-rates.js
+  _rates = mergeRates(_rates, { mempool: ok(mp), coingecko: ok(cg), yadio: ok(yd) }).rates;
 
   updatePriceBadge();
   recalcFromLeft();

@@ -48,7 +48,9 @@ export function getStoredPubkey() {
 
 export function storePubkey(hex) {
   if (!/^[0-9a-f]{64}$/i.test(String(hex))) throw new Error('pubkey inválida')
-  localStorage.setItem(LS_PUBKEY, String(hex).toLowerCase())
+  // Almacenamiento lleno o bloqueado: la identidad vale para esta visita (la
+  // guarda quien llama en memoria); solo se pierde el recordarla.
+  try { localStorage.setItem(LS_PUBKEY, String(hex).toLowerCase()) } catch { /* sin persistencia */ }
 }
 
 export function clearPubkey() {
@@ -95,22 +97,33 @@ function callbackBase(extraParam) {
  * Guarda el estado pendiente (para restaurarlo tras el round-trip a Amber).
  * @param {object} pending — { step, unsignedEvent?, formSnapshot?, meta? }
  */
+// Copia en memoria del pendiente. sessionStorage hace falta para sobrevivir al
+// salto a Amber (la página se recarga), pero con NIP-07 todo ocurre en la
+// misma página: si el almacenamiento está lleno o bloqueado, firmar y publicar
+// con extensión tiene que seguir funcionando.
+let memPending = null
+const PENDING_TTL_MS = 15 * 60_000
+
 export function savePending(pending) {
-  sessionStorage.setItem(SS_PENDING, JSON.stringify({ ...pending, ts: Date.now() }))
+  memPending = { ...pending, ts: Date.now() }
+  try { sessionStorage.setItem(SS_PENDING, JSON.stringify(memPending)) } catch { /* solo en memoria */ }
 }
 
 export function loadPending() {
+  let p = null
   try {
     const raw = sessionStorage.getItem(SS_PENDING)
-    if (!raw) return null
-    const p = JSON.parse(raw)
-    // Estado pendiente más viejo de 15 min: descartar (evita replays confusos)
-    if (!p.ts || Date.now() - p.ts > 15 * 60_000) { clearPending(); return null }
-    return p
-  } catch { return null }
+    if (raw) p = JSON.parse(raw)
+  } catch { /* ilegible o sin acceso: probar la copia en memoria */ }
+  if (!p || typeof p !== 'object') p = memPending
+  if (!p) return null
+  // Estado pendiente más viejo de 15 min: descartar (evita replays confusos)
+  if (!p.ts || Date.now() - p.ts > PENDING_TTL_MS) { clearPending(); return null }
+  return p
 }
 
 export function clearPending() {
+  memPending = null
   try { sessionStorage.removeItem(SS_PENDING) } catch { /* ignorar */ }
 }
 

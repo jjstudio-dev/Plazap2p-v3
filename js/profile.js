@@ -5,6 +5,8 @@
 // pantalla) — así se puede cambiar de dónde se leen los perfiles sin tocar
 // nada más.
 
+import { collectUntilEose } from './relay-pool.js'
+
 /** Parsea el content (JSON) de un evento kind 0 — pura, testeable sin red. */
 export function parseProfileMetadata(event) {
   if (!event || event.kind !== 0) return null
@@ -28,25 +30,20 @@ export function parseProfileMetadata(event) {
  * perfil publicado o los relays no responden a tiempo — nunca lanza (un
  * perfil ausente es un estado normal, no un error).
  */
-export function fetchProfileMeta(pool, pubkeyHex, timeoutMs = 6000) {
-  return new Promise(resolve => {
-    if (!pool || !pubkeyHex) { resolve(null); return }
-    let best = null
-    const subId = `profile-${pubkeyHex.slice(0, 8)}-${Math.random().toString(36).slice(2, 6)}`
-    let settled = false
-    const finish = () => {
-      if (settled) return
-      settled = true
-      pool.unsubscribe(subId)
-      resolve(best)
-    }
-    pool.subscribe(subId, [{ kinds: [0], authors: [pubkeyHex], limit: 1 }], {
-      onEvent(ev) {
-        if (ev.pubkey !== pubkeyHex) return
-        if (!best || ev.created_at > best.createdAt) best = parseProfileMetadata(ev)
-      },
-      onEose: finish,
-    })
-    setTimeout(finish, timeoutMs)
+export async function fetchProfileMeta(pool, pubkeyHex, timeoutMs = 6000) {
+  if (!pool || !pubkeyHex) return null
+  let best = null
+  // Todos los relays, no solo el primero en contestar: el más rápido puede
+  // no tener el kind 0 (o tener una versión antigua sin lud16).
+  await collectUntilEose(pool, [{ kinds: [0], authors: [pubkeyHex], limit: 1 }], {
+    timeoutMs,
+    prefix: 'profile',
+    onEvent(ev) {
+      if (ev.kind !== 0 || ev.pubkey !== pubkeyHex) return
+      if (best && ev.created_at <= best.createdAt) return
+      const parsed = parseProfileMetadata(ev)
+      if (parsed) best = parsed
+    },
   })
+  return best
 }
