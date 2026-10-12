@@ -133,11 +133,18 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      - name: Reunir solo lo que la web necesita (.github/publish-list.txt)
+        run: |
+          set -e
+          mkdir _site
+          grep -vE '^[[:space:]]*(#|$)' .github/publish-list.txt | tr -d '\r' | while IFS= read -r p; do
+            cp -r --parents "$p" _site/
+            echo "OK $p"
+          done
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
-          path: '.'
+          path: '_site'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5

@@ -1,0 +1,19 @@
+# Lo que se publica en GitHub Pages: una ruta por línea (archivo o carpeta).
+# Lo que no esté aquí no llega a la web pública (tests, documentos internos,
+# plantillas...). El trabajo `deploy` de workflows/app.yml copia esta lista y
+# tests/publish-list.test.mjs comprueba que no falta nada de lo que la web pide.
+index.html
+publicar.html
+manifest.json
+sw.js
+robots.txt
+sitemap.xml
+LICENSE
+.nojekyll
+.well-known
+css
+js
+data
+icons
+app
+docs/bitcoin-whitepaper-es.pdf
