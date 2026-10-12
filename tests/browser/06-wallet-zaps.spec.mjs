@@ -189,31 +189,34 @@ export const tests = [
     },
   },
   {
-    name: 'la sesión de wallet no sobrevive al cierre de pestaña salvo que se pida recordar',
+    name: 'la sesión de wallet no sobrevive al cierre de pestaña, y ya no se ofrece recordarla',
     async run(t) {
       const server = await t.server()
       const page = await t.open({ scenario: base({ behaviors: OK }) })
       await page.goto(server.origin + '/publicar.html')
       await page.click('#nav-perfil'); await page.click('.pub-chip[data-chip="wallet"]')
+      t.assert.equal(await page.count('#w-remember'), 0, 'no se ofrece "recordar" mientras la web comparta dominio')
       await page.fill('#w-conn-string', CONN_STRING)
       await page.click('#w-btn-connect')
       await page.waitFor(visible('w-connected'))
+      t.assert.deepEqual(await page.evaluate(`['plazap2p_nwc_persist', 'plazap2p_nwc_meta'].map(k => localStorage.getItem(k))`), [null, null])
       // "Cerrar la pestaña": se pierde sessionStorage, queda localStorage.
       await page.evaluate(`sessionStorage.removeItem('plazap2p_nwc_session')`)
       await page.reload()
       await page.click('#nav-perfil'); await page.click('.pub-chip[data-chip="wallet"]')
       t.assert.equal(await page.evaluate(visible('w-connected')), false)
-      // Sin "recordar" no queda escrito ni qué wallet era.
       t.assert.doesNotMatch(await page.evaluate(errText('err-w-connect')), /Wallet conocida/)
-      t.assert.equal(await page.evaluate(`localStorage.getItem('plazap2p_nwc_meta')`), null)
-      // Desconectar borra también los metadatos
-      await page.fill('#w-conn-string', CONN_STRING)
-      await page.fill('#w-remember', true)
-      await page.click('#w-btn-connect')
-      await page.waitFor(visible('w-connected'))
-      t.assert.ok(await page.evaluate(`!!localStorage.getItem('plazap2p_nwc_persist')`), 'con "recordar" sí se persiste')
-      await page.click('#w-btn-disconnect')
-      t.assert.deepEqual(await page.evaluate(`['plazap2p_nwc_persist', 'plazap2p_nwc_meta'].map(k => localStorage.getItem(k)).concat(sessionStorage.getItem('plazap2p_nwc_session'))`), [null, null, null])
+    },
+  },
+  {
+    name: 'una conexión recordada en una visita anterior se saca del almacenamiento permanente',
+    async run(t) {
+      const recordada = SESSION.plazap2p_nwc_session
+      const { secret, ...meta } = recordada
+      const page = await abrirWallet(t, base({ behaviors: OK }, { localStorage: { plazap2p_pubkey: PK1, plazap2p_nwc_persist: recordada, plazap2p_nwc_meta: meta } }))
+      await page.waitFor(visible('w-connected'), { label: 'sigue conectada en esta pestaña' })
+      t.assert.deepEqual(await page.evaluate(`['plazap2p_nwc_persist', 'plazap2p_nwc_meta'].map(k => localStorage.getItem(k))`), [null, null], 'la credencial ya no queda escrita')
+      t.assert.equal(await page.evaluate(`!!sessionStorage.getItem('plazap2p_nwc_session')`), true)
     },
   },
 

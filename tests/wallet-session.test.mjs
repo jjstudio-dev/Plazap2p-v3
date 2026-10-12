@@ -93,3 +93,25 @@ test('almacenamiento bloqueado por el navegador: nada lanza', () => {
   assert.equal(ws.isPersisted(), false)
   assert.doesNotThrow(() => ws.clear())
 })
+
+test('forgetPersisted(): una conexión recordada en otra visita sale del almacenamiento permanente y sigue activa en la pestaña', () => {
+  const { session, local } = install()
+  ws.save(CONN, { remember: true })
+  session._m.clear()                       // pestaña nueva
+  ws.forgetPersisted()
+  assert.equal(local.getItem('plazap2p_nwc_persist'), null, 'la credencial ya no queda escrita')
+  assert.equal(local.getItem('plazap2p_nwc_meta'), null)
+  assert.deepEqual(ws.load(), CONN, 'sigue conectada en esta pestaña')
+  session._m.clear()
+  assert.equal(ws.load(), null, 'y al cerrar la pestaña no queda nada')
+})
+
+test('forgetPersisted(): con datos corruptos o almacenamiento bloqueado no lanza y limpia lo que puede', () => {
+  const { local } = install()
+  local.setItem('plazap2p_nwc_persist', '{')
+  ws.forgetPersisted()
+  assert.equal(local.getItem('plazap2p_nwc_persist'), null)
+  install({ denied: true })
+  assert.doesNotThrow(() => ws.forgetPersisted())
+  install()
+})

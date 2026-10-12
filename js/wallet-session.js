@@ -82,6 +82,24 @@ export function isPersisted() {
   try { return !!localStorage.getItem(LS_KEY) } catch { return false }
 }
 
+/**
+ * Saca del almacenamiento permanente una conexión recordada en una visita
+ * anterior: sigue activa en esta pestaña, pero deja de estar escrita. La
+ * página lo llama al arrancar mientras no ofrezca "recordar".
+ */
+export function forgetPersisted() {
+  try {
+    const raw = localStorage.getItem(LS_KEY)
+    if (raw && !sessionStorage.getItem(SS_KEY) && isValidConn(JSON.parse(raw))) {
+      sessionStorage.setItem(SS_KEY, raw)
+    }
+  } catch { /* corrupta o almacenamiento bloqueado: se borra igual abajo */ }
+  try {
+    localStorage.removeItem(LS_KEY)
+    localStorage.removeItem(LS_META)
+  } catch { /* ignorar */ }
+}
+
 /** Borra conexión, persistencia y metadatos. */
 export function clear() {
   try { sessionStorage.removeItem(SS_KEY) } catch { /* ignorar */ }

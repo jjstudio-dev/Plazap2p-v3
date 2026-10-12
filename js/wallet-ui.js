@@ -12,7 +12,10 @@ let conn = null
 const $ = id => document.getElementById(id)
 
 export function initWallet() {
-  // WAL-001: sessionStorage por defecto; localStorage solo con opt-in
+  // La conexión vive solo en la pestaña. "Recordar" no se ofrece mientras la
+  // web comparta dominio (y por tanto almacenamiento) con otras webs: lo que
+  // se hubiera recordado en una visita anterior se saca de ahí al arrancar.
+  walletSession.forgetPersisted()
   conn = walletSession.load()
 
   $('w-btn-connect').addEventListener('click', onConnect)
@@ -81,7 +84,7 @@ async function onConnect() {
     await nwc.getBalance(parsed)
 
     conn = parsed
-    walletSession.save(conn, { remember: !!$('w-remember')?.checked })
+    walletSession.save(conn)
     $('w-conn-string').value = ''   // no dejar el secret a la vista
     renderState()
     refreshBalance()

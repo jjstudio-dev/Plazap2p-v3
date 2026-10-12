@@ -1,9 +1,9 @@
 {
-  "cache": "plazap2p-v3-r61",
+  "cache": "plazap2p-v3-r62",
   "files": {
     "./": "4d6690778c247d0c",
     "./index.html": "4d6690778c247d0c",
-    "./publicar.html": "7c9e004e2811a129",
+    "./publicar.html": "05af861b85f4ce13",
     "./css/style.css?v=42": "a81b3271ad755421",
     "./css/publicar.css?v=42": "c72c4d028ff566ad",
     "./js/app.js?v=42": "e8d43265e7fd8a24",
@@ -42,8 +42,8 @@
     "./js/nostr.js": "2c16959e191b75d8",
     "./js/relay-pool.js": "9cfabfa1be45cdda",
     "./js/nwc.js": "add91a490a38c8a2",
-    "./js/wallet-session.js": "063133c7b272f8cf",
-    "./js/wallet-ui.js": "b8c99f734377be6c",
+    "./js/wallet-session.js": "86b783c76247d5a6",
+    "./js/wallet-ui.js": "873e585764b439b0",
     "./js/vendor/nostr-crypto.js": "3e7c8458d5496be5",
     "./js/vendor/qrcode.js": "0cb6003158ec4d18",
     "./docs/bitcoin-whitepaper-es.pdf": "9956fcc0adaece85",

@@ -677,11 +677,7 @@
         <input type="password" id="w-conn-string" placeholder="nostr+walletconnect://…" autocomplete="off" spellcheck="false">
         <div class="f-error" id="err-w-connect"></div>
         <div class="img-hint">🔒 Configura un <strong>presupuesto</strong> (p.ej. 10&#8239;000 sats/día) al crear la conexión en tu wallet — es tu límite máximo de riesgo. Puedes revocarla en cualquier momento.</div>
-        <label class="negociar-label">
-          <input type="checkbox" id="w-remember">
-          Recordar esta conexión en este dispositivo
-        </label>
-        <div class="img-hint">⚠️ Si la recuerdas, la credencial queda guardada en el navegador: cualquier persona (o código malicioso) con acceso a este perfil podría gastar hasta el presupuesto configurado en tu wallet. Sin marcar, se olvida al cerrar la pestaña.</div>
+        <div class="img-hint">ℹ️ La conexión se olvida al cerrar la pestaña: la credencial no queda guardada en el navegador. Para volver a usarla, pega de nuevo el string.</div>
       </div>
       <button class="btn-primary" id="w-btn-connect" type="button">🔌 Conectar wallet</button>
     </div>
