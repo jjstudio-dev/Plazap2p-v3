@@ -52,7 +52,7 @@ export const tests = [
       t.assert.equal(await page.evaluate(`document.getElementById('w-conn-string').value`), '', 'el secret no queda a la vista')
       t.assert.equal(await page.evaluate(`!!sessionStorage.getItem('plazap2p_nwc_session')`), true)
       t.assert.equal(await page.evaluate(`localStorage.getItem('plazap2p_nwc_persist')`), null, 'sin "recordar", el secret no va a localStorage')
-      t.assert.doesNotMatch(await page.evaluate(`localStorage.getItem('plazap2p_nwc_meta')`), new RegExp(skHex(SKC)), 'los metadatos no llevan el secret')
+      t.assert.equal(await page.evaluate(`localStorage.getItem('plazap2p_nwc_meta')`), null, 'sin "recordar", tampoco se guarda qué wallet es')
       t.assert.deepEqual(t.appErrors(page), [])
     },
   },
@@ -203,7 +203,9 @@ export const tests = [
       await page.reload()
       await page.click('#nav-perfil'); await page.click('.pub-chip[data-chip="wallet"]')
       t.assert.equal(await page.evaluate(visible('w-connected')), false)
-      t.assert.match(await page.evaluate(errText('err-w-connect')), /Wallet conocida/)
+      // Sin "recordar" no queda escrito ni qué wallet era.
+      t.assert.doesNotMatch(await page.evaluate(errText('err-w-connect')), /Wallet conocida/)
+      t.assert.equal(await page.evaluate(`localStorage.getItem('plazap2p_nwc_meta')`), null)
       // Desconectar borra también los metadatos
       await page.fill('#w-conn-string', CONN_STRING)
       await page.fill('#w-remember', true)

@@ -20,14 +20,21 @@ install()
 const ws = await import('../js/wallet-session.js')
 const CONN = { walletPubkey: 'a'.repeat(64), relay: 'wss://relay.test', secret: 'b'.repeat(64), encryption: 'nip04', methods: ['get_balance'] }
 
-test('por defecto el secret solo vive en la sesión; los metadatos persistidos no lo llevan', () => {
+test('por defecto nada de la wallet queda guardado de forma permanente: ni el secret ni qué wallet es', () => {
   const { session, local } = install()
   ws.save(CONN)
   assert.deepEqual(ws.load(), CONN)
   assert.ok(session.getItem('plazap2p_nwc_session').includes(CONN.secret))
   assert.equal(local.getItem('plazap2p_nwc_persist'), null)
-  assert.ok(!local.getItem('plazap2p_nwc_meta').includes(CONN.secret), 'el secret no puede acabar en localStorage')
+  assert.equal(local.getItem('plazap2p_nwc_meta'), null, 'sin "recordar" tampoco se guarda qué wallet es ni su relay')
   assert.equal(ws.isPersisted(), false)
+  assert.equal(ws.loadMeta(), null)
+})
+
+test('con "recordar", los metadatos persistidos no llevan el secret', () => {
+  const { local } = install()
+  ws.save(CONN, { remember: true })
+  assert.ok(!local.getItem('plazap2p_nwc_meta').includes(CONN.secret), 'el secret no puede acabar en los metadatos')
   assert.equal(ws.loadMeta().walletPubkey, CONN.walletPubkey)
 })
 
@@ -37,6 +44,7 @@ test('con "recordar" se persiste; sin él, una persistencia anterior se borra', 
   assert.equal(ws.isPersisted(), true)
   ws.save(CONN, { remember: false })
   assert.equal(local.getItem('plazap2p_nwc_persist'), null)
+  assert.equal(local.getItem('plazap2p_nwc_meta'), null)
 })
 
 test('cerrar la pestaña (se pierde sessionStorage): sin "recordar" no queda conexión', () => {
@@ -44,7 +52,7 @@ test('cerrar la pestaña (se pierde sessionStorage): sin "recordar" no queda con
   ws.save(CONN)
   session._m.clear()
   assert.equal(ws.load(), null)
-  assert.equal(ws.loadMeta().walletPubkey, CONN.walletPubkey, 'sí se recuerda QUÉ wallet era, sin el secret')
+  assert.equal(ws.loadMeta(), null, 'tampoco queda rastro de qué wallet era')
 })
 
 test('una conexión guardada sin secret, pubkey o relay válidos no se acepta y se elimina', () => {

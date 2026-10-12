@@ -5,8 +5,9 @@
 //   - Por defecto vive en sessionStorage: desaparece al cerrar la pestaña.
 //   - Solo pasa a localStorage si el usuario marca explícitamente
 //     "Recordar esta conexión" (opt-in con advertencia visible en la UI).
-//   - Los METADATOS sin secret (walletPubkey, relay, métodos, cifrado) sí se
-//     recuerdan siempre, para poder mostrar "wallet conocida — reconectar".
+//   - Los METADATOS sin secret (walletPubkey, relay, métodos, cifrado) se
+//     guardan en localStorage solo con ese mismo opt-in: dicen qué wallet usa
+//     alguien y por qué relay, y no hay por qué dejarlo escrito sin pedirlo.
 //   - clear() borra las tres claves. Nunca loguear ni exportar el secret.
 //
 // Migración: versiones anteriores guardaban la conexión completa en
@@ -31,16 +32,20 @@ function stripSecret(conn) {
 }
 
 /**
- * Guarda la conexión activa. sessionStorage siempre; localStorage solo si
- * remember=true. Los metadatos (sin secret) se persisten en ambos casos.
+ * Guarda la conexión activa. sessionStorage siempre; localStorage (la
+ * conexión y sus metadatos sin secret) solo si remember=true.
  */
 export function save(conn, { remember = false } = {}) {
   if (!isValidConn(conn)) throw new Error('conexión NWC inválida')
   try { sessionStorage.setItem(SS_KEY, JSON.stringify(conn)) } catch { /* privado/lleno */ }
   try {
-    if (remember) localStorage.setItem(LS_KEY, JSON.stringify(conn))
-    else localStorage.removeItem(LS_KEY)
-    localStorage.setItem(LS_META, JSON.stringify(stripSecret(conn)))
+    if (remember) {
+      localStorage.setItem(LS_KEY, JSON.stringify(conn))
+      localStorage.setItem(LS_META, JSON.stringify(stripSecret(conn)))
+    } else {
+      localStorage.removeItem(LS_KEY)
+      localStorage.removeItem(LS_META)
+    }
   } catch { /* ignorar */ }
 }
 

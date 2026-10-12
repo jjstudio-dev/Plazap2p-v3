@@ -1,5 +1,5 @@
 {
-  "cache": "plazap2p-v3-r52",
+  "cache": "plazap2p-v3-r53",
   "files": {
     "./": "0dfd19ea9d69ddd0",
     "./index.html": "0dfd19ea9d69ddd0",
@@ -42,7 +42,7 @@
     "./js/nostr.js": "2c16959e191b75d8",
     "./js/relay-pool.js": "9cfabfa1be45cdda",
     "./js/nwc.js": "add91a490a38c8a2",
-    "./js/wallet-session.js": "9ebec64c5c2027a6",
+    "./js/wallet-session.js": "063133c7b272f8cf",
     "./js/wallet-ui.js": "6cd103982ce60690",
     "./js/vendor/nostr-crypto.js": "3e7c8458d5496be5",
     "./js/vendor/qrcode.js": "0cb6003158ec4d18",
