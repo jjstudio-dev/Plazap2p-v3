@@ -70,7 +70,7 @@ Breve cronología de cómo llegamos a "una app" para PlazaP2P, aparte de esta we
 
 Ni el bot ni el wrapper TWA están publicados — ambos quedaron desplazados por la app nativa. La vía activa es PlazaP2P Android.
 
-V3.1 también trae, en esta misma web: sistema de tokens de diseño (`css/tokens.css`), un router con historial real (Atrás/Adelante entre secciones), Zaps (NIP-57) con pago vía wallet conectada, borradores de publicación, favoritos y varias mejoras de confianza/moderación. (La copia de seguridad local, las búsquedas guardadas y la exportación a calendario están escritas y probadas en `js/`, pero todavía no están conectadas a ninguna pantalla.) Ver `git log` para el detalle línea a línea.
+V3.1 también trae, en esta misma web: sistema de tokens de diseño (`css/tokens.css`), un router con historial real (Atrás/Adelante entre secciones), Zaps (NIP-57) con pago vía wallet conectada, borradores de publicación, favoritos y varias mejoras de confianza/moderación. (La copia de seguridad local, las búsquedas guardadas y la exportación a calendario están escritas, pero todavía no están conectadas a ninguna pantalla: su código está apartado fuera de `js/` hasta que se conecten.) Ver `git log` para el detalle línea a línea.
 
 ### PlazaP2P Android — qué hace hoy
 
