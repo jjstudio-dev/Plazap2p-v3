@@ -56,3 +56,36 @@ test('utf8ToBase64: round-trip con acentos/emoji (no solo ASCII)', () => {
   const decoded = Buffer.from(utf8ToBase64(original), 'base64').toString('utf8')
   assert.equal(decoded, original)
 })
+
+// W3-02 — lo que se sube es la imagen redibujada, no el archivo original (que
+// puede llevar dentro el lugar, la fecha y el modelo de teléfono).
+test('uploadImage: sube la imagen redibujada, y el hash autorizado es el suyo', async (t) => {
+  const { uploadImage } = await import('../js/media-upload.js')
+  const original = globalThis.fetch
+  t.after(() => { globalThis.fetch = original })
+  const sent = []
+  globalThis.fetch = async (url, init) => { sent.push(init); return { ok: true, json: async () => ({ url: 'https://blossom.test/abc' }) } }
+
+  const originalFile = new Blob(['FOTO-CON-GPS-SECRETO'], { type: 'image/jpeg' })
+  const clean = new Blob(['solo-pixeles'], { type: 'image/jpeg' })
+  let signedHash = null
+  const sign = async unsigned => { signedHash = unsigned.tags.find(tag => tag[0] === 'x')[1]; return { ...unsigned, id: 'i', sig: 's' } }
+
+  const url = await uploadImage(originalFile, PK1, sign, 'https://blossom.test', { reencode: async () => clean })
+
+  assert.equal(url, 'https://blossom.test/abc')
+  assert.equal(sent.length, 1)
+  assert.equal(await sent[0].body.text(), 'solo-pixeles', 'no se envía el archivo original')
+  assert.equal(signedHash, await sha256Hex(await clean.arrayBuffer()))
+})
+
+test('uploadImage: si la imagen no se puede redibujar, no se sube nada', async (t) => {
+  const { uploadImage } = await import('../js/media-upload.js')
+  const original = globalThis.fetch
+  t.after(() => { globalThis.fetch = original })
+  let fetched = 0
+  globalThis.fetch = async () => { fetched++; return { ok: true, json: async () => ({ url: 'x' }) } }
+  const file = new Blob(['x'], { type: 'image/jpeg' })
+  await assert.rejects(uploadImage(file, PK1, async u => u, 'https://blossom.test', { reencode: async () => { throw new Error('no se pudo procesar la imagen') } }))
+  assert.equal(fetched, 0)
+})

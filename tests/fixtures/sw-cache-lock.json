@@ -1,5 +1,5 @@
 {
-  "cache": "plazap2p-v3-r53",
+  "cache": "plazap2p-v3-r54",
   "files": {
     "./": "0dfd19ea9d69ddd0",
     "./index.html": "0dfd19ea9d69ddd0",
@@ -30,7 +30,7 @@
     "./js/publish-builders.js": "d084022437195126",
     "./js/mis-anuncios.js": "0db7ecfdf3ecc5f2",
     "./js/drafts.js": "661b2e630388d9e2",
-    "./js/media-upload.js": "009b7d668cb6d7a2",
+    "./js/media-upload.js": "c162a4562652c025",
     "./js/moderation.js": "ecc414d58acec1c7",
     "./js/trust-signals.js": "e72ef1ab4c3505e5",
     "./js/profile.js": "08ff59fd34dd968f",

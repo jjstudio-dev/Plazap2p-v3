@@ -20,6 +20,7 @@ Requisitos: Node 22 o superior y Chrome o Edge instalado (o la variable `CHROME_
 | `06-wallet-zaps` | Conectar, recibir, pagar y zaps contra una wallet NWC simulada que cifra y firma de verdad |
 | `07-pwa` | Arranque sin red, actualización de versión y tamaño de la caché del Service Worker |
 | `08-apis-externas` | APIs de precios caídas, lentas, con JSON roto o con texto hostil |
+| `09-fotos` | Una foto con datos ocultos (lugar, fecha) sale sin ellos antes de subirse |
 
 ## Piezas
 

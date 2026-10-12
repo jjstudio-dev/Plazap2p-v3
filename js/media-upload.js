@@ -72,17 +72,42 @@ export async function uploadBlob(server, file, signedAuthEvent) {
 }
 
 /**
- * Orquesta el flujo completo: valida → hashea → construye el evento de
- * autorización → lo firma (vía el callback `sign`, normalmente
- * signer.nip07Sign) → sube → devuelve la URL. No hace nada con Amber: el
- * llamador decide si ofrece esta función según `signer.detectSigner()`.
+ * Redibuja la imagen en un lienzo y devuelve el resultado. Una foto de móvil
+ * suele llevar dentro el lugar, la fecha y el modelo de teléfono; lo que sale
+ * del lienzo son solo los píxeles (con la orientación ya aplicada).
+ * Los GIF se devuelven tal cual: redibujarlos los dejaría sin animación.
  */
-export async function uploadImage(file, pubkeyHex, sign, server = BLOSSOM_SERVERS[0]) {
+export async function stripImageMetadata(file) {
+  if (file.type === 'image/gif') return file
+  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
+  try {
+    const canvas = document.createElement('canvas')
+    canvas.width = bitmap.width
+    canvas.height = bitmap.height
+    canvas.getContext('2d').drawImage(bitmap, 0, 0)
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, file.type, 0.9))
+    if (!blob) throw new Error('no se pudo procesar la imagen')
+    return blob
+  } finally {
+    bitmap.close?.()
+  }
+}
+
+/**
+ * Orquesta el flujo completo: valida → redibuja (quita los datos ocultos) →
+ * hashea → construye el evento de autorización → lo firma (vía el callback
+ * `sign`, normalmente signer.nip07Sign) → sube → devuelve la URL. Si la
+ * imagen no se puede redibujar no se sube nada: nunca se envía el original.
+ * No hace nada con Amber: el llamador decide si ofrece esta función según
+ * `signer.detectSigner()`.
+ */
+export async function uploadImage(file, pubkeyHex, sign, server = BLOSSOM_SERVERS[0], { reencode = stripImageMetadata } = {}) {
   const err = validateFile(file)
   if (err) throw new Error(err)
-  const buf = await file.arrayBuffer()
+  const clean = await reencode(file)
+  const buf = await clean.arrayBuffer()
   const hash = await sha256Hex(buf)
   const unsigned = buildBlossomAuthEvent(hash, pubkeyHex)
   const signed = await sign(unsigned)
-  return uploadBlob(server, file, signed)
+  return uploadBlob(server, clean, signed)
 }
