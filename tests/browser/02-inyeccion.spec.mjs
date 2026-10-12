@@ -224,6 +224,21 @@ export const tests = [
     },
   },
   {
+    name: 'la imagen de un artículo no se pide a su servidor hasta que el usuario la pide',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: { events: [listing(), article({ image: 'https://servidor-ajeno.test/a.png' })] } })
+      await page.goto(server.origin + '/index.html')
+      await page.waitFor(`document.querySelectorAll('#channel-mercado .listing-card:not(.skeleton)').length === 1`)
+      await page.click('.nav-tab[data-tab="articulos"]')
+      await page.waitFor(`document.querySelectorAll('#channel-articulos .article-card').length === 1`)
+      t.assert.equal(await page.count('#channel-articulos img'), 0, 'ninguna imagen ajena se carga al pintar el canal')
+      await page.click('#channel-articulos .article-img-load')
+      t.assert.equal(await page.evaluate(`document.querySelector('#channel-articulos img.article-img')?.getAttribute('src')`), 'https://servidor-ajeno.test/a.png')
+      t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
+  {
     name: 'al abrir un anuncio se piden las valoraciones de su autor, sin pasar por «Vendedores»',
     async run(t) {
       const server = await t.server()

@@ -1,12 +1,12 @@
 {
-  "cache": "plazap2p-v3-r62",
+  "cache": "plazap2p-v3-r63",
   "files": {
     "./": "4d6690778c247d0c",
     "./index.html": "4d6690778c247d0c",
     "./publicar.html": "05af861b85f4ce13",
-    "./css/style.css?v=42": "a81b3271ad755421",
+    "./css/style.css?v=42": "79ae98b2d9db3eef",
     "./css/publicar.css?v=42": "c72c4d028ff566ad",
-    "./js/app.js?v=42": "e8d43265e7fd8a24",
+    "./js/app.js?v=42": "35c90a9cbe63fc01",
     "./js/app-shell.js?v=42": "aed353b01c5f956e",
     "./js/router.js?v=42": "137b6a020caec0aa",
     "./js/publicar-app.js?v=42": "e3e1fd159343a1c1",

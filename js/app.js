@@ -1018,7 +1018,7 @@ function renderArticleCard(a) {
   const njumpUrl = `https://njump.me/${a.naddr}`;
   const isNew    = (Date.now() / 1000 - a.publishedAt) < 3600;
   return `<article class="article-card" onclick="window.open('${njumpUrl}','_blank','noopener noreferrer')">
-    ${a.image && safeUrl(a.image) ? `<div class="article-img-wrap"><img src="${safeUrl(a.image)}" alt="" class="article-img" loading="lazy" onerror="this.parentElement.style.display='none'"></div>` : ''}
+    ${a.image && safeUrl(a.image) ? `<div class="article-img-wrap article-img-pending"><button type="button" class="btn-ghost btn-sm article-img-load" data-src="${safeUrl(a.image)}" onclick="event.stopPropagation(); loadArticleImage(this)">🖼 Mostrar imagen</button></div>` : ''}
     <div class="article-body">
       <div class="card-top-row">
         <span class="kind-badge kind-article">ARTÍCULO</span>
@@ -1368,6 +1368,19 @@ window.openModal = function(naddr, options = {}) {
       ? `⚡ ${receipts.length} recibo${receipts.length === 1 ? '' : 's'} de zap público${receipts.length === 1 ? '' : 's'} (no se puede comprobar desde aquí que se pagaran)`
       : '';
   }).catch(() => { /* sin zaps o relay caído: no mostrar nada, no es un error visible */ });
+};
+
+// La imagen de un artículo la elige su autor: pedirla enseña la IP del
+// visitante a ese servidor. Solo se carga cuando el usuario la pide.
+window.loadArticleImage = function(btn) {
+  const wrap = btn.parentElement;
+  const img = document.createElement('img');
+  img.className = 'article-img';
+  img.alt = '';
+  img.onerror = () => { wrap.style.display = 'none'; };
+  img.src = btn.dataset.src;
+  wrap.classList.remove('article-img-pending');
+  wrap.replaceChildren(img);
 };
 
 window.closeModal = function(options = {}) {
