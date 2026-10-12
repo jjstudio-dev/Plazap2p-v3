@@ -37,7 +37,7 @@ export function destRoute(dest, tab) {
  */
 export function resolveHash(hash) {
   const { dest, sub } = parseHash(hash);
-  const g = dest && GROUPS[dest];
+  const g = dest && Object.hasOwn(GROUPS, dest) && GROUPS[dest];
   if (!g || g.external) return null;
   const tab = g.tabs && g.tabs.includes(sub) ? sub : g.default;
   return { dest, tab };

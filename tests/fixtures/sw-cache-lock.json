@@ -1,5 +1,5 @@
 {
-  "cache": "plazap2p-v3-r54",
+  "cache": "plazap2p-v3-r55",
   "files": {
     "./": "0dfd19ea9d69ddd0",
     "./index.html": "0dfd19ea9d69ddd0",
@@ -8,7 +8,7 @@
     "./css/publicar.css?v=42": "c72c4d028ff566ad",
     "./js/app.js?v=42": "bf2272293f56f943",
     "./js/app-shell.js?v=42": "aed353b01c5f956e",
-    "./js/router.js?v=42": "cc0a624575c51278",
+    "./js/router.js?v=42": "137b6a020caec0aa",
     "./js/publicar-app.js?v=42": "b1f91322f8e3711e",
     "./js/btc-stats.js?v=42": "f685de9d7d03f6ac",
     "./js/btc-chart.js?v=42": "6e8e9d2983e7dae4",
@@ -23,7 +23,7 @@
     "./data/mantenimiento.json?v=42": "7ee6595e33def6a2",
     "./data/config.json": "57d5c10afc4be37f",
     "./css/tokens.css": "ad6ad5bdcec6f1ba",
-    "./js/router.js": "cc0a624575c51278",
+    "./js/router.js": "137b6a020caec0aa",
     "./js/app-shell.js": "aed353b01c5f956e",
     "./js/signer.js": "bc018da7f0d477e4",
     "./js/publish-utils.js": "f8cebe447688bb2f",

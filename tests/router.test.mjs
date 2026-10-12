@@ -72,3 +72,9 @@ test('anuncioRoute → parseAnuncioHash: round-trip', () => {
   const naddr = 'naddr1qqxnzd3cxg6nywfk8qcrjwfhxs6z6wpkxu6rvv3c'
   assert.equal(parseAnuncioHash(anuncioRoute(naddr)), naddr)
 })
+
+test('resolveHash: un nombre heredado de Object (#/constructor) no es un destino', () => {
+  for (const hash of ['#/constructor', '#/toString', '#/__proto__', '#/hasOwnProperty/x']) {
+    assert.equal(resolveHash(hash), null, hash)
+  }
+})
