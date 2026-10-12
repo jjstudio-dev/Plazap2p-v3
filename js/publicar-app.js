@@ -1683,3 +1683,11 @@ function setupImageUpload(prefix) {
     }
   })
 }
+
+// Service Worker (modo sin red). Va aquí y no en un <script> de publicar.html:
+// la política de seguridad de esa página no admite scripts en línea.
+if ('serviceWorker' in navigator) {
+  const register = () => navigator.serviceWorker.register('./sw.js').catch(() => {})
+  if (document.readyState === 'complete') register()
+  else window.addEventListener('load', register)
+}

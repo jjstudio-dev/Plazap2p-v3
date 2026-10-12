@@ -19,6 +19,7 @@ export function initWallet() {
   $('w-btn-disconnect').addEventListener('click', onDisconnect)
   $('w-btn-refresh').addEventListener('click', refreshBalance)
   $('w-btn-invoice').addEventListener('click', onMakeInvoice)
+  $('w-invoice-text').addEventListener('click', e => { navigator.clipboard?.writeText(e.currentTarget.textContent) })
   $('w-btn-decode').addEventListener('click', onDecodeInvoice)
 
   renderState()

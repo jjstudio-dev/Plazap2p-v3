@@ -4,11 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#07070c">
-  <!-- SEC-003: ver el comentario equivalente en index.html — misma política,
-       mismas razones (sin cabecera HTTP real posible en GitHub Pages). -->
+  <!-- SEC-003: ver el comentario equivalente en index.html (sin cabecera HTTP
+       real posible en GitHub Pages). Aquí, además, script-src NO admite scripts
+       en línea: esta página guarda la credencial de la wallet, y es la barrera
+       que frena un texto malicioso que se colara en el HTML. Todo el código va
+       en archivos de js/ y los eventos se enganchan desde ahí. -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-inline';
+    script-src 'self';
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     img-src 'self' https: data:;
     font-src 'self' https://fonts.gstatic.com;
@@ -709,8 +712,7 @@
       <button class="btn-secondary" id="w-btn-invoice" type="button">📥 Generar factura</button>
       <div id="w-invoice-box" class="hidden" style="text-align:center;margin-top:12px">
         <div id="w-qr"></div>
-        <div class="naddr-box" id="w-invoice-text" title="Toca para copiar"
-             onclick="navigator.clipboard&&navigator.clipboard.writeText(this.textContent)"></div>
+        <div class="naddr-box" id="w-invoice-text" title="Toca para copiar"></div>
       </div>
 
       <!-- Pagar -->
@@ -795,10 +797,5 @@
 </nav>
 
 <script type="module" src="js/publicar-app.js?v=42"></script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}))
-  }
-</script>
 </body>
 </html>

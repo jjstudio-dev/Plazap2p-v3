@@ -217,6 +217,30 @@ export const tests = [
     },
   },
 
+  {
+    name: 'en la página de la wallet, un script colado dentro del HTML no se ejecuta',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: base({ behaviors: OK }) })
+      await page.goto(server.origin + '/publicar.html')
+      await page.waitFor(`!!document.getElementById('nav-perfil')`)
+      await page.evaluate(`(() => {
+        const d = document.createElement('div')
+        d.innerHTML = '<img src="x" onerror="window.__colado = 1"><a id="colado-a" onclick="window.__colado = 2">x</a>'
+        document.body.append(d)
+        document.getElementById('colado-a').click()
+        const s = document.createElement('script'); s.textContent = 'window.__colado = 3'; document.body.append(s)
+      })()`)
+      await new Promise(r => setTimeout(r, 400))
+      t.assert.equal(await page.evaluate(`window.__colado ?? null`), null, 'la política de la página debe bloquear los scripts en línea')
+      // La página sigue funcionando: se puede conectar la wallet.
+      await page.click('#nav-perfil'); await page.click('.pub-chip[data-chip="wallet"]')
+      await page.fill('#w-conn-string', CONN_STRING)
+      await page.click('#w-btn-connect')
+      await page.waitFor(visible('w-connected'), { label: 'wallet conectada' })
+    },
+  },
+
   // ── Zaps ────────────────────────────────────────────────────────────────
   ...(() => {
     const vendedor = profile({ sk: SK2, meta: { name: 'Vendedora', lud16: 'vendedora@pagos.test' } })
