@@ -7,6 +7,8 @@
 //   2. js/app.js     → const ASSET_VERSION = 'V' (versiona los data/*.json)
 //   3. publicar.html → publicar.css?v=V, publicar-app.js?v=V
 //   4. sw.js         → CACHE 'rN' (incrementar) + entradas ?v=V de STATICS
+//   5. node tests/sw-cache-lock.test.mjs --update   (el CI falla si cambió un
+//      archivo de STATICS y CACHE no)
 // Regla: cada entrada de STATICS es EXACTAMENTE una URL que el navegador
 // pide de verdad. Los imports internos de ES modules van SIN query.
 const CACHE    = 'plazap2p-v3-r48';
