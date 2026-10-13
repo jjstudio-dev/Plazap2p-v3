@@ -4,7 +4,7 @@
 // para responder "sin valoraciones" / "sin lightning address" / 0 zaps.
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { fetchReputacion, fetchReputacionBatch, _clearReputacionCache } from '../js/reputacion.js'
+import { fetchReputacion, fetchReputacionBatch, _clearReputacionCache, RATINGS_PER_SELLER } from '../js/reputacion.js'
 import { fetchProfileMeta } from '../js/profile.js'
 import { fetchZapReceipts } from '../js/zaps.js'
 import { fakePool, flush, answerRaterAge } from './fixtures/fake-pool.mjs'
@@ -83,6 +83,60 @@ test('fetchReputacionBatch: un resultado cortado por timeout NO se cachea; uno c
   const again = await fetchReputacionBatch(otra, [ratee], 2000)
   assert.equal(otra.subs.size, 0, 'el resultado completo sí se sirve de caché')
   assert.equal(again[ratee].count, 1)
+})
+
+/**
+ * Relay que respeta `limit` como uno real: por cada filtro de valoraciones
+ * entrega como mucho `limit` eventos, los más recientes de los que casan.
+ */
+function limitHonouringPool(ratings) {
+  const pool = answerRaterAge(fakePool(['wss://a']))
+  const age = pool.onSubscribe
+  pool.consultas = []
+  pool.onSubscribe = (id, filters, h) => {
+    if (!filters.every(f => f.kinds?.[0] === 1985)) return age(id, filters, h)
+    pool.consultas.push(filters)
+    queueMicrotask(() => {
+      for (const f of filters) {
+        const hits = ratings
+          .filter(ev => ev.tags.some(t => t[0] === 'p' && f['#p'].includes(t[1])))
+          .sort((a, b) => b.created_at - a.created_at)
+          .slice(0, f.limit)
+        for (const ev of hits) h.onEvent?.(ev, 'wss://a')
+      }
+      h.onEose?.('wss://a')
+    })
+  }
+  return pool
+}
+
+test('reputación: una avalancha de valoraciones sobre un vendedor no deja sin las suyas a los demás (VW4-06)', async () => {
+  _clearReputacionCache()
+  const [inundado, normal] = [hex('3'), hex('4')]
+  const autor = i => (i + 16).toString(16).padStart(4, '0').repeat(16)
+  const basura = Array.from({ length: 500 }, (_, i) => rating(autor(i), inundado, 1, { ts: 2_000_000_000 + i }))
+  const reales = [rating(hex('1'), normal, 5, { ts: 100 }), rating(hex('2'), normal, 4, { ts: 101 })]
+  const pool = limitHonouringPool([...basura, ...reales])
+
+  const out = await fetchReputacionBatch(pool, [inundado, normal], 2000)
+
+  assert.equal(out[normal].count, 2, 'las valoraciones reales del otro vendedor siguen ahí')
+  assert.equal(out[normal].avg, 4.5)
+  assert.equal(out[inundado].count, RATINGS_PER_SELLER)
+  for (const f of pool.consultas.flat()) assert.equal(f['#p'].length, 1, 'un filtro por vendedor')
+})
+
+test('reputación: muchos vendedores se preguntan en lotes de 10 filtros, uno por vendedor', async () => {
+  _clearReputacionCache()
+  const vendedores = Array.from({ length: 23 }, (_, i) => (i + 1).toString(16).padStart(2, '0').repeat(32))
+  const pool = limitHonouringPool([])
+
+  const out = await fetchReputacionBatch(pool, [...vendedores, vendedores[0]], 2000)
+
+  assert.deepEqual(pool.consultas.map(c => c.length), [10, 10, 3])
+  assert.deepEqual(pool.consultas.flat().map(f => f['#p'][0]), vendedores)
+  assert.ok(pool.consultas.flat().every(f => f.limit === RATINGS_PER_SELLER))
+  assert.equal(Object.keys(out).length, 23)
 })
 
 // ── Antigüedad del valorador (ronda 2: misma regla que la app Android) ────────

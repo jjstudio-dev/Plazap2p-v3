@@ -18,6 +18,9 @@ const cache = new Map()   // rateeHex → { ts, result }
 // calcular lo que se enseña.
 const MIN_RATER_AGE_S = 30 * 24 * 60 * 60
 const MATURITY_FILTERS_PER_QUERY = 10   // los relays limitan cuántos filtros aceptan por petición
+const REPUTATION_FILTERS_PER_QUERY = 10
+/** Cuántas valoraciones se piden como mucho por vendedor y relay. */
+export const RATINGS_PER_SELLER = 200
 const matureRaters = new Set()          // quien ya demostró antigüedad la conserva
 
 function cached(hex) {
@@ -62,30 +65,40 @@ export async function fetchReputacionBatch(pool, hexes, timeoutMs = 6000) {
   const byRatee = new Map()   // rateeHex → Map(author → evento 1985 más reciente CON rating válido)
   for (const hex of pending) byRatee.set(hex, new Map())
 
-  const { complete } = await collectUntilEose(
-    pool,
-    [{ kinds: [1985], '#p': pending, '#L': [NAMESPACE], limit: 500 }],
-    {
-      timeoutMs,
-      prefix: 'rep',
-      onEvent(ev) {
-        // Verificaciones defensivas (el filtro del relay no es de fiar):
-        if (ev.kind !== 1985) return
-        if (!ev.tags.some(t => t[0] === 'L' && t[1] === NAMESPACE)) return
-        // Un evento sin puntuación válida no debe desplazar a la valoración
-        // real (más antigua) del mismo autor.
-        if (!hasValidRating(ev)) return
-        for (const t of ev.tags) {
-          if (t[0] !== 'p') continue
-          const byAuthor = byRatee.get(t[1])
-          if (!byAuthor) continue
-          if (ev.pubkey === t[1]) continue   // auto-valoración: ignorar
-          const prev = byAuthor.get(ev.pubkey)
-          if (!prev || ev.created_at > prev.created_at) byAuthor.set(ev.pubkey, ev)
-        }
+  // UN filtro por vendedor, cada uno con su límite. Con un filtro común y un
+  // límite común, quien publicara 500 valoraciones basura sobre un vendedor
+  // expulsaba de la respuesta las de todos los demás, que quedaban «sin
+  // valoraciones» (VW4-06). En lotes pequeños: los relays limitan cuántos
+  // filtros aceptan por petición.
+  let complete = true
+  for (let i = 0; i < pending.length; i += REPUTATION_FILTERS_PER_QUERY) {
+    const chunk = pending.slice(i, i + REPUTATION_FILTERS_PER_QUERY)
+    const res = await collectUntilEose(
+      pool,
+      chunk.map(ratee => ({ kinds: [1985], '#p': [ratee], '#L': [NAMESPACE], limit: RATINGS_PER_SELLER })),
+      {
+        timeoutMs,
+        prefix: 'rep',
+        onEvent(ev) {
+          // Verificaciones defensivas (el filtro del relay no es de fiar):
+          if (ev.kind !== 1985) return
+          if (!ev.tags.some(t => t[0] === 'L' && t[1] === NAMESPACE)) return
+          // Un evento sin puntuación válida no debe desplazar a la valoración
+          // real (más antigua) del mismo autor.
+          if (!hasValidRating(ev)) return
+          for (const t of ev.tags) {
+            if (t[0] !== 'p') continue
+            const byAuthor = byRatee.get(t[1])
+            if (!byAuthor) continue
+            if (ev.pubkey === t[1]) continue   // auto-valoración: ignorar
+            const prev = byAuthor.get(ev.pubkey)
+            if (!prev || ev.created_at > prev.created_at) byAuthor.set(ev.pubkey, ev)
+          }
+        },
       },
-    },
-  )
+    )
+    if (!res.complete) complete = false
+  }
 
   const raters = new Set()
   for (const byAuthor of byRatee.values()) for (const author of byAuthor.keys()) raters.add(author)
