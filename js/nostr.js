@@ -91,10 +91,17 @@ export function decodeNaddr(naddr) {
   for (const r of (tlv[1] || [])) {
     try { relays.push(td.decode(new Uint8Array(r))); } catch { /* omitir relay con bytes inválidos */ }
   }
+  // Un autor son 32 bytes y un tipo son 4. Con otra longitud, la dirección
+  // devolvía un autor de 10 caracteres o un tipo sin sentido (VW1-01); la app
+  // Android ya lo rechaza.
+  const author = tlv[2]?.[0];
+  const kindBytes = tlv[3]?.[0];
+  if (author && author.length !== 32) throw new Error('decodeNaddr: author must be 32 bytes');
+  if (kindBytes && kindBytes.length !== 4) throw new Error('decodeNaddr: kind must be 4 bytes');
   return {
     identifier,
-    pubkey: tlv[2]?.[0] ? Array.from(tlv[2][0]).map(b => b.toString(16).padStart(2, '0')).join('') : '',
-    kind: tlv[3]?.[0] ? (tlv[3][0][0] << 24 | tlv[3][0][1] << 16 | tlv[3][0][2] << 8 | tlv[3][0][3]) : 0,
+    pubkey: author ? Array.from(author).map(b => b.toString(16).padStart(2, '0')).join('') : '',
+    kind: kindBytes ? ((kindBytes[0] << 24 | kindBytes[1] << 16 | kindBytes[2] << 8 | kindBytes[3]) >>> 0) : 0,
     relays
   };
 }
@@ -113,6 +120,9 @@ export function encodeNaddr({ kind, pubkey, identifier, relays = [] }) {
   tlv.push(3, 4, (kind >>> 24) & 0xff, (kind >>> 16) & 0xff, (kind >>> 8) & 0xff, kind & 0xff);
   for (const r of relays) {
     const rb = te.encode(r);
+    // La longitud ocupa 1 byte: un relay de más de 255 bytes corrompería la
+    // dirección. Es solo una pista, así que se omite (VW1-02).
+    if (rb.length === 0 || rb.length > 255) continue;
     tlv.push(1, rb.length, ...rb);
   }
   return bech32Encode('naddr', convertBits(tlv, 8, 5));

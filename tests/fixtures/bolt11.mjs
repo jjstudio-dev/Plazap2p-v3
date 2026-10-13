@@ -27,6 +27,11 @@ function checksum(hrp, data) {
   const mod = polymod([...hrpExpand(hrp), ...data, 0, 0, 0, 0, 0, 0]) ^ 1
   return Array.from({ length: 6 }, (_, p) => (mod >> 5 * (5 - p)) & 31)
 }
+/** Bech32 genérico (para construir npub/naddr mal formados en los tests). */
+export function bech32Encode(hrp, words) {
+  return hrp + '1' + [...words, ...checksum(hrp, words)].map(v => CHARSET[v]).join('')
+}
+
 export function bytesToWords(bytes) {
   const words = []
   let acc = 0, bits = 0
