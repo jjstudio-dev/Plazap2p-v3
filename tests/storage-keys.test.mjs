@@ -23,6 +23,12 @@ test('isRegistered() reconoce claves de las tres listas y rechaza desconocidas',
   assert.equal(isRegistered('plazap2p_nwc_persist'), true)
   assert.equal(isRegistered('plazap2p_v3'), true)
   assert.equal(isRegistered('plazap2p_no_existe'), false)
+  // Borradores: una clave por tipo de publicación, registradas por prefijo.
+  assert.equal(isRegistered('plazap2p_draft_venta'), true)
+  assert.equal(isRegistered('plazap2p_draft_'), false)
+  // Módulos que ya no existen (en cuarentena): sus claves ya no figuran.
+  assert.equal(isRegistered('plazap2p_orders'), false)
+  assert.equal(isRegistered('plazap2p_saved_searches'), false)
 })
 
 // Comprobación mecánica (ver Fase 0 del plan): cualquier
