@@ -10,6 +10,7 @@ import { verifyEvent } from './vendor/nostr-crypto.js';
 
 const RECONNECT_BASE_MS = 3000;
 const RECONNECT_MAX_MS  = 60000;
+const MAX_STORED_EVENTS_PER_RELAY = 2000;   // por consulta y relay, antes de su EOSE
 const MAX_FUTURE_DRIFT_S = 900;   // eventos >15 min en el futuro: rechazados
 
 /**
@@ -164,6 +165,18 @@ export class RelayPool {
         if (type === 'EVENT' && payload) {
           const sub = this.#subs[subId];
           if (!sub) return;
+          // Tope de lo almacenado que un relay puede volcar por consulta: cada
+          // evento cuesta ~1 ms de comprobación de firma en el hilo de la
+          // pantalla, y un relay hostil podía congelarla (VW1-07). Tras su
+          // EOSE el contador ya no aplica: lo que llega es tiempo real.
+          if (!sub.eoseFrom?.has(url)) {
+            const seen = (sub.storedCount.get(url) || 0) + 1;
+            sub.storedCount.set(url, seen);
+            if (seen > MAX_STORED_EVENTS_PER_RELAY) {
+              if (seen === MAX_STORED_EVENTS_PER_RELAY + 1) console.warn(`[relay] ${url} supera el tope de eventos de la consulta ${subId}; el resto se descarta`);
+              return;
+            }
+          }
           // SEC-001: verificar antes de entregar; descartar lo que no encaje
           // en los filtros de la suscripción (relays que ignoran el REQ).
           if (!validateSignedEvent(payload)) {
@@ -173,7 +186,10 @@ export class RelayPool {
           if (!matchesFilters(payload, sub.filters)) return;
           sub.onEvent?.(payload, url);
         }
-        else if (type === 'EOSE') this.#subs[subId]?.onEose?.(url);
+        else if (type === 'EOSE') {
+          this.#subs[subId]?.eoseFrom.add(url);
+          this.#subs[subId]?.onEose?.(url);
+        }
         // CLOSED: el relay rechaza la suscripción (auth-required, rate-limited…)
         // y no va a mandar EOSE. Para quien espera respuestas equivale a "este
         // relay ya ha contestado": sin esto, un solo relay que exija
@@ -206,7 +222,7 @@ export class RelayPool {
   }
 
   subscribe(id, filters, { onEvent, onEose } = {}) {
-    this.#subs[id] = { filters, onEvent, onEose };
+    this.#subs[id] = { filters, onEvent, onEose, storedCount: new Map(), eoseFrom: new Set() };
     for (const { ws, status } of Object.values(this.#relays)) {
       if (status === 'connected') {
         try { ws.send(JSON.stringify(['REQ', id, ...filters])); } catch (e) { console.warn('[relay] subscribe send failed', e); }
@@ -243,13 +259,19 @@ export class RelayPool {
       .filter(r => r.status === 'connected' || (r.status === 'connecting' && r.failCount === 0)).length;
   }
 
+  /**
+   * Envía sin esperar respuesta. Devuelve a cuántos relays se envió: con
+   * cero conectados no se envía nada, y antes eso pasaba en silencio (VW1-05).
+   */
   publish(event) {
     const msg = JSON.stringify(['EVENT', event]);
+    let sent = 0;
     for (const relay of Object.values(this.#relays)) {
       if (relay.status === 'connected') {
-        try { relay.ws.send(msg); } catch {}
+        try { relay.ws.send(msg); sent++; } catch {}
       }
     }
+    return sent;
   }
 
   publishWithFeedback(event, timeout = 6000) {
