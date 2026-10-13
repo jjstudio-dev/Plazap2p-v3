@@ -80,8 +80,16 @@ async function onConnect() {
     const info = await nwc.fetchWalletInfo(parsed)
     parsed.encryption = info.encryption
     parsed.methods = info.methods
-    // Verificación real end-to-end antes de guardar
-    await nwc.getBalance(parsed)
+    // Verificación real de extremo a extremo antes de guardar. Una conexión que
+    // solo permite pagar no deja consultar el saldo, y antes eso impedía
+    // conectarla (VW2-01). Si la wallet contesta "sin permiso", esa respuesta ya
+    // prueba que la conexión funciona. Si ni siquiera anuncia el saldo, no hay
+    // nada inocuo que preguntarle: se conecta con lo que dice su info firmada.
+    if (nwc.announcesBalance(parsed.methods)) {
+      try { await nwc.getBalance(parsed) } catch (e) {
+        if (!nwc.isOperationNotAllowed(e)) throw e
+      }
+    }
 
     conn = parsed
     walletSession.save(conn)
@@ -106,13 +114,17 @@ function onDisconnect() {
 
 // ── Saldo ─────────────────────────────────────────────────────────────────────
 
+const NO_BALANCE_TEXT = 'Saldo no disponible: esta conexión solo permite pagar'
+
 async function refreshBalance() {
   if (!conn) return
+  if (!nwc.announcesBalance(conn.methods)) { $('w-balance').textContent = NO_BALANCE_TEXT; return }
   $('w-balance').textContent = '···'
   try {
     const { balance } = await nwc.getBalance(conn)
     $('w-balance').textContent = Math.floor(balance / 1000).toLocaleString('es-ES') + ' sats'
   } catch (e) {
+    if (nwc.isOperationNotAllowed(e)) { $('w-balance').textContent = NO_BALANCE_TEXT; return }
     $('w-balance').textContent = '—'
     setErr('err-w-balance', e.message)
     setTimeout(() => setErr('err-w-balance', ''), 6000)

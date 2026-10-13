@@ -1,7 +1,9 @@
 // WAL-002 — validación de respuestas NWC, string de conexión y BOLT11
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { parseConnectionString, isValidNwcResponse, decodeBolt11 } from '../js/nwc.js'
+import {
+  parseConnectionString, isValidNwcResponse, decodeBolt11, announcesBalance, isOperationNotAllowed,
+} from '../js/nwc.js'
 import { buildInvoice, SIG_WORDS } from './fixtures/bolt11.mjs'
 import { SK2, PK1, PK2, signWith, tampered } from './fixtures/events.mjs'
 
@@ -109,4 +111,29 @@ test('decodeBolt11: checksum corrupto y basura → lanza', () => {
   assert.throws(() => decodeBolt11(corrupted))
   assert.throws(() => decodeBolt11('no-es-una-factura'))
   assert.throws(() => decodeBolt11(''))
+})
+
+// ── Permisos de la conexión (VW2-01) ─────────────────────────────────────────
+
+test('announcesBalance: una conexión solo de pago no anuncia el saldo', () => {
+  assert.equal(announcesBalance(['pay_invoice']), false)
+  assert.equal(announcesBalance(['pay_invoice', 'get_balance']), true)
+})
+
+test('announcesBalance: sin lista de métodos no se sabe, así que se intenta', () => {
+  assert.equal(announcesBalance([]), true)
+  assert.equal(announcesBalance(undefined), true)
+  assert.equal(announcesBalance(null), true)
+})
+
+test('isOperationNotAllowed: solo cuando la wallet contesta que falta ese permiso', () => {
+  const walletError = walletCode => Object.assign(new Error('x'), { code: 'WALLET_ERROR', walletCode })
+  assert.equal(isOperationNotAllowed(walletError('RESTRICTED')), true)
+  assert.equal(isOperationNotAllowed(walletError('NOT_IMPLEMENTED')), true)
+  // La conexión no vale, o el fallo es otro: no se puede dar por buena.
+  assert.equal(isOperationNotAllowed(walletError('UNAUTHORIZED')), false)
+  assert.equal(isOperationNotAllowed(walletError('INTERNAL')), false)
+  assert.equal(isOperationNotAllowed(Object.assign(new Error('x'), { code: 'TIMEOUT', walletCode: null })), false)
+  assert.equal(isOperationNotAllowed(Object.assign(new Error('x'), { code: 'TIMEOUT', walletCode: 'RESTRICTED' })), false)
+  assert.equal(isOperationNotAllowed(null), false)
 })

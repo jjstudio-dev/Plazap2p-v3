@@ -1,5 +1,5 @@
 {
-  "cache": "plazap2p-v3-r67",
+  "cache": "plazap2p-v3-r68",
   "files": {
     "./": "304ce36d5fe1ad5a",
     "./index.html": "304ce36d5fe1ad5a",
@@ -42,9 +42,9 @@
     "./js/reputacion.js": "87bde4f8c59ee5cc",
     "./js/nostr.js": "0c8d40a92ab7b07e",
     "./js/relay-pool.js": "e4c96141e5bfb890",
-    "./js/nwc.js": "1b4219ade2f1ec2a",
+    "./js/nwc.js": "bad0a9c305672edd",
     "./js/wallet-session.js": "86b783c76247d5a6",
-    "./js/wallet-ui.js": "873e585764b439b0",
+    "./js/wallet-ui.js": "cfde83858c9830ac",
     "./js/vendor/nostr-crypto.js": "3e7c8458d5496be5",
     "./js/vendor/qrcode.js": "0cb6003158ec4d18",
     "./fonts/inter-latin.woff2": "3100e775e8616cd2",

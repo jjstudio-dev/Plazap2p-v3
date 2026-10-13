@@ -99,12 +99,14 @@ function nwcRequest(conn, method, params = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
     const clientPubkey = getPublicKey(secretBytes)
     const useNip44 = conn.encryption === 'nip44_v2'
 
-    const fail = (msg, code = 'INTERNAL') => {
+    // walletCode: el código que dio la propia wallet (RESTRICTED, UNAUTHORIZED…),
+    // solo cuando code es WALLET_ERROR.
+    const fail = (msg, code = 'INTERNAL', walletCode = null) => {
       if (settled) return
       settled = true
       clearTimeout(timer)
       try { ws?.close() } catch {}
-      reject(Object.assign(new Error(msg), { code, sent }))
+      reject(Object.assign(new Error(msg), { code, sent, walletCode }))
     }
     const done = (val) => { if (!settled) { settled = true; clearTimeout(timer); try { ws?.close() } catch {} ; resolve(val) } }
     // "Fondos intactos" solo es verdad si la operación no mueve dinero: un
@@ -177,7 +179,7 @@ function nwcRequest(conn, method, params = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
           if (payload.result_type && payload.result_type !== method) return
           if (payload.error) {
             const code = payload.error.code || 'OTHER'
-            fail(ERROR_ES[code] || payload.error.message || ERROR_ES.OTHER, 'WALLET_ERROR')
+            fail(ERROR_ES[code] || payload.error.message || ERROR_ES.OTHER, 'WALLET_ERROR', code)
           } else {
             done(payload.result)
           }
@@ -229,6 +231,27 @@ export function fetchWalletInfo(conn, timeoutMs = 8000) {
       }
     }
   })
+}
+
+// ── Permisos de la conexión ───────────────────────────────────────────────────
+
+/**
+ * ¿Anuncia la wallet que esta conexión puede consultar el saldo? Una conexión
+ * que solo permite pagar no lo anuncia. Sin lista de métodos no se sabe: se
+ * intenta.
+ */
+export function announcesBalance(methods) {
+  return !Array.isArray(methods) || methods.length === 0 || methods.includes('get_balance')
+}
+
+/**
+ * La wallet contestó que esta conexión no puede hacer esa operación. Es una
+ * respuesta cifrada y firmada por la wallet, así que la conexión funciona: solo
+ * le falta ese permiso. UNAUTHORIZED no cuenta: ahí es la conexión la que no vale.
+ */
+export function isOperationNotAllowed(e) {
+  return e?.code === 'WALLET_ERROR' &&
+    (e.walletCode === 'RESTRICTED' || e.walletCode === 'NOT_IMPLEMENTED')
 }
 
 // ── Métodos NWC ───────────────────────────────────────────────────────────────

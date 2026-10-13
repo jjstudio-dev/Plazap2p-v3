@@ -57,6 +57,40 @@ export const tests = [
     },
   },
   {
+    name: 'conectar: una wallet que solo permite pagar se conecta, sin saldo (VW2-01)',
+    async run(t) {
+      const sinSaldo = `document.getElementById('w-balance').textContent.includes('Saldo no disponible')`
+      for (const [caso, wallet, pideSaldo] of [
+        // No anuncia get_balance: ni se le pregunta.
+        ['no lo anuncia', { methods: 'pay_invoice', behaviors: { get_balance: 'silent' } }, false],
+        // Lo anuncia, pero la conexión no tiene ese permiso.
+        ['sin permiso', { behaviors: { get_balance: { error: { code: 'RESTRICTED', message: 'no' } } } }, true],
+      ]) {
+        const page = await abrirWallet(t, base(wallet))
+        await page.fill('#w-conn-string', CONN_STRING)
+        await page.click('#w-btn-connect')
+        await page.waitFor(visible('w-connected'), { label: `wallet conectada (${caso})` })
+        await page.waitFor(sinSaldo, { label: `saldo no disponible (${caso})` })
+        t.assert.equal((await calls(page)).includes('get_balance'), pideSaldo, caso)
+        t.assert.equal(await page.evaluate(`!!sessionStorage.getItem('plazap2p_nwc_session')`), true, caso)
+        t.assert.equal(await page.evaluate(errText('err-w-connect')), '', caso)
+        await page.close()
+      }
+    },
+  },
+  {
+    name: 'conectar: una conexión que la wallet no reconoce no se guarda',
+    async run(t) {
+      const page = await abrirWallet(t, base({ behaviors: { get_balance: { error: { code: 'UNAUTHORIZED', message: 'no' } } } }))
+      await page.fill('#w-conn-string', CONN_STRING)
+      await page.click('#w-btn-connect')
+      await page.waitFor(`${errText('err-w-connect')}.length > 0`, { label: 'error de conexión' })
+      t.assert.match(await page.evaluate(errText('err-w-connect')), /no autorizada/)
+      t.assert.equal(await page.evaluate(visible('w-connected')), false)
+      t.assert.equal(await page.evaluate(`sessionStorage.getItem('plazap2p_nwc_session')`), null)
+    },
+  },
+  {
     name: 'conectar: string inválido, wallet que no publica su info, e info falsificada',
     async run(t) {
       for (const [caso, wallet, cadena, esperado] of [
