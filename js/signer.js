@@ -24,6 +24,7 @@ const AMBER_PERMISSIONS = JSON.stringify([
   { type: 'sign_event', kind: 31922 },
   { type: 'sign_event', kind: 31923 },
   { type: 'sign_event', kind: 1985 },
+  { type: 'sign_event', kind: 1984 },   // reportes: la web los publica; sin pedirlo, Amber preguntaba en cada uno (VA3-03)
   { type: 'sign_event', kind: 5 },
 ])
 
