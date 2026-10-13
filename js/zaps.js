@@ -22,6 +22,7 @@ import { decodeBolt11 } from './nwc.js'
 import { collectUntilEose } from './relay-pool.js'
 
 const WELL_KNOWN_TIMEOUT_MS = 8000
+const INVOICE_TIMEOUT_MS = 15000
 
 /** user@dominio.com → URL LNURL-pay bien-known. Lanza si el formato no es válido. */
 export function lud16ToUrl(lud16) {
@@ -177,16 +178,27 @@ export async function fetchLnurlPayParams(lud16, timeoutMs = WELL_KNOWN_TIMEOUT_
   }
 }
 
-export async function requestZapInvoice(params, signedZapRequest, amountMsats) {
+export async function requestZapInvoice(params, signedZapRequest, amountMsats, timeoutMs = INVOICE_TIMEOUT_MS) {
   const url = new URL(params.callback)
   url.searchParams.set('amount', String(amountMsats))
   if (params.allowsNostr) url.searchParams.set('nostr', JSON.stringify(signedZapRequest))
-  const res = await fetch(url.toString())
-  if (!res.ok) throw new Error(`el servidor de la lightning address rechazó la petición (${res.status})`)
-  const json = await res.json()
-  if (json.status === 'ERROR') throw new Error(json.reason || 'error del servidor LNURL')
-  if (!json.pr) throw new Error('respuesta sin factura (pr)')
-  return json.pr
+  // Con tiempo límite: con el servidor colgado, el botón se quedaba girando
+  // para siempre (VW2-05). Aquí todavía no se ha pagado nada.
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs)
+  try {
+    const res = await fetch(url.toString(), { signal: ctrl.signal })
+    if (!res.ok) throw new Error(`el servidor de la lightning address rechazó la petición (${res.status})`)
+    const json = await res.json()
+    if (json.status === 'ERROR') throw new Error(json.reason || 'error del servidor LNURL')
+    if (!json.pr) throw new Error('respuesta sin factura (pr)')
+    return json.pr
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('el servidor de la lightning address no devolvió la factura a tiempo; no se ha pagado nada')
+    throw e
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 /**
