@@ -1415,6 +1415,19 @@ async function openZap(recipientHex, refTag) {
   $('zap-form-fields').classList.remove('hidden')
 }
 
+/**
+ * Firma la petición de zap y comprueba lo devuelto igual que al publicar:
+ * firma válida, mismo contenido y misma identidad. Sin esto, una extensión
+ * que devolviera otra cosa llevaba a pagar una factura pedida con una
+ * petición que el usuario no vio (VW2-11).
+ */
+async function signZapRequestChecked(unsigned) {
+  const signed = await signer.nip07Sign(unsigned)
+  const check = signer.verifySignedReturn(signed, unsigned)
+  if (!check.ok) throw new Error(`La extensión devolvió una petición de zap que no es la pedida (${check.error}). No se ha pagado nada.`)
+  return signed
+}
+
 async function submitZap() {
   setErr('err-zap', '')
   setErr('err-z-amount', '')   // si no, el aviso de un intento anterior se queda puesto (VW2-06)
@@ -1434,7 +1447,7 @@ async function submitZap() {
       relays: config.relays,
       comment: val('z-comment'),
       addressableRef: (zapRefTag && /^\d+:[0-9a-f]{64}:.*$/i.test(zapRefTag)) ? zapRefTag : null,
-    }, userPubkey, signer.nip07Sign, null, (_conn, bolt11) => payViaWallet(bolt11))
+    }, userPubkey, signZapRequestChecked, null, (_conn, bolt11) => payViaWallet(bolt11))
 
     $('zap-result').textContent = `✅ Zap de ${amountSats.toLocaleString('es-ES')} sats enviado` +
       (payResult?.preimage ? ` · preimage ${String(payResult.preimage).slice(0, 16)}…` : '')
@@ -1619,13 +1632,35 @@ function takeFormSnapshot() {
 }
 
 function restoreFormSnapshot(snap) {
-  if (!snap) return
-  for (const [id, v] of Object.entries(snap.fields || {})) { const el = $(id); if (el) el.value = v }
-  for (const id of (snap.checks || [])) { const el = $(id); if (el) el.checked = true }
-  for (const [groupId, value] of Object.entries(snap.pills || {})) {
+  if (!snap || typeof snap !== 'object') return
+  // Lo guardado viene del almacenamiento del navegador y puede estar dañado:
+  // se comprueba su forma antes de usarlo para buscar elementos, porque un
+  // dato raro detenía el arranque de la página (VW3-05).
+  const isRecord = v => !!v && typeof v === 'object' && !Array.isArray(v)
+  const fields = isRecord(snap.fields) ? snap.fields : {}
+  const checks = Array.isArray(snap.checks) ? snap.checks : []
+  const pills = isRecord(snap.pills) ? snap.pills : {}
+  const platforms = Array.isArray(snap.platforms) ? snap.platforms : []
+  const knownId = id => typeof id === 'string' && FORM_FIELD_IDS.includes(id)
+
+  // Antes de restaurar se limpia lo que hubiera marcado: si no, podían quedar
+  // dos opciones activas en un mismo grupo y se publicaba la primera (VW3-04).
+  document.querySelectorAll('.pill.active').forEach(p => p.classList.remove('active'))
+  document.querySelectorAll('input[name="h-platform"]').forEach(cb => { cb.checked = false })
+  for (const id of FORM_FIELD_IDS) { const el = $(id); if (el?.type === 'checkbox') el.checked = false }
+
+  for (const [id, v] of Object.entries(fields)) {
+    if (!knownId(id) || typeof v !== 'string') continue
+    const el = $(id)
+    if (el && el.type !== 'checkbox') el.value = v
+  }
+  for (const id of checks) { if (knownId(id)) { const el = $(id); if (el?.type === 'checkbox') el.checked = true } }
+  for (const [groupId, value] of Object.entries(pills)) {
+    if (!/^[\w-]+$/.test(groupId) || typeof value !== 'string') continue
     document.querySelector(`#${groupId} .pill[data-value="${CSS.escape(value)}"]`)?.classList.add('active')
   }
-  for (const p of (snap.platforms || [])) {
+  for (const p of platforms) {
+    if (typeof p !== 'string') continue
     const cb = document.querySelector(`input[name="h-platform"][value="${CSS.escape(p)}"]`)
     if (cb) cb.checked = true
   }

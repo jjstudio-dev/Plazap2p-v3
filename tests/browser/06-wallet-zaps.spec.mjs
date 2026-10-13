@@ -286,6 +286,18 @@ export const tests = [
         },
       },
       {
+        name: 'zap: si la extensión devuelve una petición alterada, no se pide factura ni se paga',
+        async run(t) {
+          const page = await abrirZap(t, base({ behaviors: { ...OK, pay_invoice: { result: { preimage: 'ab'.repeat(32) } } } },
+            { sessionStorage: SESSION, events: [vendedor], fetch: lnurl(buena), nip07: { sk: skHex(SK1), behavior: 'tamper' } }))
+          await enviar(page, 21)
+          await page.waitFor(`${errText('err-zap')}.includes('no es la pedida')`, { timeout: 9000, label: 'aviso de petición alterada' })
+          t.assert.match(await page.evaluate(errText('err-zap')), /No se ha pagado nada/)
+          t.assert.ok(!(await calls(page)).includes('pay_invoice'), 'no se paga')
+          t.assert.ok(!(await page.evaluate('window.__fetchLog')).some(f => f.url.includes('/cb')), 'ni se pide la factura')
+        },
+      },
+      {
         name: 'zap: si el servidor del receptor devuelve otra factura (mayor, sin importe, caducada), no se paga',
         async run(t) {
           for (const [caso, factura, esperado] of [

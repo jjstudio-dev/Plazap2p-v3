@@ -403,6 +403,26 @@ export const tests = [
     },
   },
   {
+    name: 'una firma pendiente con la instantánea del formulario dañada no impide arrancar',
+    async run(t) {
+      const server = await t.server()
+      const pendiente = {
+        step: 'sign', ts: Date.now(),
+        unsignedEvent: { kind: 30402, pubkey: PK1, created_at: Math.floor(Date.now() / 1000), tags: [['d', 'x']], content: '' },
+        formSnapshot: {
+          fields: { 'tx-title': 'Título bueno', 'no-existe': 'x', 'tx-desc': { raro: 1 }, 'tx-negociar': 'on' },
+          checks: 'no-lista', pills: { 'pills tx[': 'local', 'pills-tx-alcance': 7 }, platforms: { a: 1 }, selectedType: 'venta',
+        },
+      }
+      const page = await t.open({ scenario: { ...identidad, sessionStorage: { plazap2p_pending_sign: pendiente } } })
+      await page.goto(`${server.origin}/publicar.html`)
+      await page.waitFor(`!document.getElementById('sec-paste-event').classList.contains('hidden')`, { label: 'pantalla de firma pendiente' })
+      t.assert.equal(await page.evaluate(`document.getElementById('tx-title').value`), 'Título bueno', 'lo válido se restaura')
+      t.assert.equal(await page.evaluate(`document.getElementById('tx-desc').value`), '', 'lo que no es texto se ignora')
+      t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
+  {
     name: 'borrador: lo escrito se recupera al volver y no hereda una edición anterior',
     async run(t) {
       const server = await t.server()
