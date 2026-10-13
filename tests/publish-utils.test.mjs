@@ -40,6 +40,8 @@ test('sanitizeContact: quita enlaces y acortadores, conserva alias, correo y npu
     ['escribe a https://t.me/estafa', 't.me'], ['http://phishing.test/login', 'phishing'], ['wss://relay.test/x', 'relay.test'],
     ['nostr:npub1xyz', 'npub1xyz'], ['t.me/estafa', 't.me/'], ['discord.gg/abc', 'discord.gg/'], ['wa.me/34600111222', 'wa.me/'],
     ['bit.ly/x1', 'bit.ly/'], ['linktr.ee/yo', 'linktr.ee/'], ['HTTPS://MAYUS.test/a', 'MAYUS'],
+    ['paga en evil.com/pago', 'evil.com'], ['www.evil.com', 'evil.com'], ['WWW.Evil.Com/x', 'evil'],
+    ['mi tienda sub.dominio.example/checkout?id=1', 'dominio.example'],
   ]) {
     const out = sanitizeContact(entrada)
     assert.ok(!out.toLowerCase().includes(prohibido.toLowerCase()), `${entrada} → ${out}`)

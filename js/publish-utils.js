@@ -30,6 +30,11 @@ export function sanitizeContact(raw, maxLen = 200) {
     .replace(/wss?:\/\/\S+/gi, '[url]')
     .replace(/nostr:[^\s]+/gi, '[nostr-link]')
     .replace(/\b(?:t\.me|telegram\.me|tg\.me|discord\.gg|wa\.me|bit\.ly|tinyurl\.com|linktr\.ee|lnk\.bio|rebrand\.ly|ow\.ly|linktw\.ee|carrd\.co|solo\.to)\/\S+/gi, '[url]')
+    // Direcciones sin protocolo: `www.sitio.com` y `sitio.com/pago`. Antes solo
+    // se cortaban las que llevaban `https://` y una lista de acortadores (VW3-09).
+    // Un correo (`ana@correo.test`) no lleva barra y se conserva.
+    .replace(/\bwww\.\S+/gi, '[url]')
+    .replace(/\b(?:[a-z0-9-]+\.)+[a-z]{2,}\/\S*/gi, '[url]')
     .trim()
     .slice(0, maxLen)
   return safe || null
