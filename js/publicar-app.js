@@ -552,6 +552,14 @@ async function handleAmberCallback(cb) {
   history.replaceState(null, '', 'publicar.html')
 
   if (cb.step === 'pubkey') {
+    // Solo vale si esta pestaña había pedido conectar. Sin esto, cualquier
+    // enlace `?amber=pubkey&res=<clave>` cambiaba la identidad guardada de
+    // quien lo abriera (VW1-04).
+    if (signer.loadPending()?.step !== 'pubkey') {
+      renderResult({ ok: false, title: 'Conexión no solicitada',
+        sub: 'Este enlace intenta conectar una identidad que no has pedido desde aquí. No se ha cambiado nada. Si querías conectar con Amber, pulsa «Conectar» de nuevo.' })
+      return
+    }
     userPubkey = cb.value
     signer.storePubkey(cb.value)
     signer.clearPending()

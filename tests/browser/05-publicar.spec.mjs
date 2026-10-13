@@ -353,6 +353,27 @@ export const tests = [
     },
   },
   {
+    name: 'un enlace de retorno de Amber no cambia la identidad si no se había pedido conectar',
+    async run(t) {
+      const server = await t.server()
+      const ajena = 'c'.repeat(64)
+      const page = await t.open({ scenario: identidad })
+      await page.goto(`${server.origin}/publicar.html`)
+      await page.sleep(300)
+      const antes = await page.evaluate(`localStorage.getItem('plazap2p_pubkey')`)
+      await page.goto(`${server.origin}/publicar.html?amber=pubkey&res=${ajena}`)
+      await page.waitFor(`document.getElementById('res-box').textContent.includes('no solicitada')`, { label: 'aviso de conexión no solicitada' })
+      t.assert.equal(await page.evaluate(`localStorage.getItem('plazap2p_pubkey')`), antes, 'la identidad guardada no cambia')
+      t.assert.equal(await page.evaluate(`location.search`), '', 'la dirección queda limpia')
+
+      // Con la petición pendiente en esta pestaña, el mismo retorno sí conecta.
+      await page.evaluate(`sessionStorage.setItem('plazap2p_pending_sign', JSON.stringify({ step: 'pubkey', ts: Date.now() }))`)
+      await page.goto(`${server.origin}/publicar.html?amber=pubkey&res=${ajena}`)
+      await page.waitFor(`localStorage.getItem('plazap2p_pubkey') === '${ajena}'`, { label: 'identidad conectada tras pedirlo' })
+      t.assert.equal(await page.evaluate(`sessionStorage.getItem('plazap2p_pending_sign')`), null, 'el pendiente se consume')
+    },
+  },
+  {
     name: 'borrador: lo escrito se recupera al volver y no hereda una edición anterior',
     async run(t) {
       const server = await t.server()
