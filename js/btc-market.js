@@ -1,7 +1,7 @@
 // btc-market.js — Fear & Greed, market cap, volumen, supply, ATH, halving, Lightning, hashrate
 // Fuentes: alternative.me · CoinGecko · mempool.space
 
-import { finiteNumber, onlyNumbers } from './btc-rates.js';
+import { finiteNumber, onlyNumbers, timeoutOptions } from './btc-rates.js';
 
 const FNG_URL    = 'https://api.alternative.me/fng/?limit=1';
 const CGK_URL    = 'https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&market_data=true&community_data=true&developer_data=false';
@@ -65,7 +65,7 @@ async function fetchAndRender() {
 }
 
 async function fetchJson(url, timeoutMs) {
-  const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+  const res = await fetch(url, timeoutOptions(timeoutMs));
   if (!res.ok) throw new Error(`${url} ${res.status}`);
   return res.json();
 }

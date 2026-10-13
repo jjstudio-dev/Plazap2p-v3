@@ -83,3 +83,16 @@ test('finiteNumber / onlyNumbers: solo sobreviven los números', () => {
     { a: 1, b: null, c: { d: 2, e: null, f: null }, g: [3, null, { h: 4 }], i: null, j: null },
   )
 })
+
+// VW5-02 — la gráfica y el panel de mercado usaban AbortSignal.timeout sin comprobar que existe.
+test('timeoutOptions: da una señal si el navegador la admite y {} si no, sin lanzar', async () => {
+  const { timeoutOptions } = await import('../js/btc-rates.js')
+  assert.ok(timeoutOptions(1000).signal instanceof AbortSignal)
+  const original = AbortSignal.timeout
+  try {
+    AbortSignal.timeout = undefined
+    assert.deepEqual(timeoutOptions(1000), {})
+  } finally {
+    AbortSignal.timeout = original
+  }
+})

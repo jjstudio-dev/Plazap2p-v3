@@ -70,11 +70,19 @@ export function mergeRates(prev, { mempool = null, coingecko = null, yadio = nul
   return { rates, refreshed: Object.keys(fresh) }
 }
 
+/**
+ * Opciones de fetch con tiempo límite. En un navegador sin `AbortSignal.timeout`
+ * devuelve {} (la petición se hace sin límite) en vez de lanzar: la gráfica y
+ * el panel de mercado lo usaban sin comprobar y ahí no cargaban (VW5-02).
+ */
+export function timeoutOptions(timeoutMs) {
+  return (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function')
+    ? { signal: AbortSignal.timeout(timeoutMs) } : {}
+}
+
 /** fetch → JSON, tratando como fallo cualquier respuesta que no sea 2xx. */
 export async function fetchJson(url, timeoutMs = 8000) {
-  const opts = (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function')
-    ? { signal: AbortSignal.timeout(timeoutMs) } : {}
-  const res = await fetch(url, opts)
+  const res = await fetch(url, timeoutOptions(timeoutMs))
   if (!res.ok) throw new Error(`${url} ${res.status}`)
   return res.json()
 }

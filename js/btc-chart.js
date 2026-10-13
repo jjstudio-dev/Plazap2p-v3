@@ -1,5 +1,6 @@
 // btc-chart.js — BTC 30-day price chart · pure SVG · no dependencies
 // Primary: CoinGecko  Fallback: Kraken public API
+import { timeoutOptions } from './btc-rates.js';
 
 const CACHE_KEY = 'plazap2p_chart_v2';
 const CACHE_TTL = 15 * 60 * 1000;
@@ -42,7 +43,7 @@ async function fetchAndRender() {
 async function fetchPrices() {
   // Try CoinGecko first
   try {
-    const r = await fetch(SOURCES.coingecko, { signal: AbortSignal.timeout(6000) });
+    const r = await fetch(SOURCES.coingecko, timeoutOptions(6000));
     if (!r.ok) throw new Error(`CoinGecko ${r.status}`);
     const d = await r.json();
     if (!d.prices?.length) throw new Error('empty');
@@ -52,7 +53,7 @@ async function fetchPrices() {
   }
 
   // Fallback: Kraken OHLC (daily, last 30 candles)
-  const r = await fetch(SOURCES.kraken, { signal: AbortSignal.timeout(8000) });
+  const r = await fetch(SOURCES.kraken, timeoutOptions(8000));
   if (!r.ok) throw new Error(`Kraken ${r.status}`);
   const d = await r.json();
   const candles = Object.values(d.result || {}).find(Array.isArray)?.slice(-31) || [];
