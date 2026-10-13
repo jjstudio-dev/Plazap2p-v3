@@ -11,7 +11,7 @@
 //      archivo de STATICS y CACHE no)
 // Regla: cada entrada de STATICS es EXACTAMENTE una URL que el navegador
 // pide de verdad. Los imports internos de ES modules van SIN query.
-const CACHE    = 'plazap2p-v3-r66';
+const CACHE    = 'plazap2p-v3-r67';
 const STATICS  = [
   './',
   './index.html',
