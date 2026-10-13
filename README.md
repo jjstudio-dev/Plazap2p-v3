@@ -161,8 +161,6 @@ plazap2p-v3/
 ├── sw.js                   # Service Worker cache-first
 ├── robots.txt
 ├── sitemap.xml
-├── .well-known/
-│   └── assetlinks.json     # Digital Asset Links del wrapper TWA abandonado (ver app/) — sin uso activo
 ├── css/
 │   ├── tokens.css          # Fuente única de tokens de diseño
 │   ├── style.css           # Tema cyberpunk (heredado de V2, extendido)

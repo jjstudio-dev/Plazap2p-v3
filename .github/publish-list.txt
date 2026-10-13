@@ -10,7 +10,6 @@ robots.txt
 sitemap.xml
 LICENSE
 .nojekyll
-.well-known
 css
 js
 data
