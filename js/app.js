@@ -508,6 +508,8 @@ function getSellerRating(pubkeyHex) {
 
 // Consulta en lote las valoraciones kind 1985 de los vendedores visibles
 // y re-renderiza el directorio cuando llegan (si el tab sigue activo).
+const liveRatingMisses = {};   // pubkey → consultas de reputación que no llegaron a completarse
+
 function refreshLiveRatings(hexes) {
   if (!pool || liveRatingsFetching) return;
   const pendientes = [...hexes].filter(h => !(h in liveRatings)).slice(0, 30);
@@ -516,9 +518,14 @@ function refreshLiveRatings(hexes) {
   fetchReputacionBatch(pool, pendientes)
     .then(results => {
       for (const [hex, r] of Object.entries(results)) {
-        liveRatings[hex] = (r && r.count > 0)
-          ? { avg: r.avg, n: r.count, aspects: r.aspects, comments: r.comments }
-          : null;   // null = ya consultado, sin valoraciones (evita re-fetch)
+        if (r && r.count > 0) {
+          liveRatings[hex] = { avg: r.avg, n: r.count, aspects: r.aspects, comments: r.comments };
+        } else if (r?.complete || (liveRatingMisses[hex] = (liveRatingMisses[hex] || 0) + 1) >= 3) {
+          liveRatings[hex] = null;   // null = ya consultado, sin valoraciones (evita re-fetch)
+        }
+        // Si la consulta se cortó por tiempo no se anota nada: «sin valoraciones»
+        // podía no ser verdad y quedaba fijo hasta recargar (VW4-07). Se
+        // reintenta en el siguiente pintado, como mucho tres veces.
       }
       liveRatingsFetching = false;
       if (activeTab === 'vendedores') renderSellersDirectory();
@@ -2115,7 +2122,10 @@ function renderHerramientas(items, githubUrl) {
     grouped[cat].push(h);
   }
 
-  const html = CAT_ORDER
+  // Las categorías que no están en la lista fija van al final en vez de no
+  // enseñarse: una herramienta curada con una categoría nueva desaparecía sin
+  // aviso (VW4-10).
+  const html = [...CAT_ORDER, ...Object.keys(grouped).filter(cat => !CAT_ORDER.includes(cat)).sort()]
     .filter(cat => grouped[cat]?.length)
     .map(cat => {
       const meta = CAT_META[cat] || { label: cat, icon: '🔧', color: '#86868b' };
@@ -2145,7 +2155,7 @@ function renderHerramientas(items, githubUrl) {
       return `<div class="tools-category">
         <div class="tools-cat-header">
           <span class="tools-cat-icon">${meta.icon}</span>
-          <span class="tools-cat-label" style="color:${meta.color}">${meta.label}</span>
+          <span class="tools-cat-label" style="color:${meta.color}">${esc(meta.label)}</span>
         </div>
         <div class="tools-cat-grid">${tools}</div>
       </div>`;
