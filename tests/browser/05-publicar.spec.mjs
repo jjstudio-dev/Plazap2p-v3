@@ -374,6 +374,22 @@ export const tests = [
     },
   },
   {
+    name: 'publicar nada más cargar la página espera a los relays que aún están conectando',
+    async run(t) {
+      const server = await t.server()
+      // Como al volver de Amber: un relay conecta enseguida y el resto tarda.
+      const page = await t.open({ scenario: { ...identidad, relays: { '*': { connectMs: 2000 }, 'wss://nos.lol': { connectMs: 5 } } } })
+      await page.goto(`${server.origin}/publicar.html?type=venta`)
+      await page.waitFor(`!document.getElementById('publish-bar').classList.contains('hidden')`)
+      await rellenar(page, TIPOS.venta)
+      const res = await publicar(page)
+      t.assert.equal(res.ok, true, res.titulo + ' — ' + res.sub)
+      const destinos = await page.evaluate(`new Set(window.__published.map(p => p.url)).size`)
+      t.assert.ok(destinos > 1, `el anuncio fue a ${destinos} relay(s): ${res.sub}`)
+      t.assert.doesNotMatch(res.sub, /no estaba|no estaban/, 'no queda ningún relay sin intentar')
+    },
+  },
+  {
     name: 'borrador: lo escrito se recupera al volver y no hereda una edición anterior',
     async run(t) {
       const server = await t.server()

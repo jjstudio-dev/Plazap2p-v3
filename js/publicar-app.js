@@ -836,17 +836,41 @@ function onPasteEvent() {
 
 // ── Publicación a relays ──────────────────────────────────────────────────────
 
-/** Espera a que el pool tenga al menos `min` relays conectados (F1). */
-function waitForRelays(min = 1, timeoutMs = 8000) {
+/**
+ * Espera a que el pool tenga al menos `min` relays conectados (F1) y, desde
+ * ese momento, da un margen a que conecten los demás.
+ *
+ * Sin el margen, al volver de Amber (la página acaba de recargarse) el anuncio
+ * se enviaba solo al primer relay en conectar y se daba por publicado (VW3-01).
+ * Con la página ya abierta no añade espera: todos están conectados. Un relay
+ * que ya falló no cuenta (`expectedCount`), así que uno caído tampoco retrasa.
+ */
+function waitForRelays(min = 1, timeoutMs = 8000, settleMs = 3000) {
   return new Promise(resolve => {
     const start = Date.now()
+    let firstAt = null
     const check = () => {
-      if (pool.connectedCount >= min) return resolve(true)
-      if (Date.now() - start > timeoutMs) return resolve(false)
+      const now = Date.now()
+      const connected = pool.connectedCount
+      if (connected >= min) {
+        firstAt ??= now
+        if (connected >= pool.expectedCount || now - firstAt >= settleMs) return resolve(true)
+      } else if (now - start > timeoutMs) {
+        return resolve(false)
+      }
       setTimeout(check, 250)
     }
     check()
   })
+}
+
+/** Relays configurados a los que no se llegó a enviar: se dice, no se calla. */
+function notTriedNote(results) {
+  const missing = (config?.relays?.length || 0) - results.length
+  if (missing <= 0) return ''
+  return missing === 1
+    ? ' Otro relay no estaba conectado y no lo ha recibido.'
+    : ` Otros ${missing} relays no estaban conectados y no lo han recibido.`
 }
 
 async function broadcastAndReport(signedEvent, pending) {
@@ -920,7 +944,7 @@ async function broadcastAndReportInner(signedEvent, pending) {
            : editingDTagWas(pending)   ? '💾 Anuncio actualizado'
            : signedEvent.kind === 5    ? '🗑 Solicitud de borrado enviada'
            : '🎉 ¡Publicado en Nostr!',
-      sub: `Aceptado por ${accepted.length} de ${results.length} relays.`,
+      sub: `Aceptado por ${accepted.length} de ${results.length} relays.` + notTriedNote(results),
       results, naddr,
     })
   } else {
