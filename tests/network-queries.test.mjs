@@ -71,13 +71,16 @@ test('fetchReputacionBatch: un resultado cortado por timeout NO se cachea; uno c
   const mudo = fakePool(['wss://mudo'])
   const parcial = await fetchReputacionBatch(mudo, [ratee], 50)     // nadie contesta → timeout
   assert.equal(parcial[ratee].count, 0)
+  assert.equal(parcial[ratee].complete, false, 'y se dice que el resultado no es completo (VW4-07)')
 
   const pool = answerRaterAge(fakePool(['wss://a']))
   const p = fetchReputacionBatch(pool, [ratee], 2000)
   assert.equal(pool.subs.size, 1, 'vuelve a consultar: el vacío por timeout no quedó en caché')
   pool.emit(rating(hex('1'), ratee, 5), 'wss://a')
   pool.eose('wss://a')
-  assert.equal((await p)[ratee].count, 1)
+  const completo = await p
+  assert.equal(completo[ratee].count, 1)
+  assert.equal(completo[ratee].complete, true)
 
   const otra = fakePool(['wss://a'])
   const again = await fetchReputacionBatch(otra, [ratee], 2000)

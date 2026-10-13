@@ -109,7 +109,10 @@ export async function fetchReputacionBatch(pool, hexes, timeoutMs = 6000) {
     const result = aggregate(counted, hex)
     // Para poder decirlo en pantalla: cuántas valoraciones existen pero no cuentan.
     result.excludedRecent = byAuthor.size - counted.size
-    if (complete && age.complete) cache.set(hex, { ts: Date.now(), result })
+    // Para quien guarde el resultado por su cuenta: si la consulta se cortó,
+    // «sin valoraciones» puede no ser verdad (VW4-07).
+    result.complete = !!(complete && age.complete)
+    if (result.complete) cache.set(hex, { ts: Date.now(), result })
     results[hex] = result
   }
   return results
