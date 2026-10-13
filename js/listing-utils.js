@@ -69,6 +69,26 @@ export function parseCalendarDate(kind, value) {
   return { ts };
 }
 
+/** Fecha AAAA-MM-DD desplazada `days` días (en calendario, sin zonas horarias). '' si no es válida. */
+export function shiftIsoDate(iso, days) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''))
+  if (!m) return ''
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + days))
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toISOString().slice(0, 10)
+}
+
+/**
+ * Último día de un evento de todo el día (kind 31922), a partir de su etiqueta
+ * `end`. En NIP-52 `end` es EXCLUSIVO: el día siguiente al último. Devuelve ''
+ * si no hay fin o si el evento dura un solo día.
+ */
+export function allDayLastDay(endIso, startIso) {
+  const last = shiftIsoDate(endIso, -1)
+  if (!last || !/^\d{4}-\d{2}-\d{2}$/.test(String(startIso || ''))) return ''
+  return last > startIso ? last : ''
+}
+
 /** { ts } de parseCalendarDate → Date válido, o null. */
 export function calDate(point) {
   const ts = Number(point?.ts);

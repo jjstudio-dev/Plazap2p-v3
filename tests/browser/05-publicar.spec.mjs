@@ -423,6 +423,25 @@ export const tests = [
     },
   },
   {
+    name: 'evento de todo el día de varios días: se publica con el fin exclusivo de NIP-52',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: identidad })
+      await page.goto(`${server.origin}/publicar.html?type=evento`)
+      await page.waitFor(`!document.getElementById('publish-bar').classList.contains('hidden')`)
+      await rellenar(page, {
+        campos: { 'e-title': 'Feria de tres días', 'e-desc': DESC, 'e-date': '2099-05-01T00:00', 'e-date-end': '2099-05-03T00:00', 'e-location': 'Valencia' },
+        checks: ['#e-allday'],
+      })
+      const res = await publicar(page)
+      t.assert.equal(res.ok, true, res.titulo + ' — ' + res.sub)
+      const ev = (await publicados(page)).find(e => e.kind === 31922)
+      t.assert.ok(ev, 'evento de todo el día publicado')
+      t.assert.equal(tag(ev, 'start')[1], '2099-05-01')
+      t.assert.equal(tag(ev, 'end')[1], '2099-05-04', 'el último día es el 3; la etiqueta lleva el día siguiente')
+    },
+  },
+  {
     name: 'borrador: lo escrito se recupera al volver y no hereda una edición anterior',
     async run(t) {
       const server = await t.server()

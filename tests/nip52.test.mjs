@@ -3,6 +3,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { buildEvento, nip52DayTags } from '../js/publish-builders.js'
 import { PK1 } from './fixtures/events.mjs'
+import { shiftIsoDate, allDayLastDay } from '../js/listing-utils.js'
 
 const base = { title: 'Meetup Bitcoin', desc: 'Charla y networking sobre Bitcoin y Nostr.' }
 const tag = (ev, name) => ev.tags.find(t => t[0] === name)?.[1]
@@ -17,7 +18,10 @@ test('todo el día → kind 31922 con start ISO', () => {
 
 test('todo el día con fin válido → tag end; fin ≤ inicio → error', () => {
   const ok = buildEvento({ ...base, allDay: true, startDate: '2026-08-01', endDate: '2026-08-03' }, PK1)
+  // El constructor publica el fin tal cual lo recibe (contrato común con Android); es el
+  // formulario quien le pasa el día siguiente al último. Al leer se recupera el último día.
   assert.equal(tag(ok.unsignedEvent, 'end'), '2026-08-03')
+  assert.equal(allDayLastDay(tag(ok.unsignedEvent, 'end'), '2026-08-01'), '2026-08-02')
   const bad = buildEvento({ ...base, allDay: true, startDate: '2026-08-03', endDate: '2026-08-01' }, PK1)
   assert.equal(bad.ok, false)
 })
@@ -77,4 +81,22 @@ test('edición conserva d y published_at originales', () => {
   assert.equal(r.dTag, 'd-existente')
   assert.equal(tag(r.unsignedEvent, 'd'), 'd-existente')
   assert.equal(tag(r.unsignedEvent, 'published_at'), '1700000000')
+})
+
+// ── Fin de un evento de todo el día (VW3-06) ─────────────────────────────────
+
+test('shiftIsoDate: suma y resta días de calendario, también entre meses, años y bisiestos', () => {
+  assert.equal(shiftIsoDate('2026-08-03', 1), '2026-08-04')
+  assert.equal(shiftIsoDate('2026-12-31', 1), '2027-01-01')
+  assert.equal(shiftIsoDate('2028-03-01', -1), '2028-02-29')
+  assert.equal(shiftIsoDate('2027-03-01', -1), '2027-02-28')
+  for (const malo of ['', null, undefined, '2026-8-3', 'hoy', '1785542400']) assert.equal(shiftIsoDate(malo, 1), '')
+})
+
+test('allDayLastDay: el fin publicado es exclusivo; un evento de un solo día no tiene último día', () => {
+  assert.equal(allDayLastDay('2026-08-04', '2026-08-01'), '2026-08-03')
+  assert.equal(allDayLastDay('2026-08-02', '2026-08-01'), '', 'fin = día siguiente al inicio: dura un día')
+  assert.equal(allDayLastDay('2026-08-01', '2026-08-01'), '')
+  assert.equal(allDayLastDay('', '2026-08-01'), '')
+  assert.equal(allDayLastDay('2026-08-04', ''), '')
 })

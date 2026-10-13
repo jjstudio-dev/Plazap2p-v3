@@ -6,7 +6,7 @@ import { isBlocked, blockPubkey, unblockPubkey, listBlocked, exportBlocked, impo
 import { trustLevel, compareSellersByRating } from './trust-signals.js';
 import { fetchZapReceipts } from './zaps.js';
 import { isFavorite, toggleFavorite } from './favorites.js';
-import { channelTagFilters, isExpired, expirationTs, isItemExpired, parseCalendarDate, calDate, detectCategory, detectPayment, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts, safeHref } from './listing-utils.js';
+import { channelTagFilters, isExpired, expirationTs, isItemExpired, parseCalendarDate, calDate, detectCategory, detectPayment, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts, safeHref, allDayLastDay } from './listing-utils.js';
 
 // ── Constants ──────────────────────────────────────────────────
 const CACHE_KEY      = 'plazap2p_v3';
@@ -442,7 +442,9 @@ function parseCalendarEvent(event) {
   const tzid     = getTagValue(tags, 'start_tzid') || '';
   const links    = getTagValues(tags, 'r');
   const start    = parseCalendarDate(kind, startRaw);
-  const end      = parseCalendarDate(kind, endRaw);
+  // Todo el día: `end` es exclusivo en NIP-52; lo que se enseña es el último día.
+  const end      = parseCalendarDate(kind, kind === 31922 && /^\d{4}-\d{2}-\d{2}$/.test(endRaw || '')
+    ? allDayLastDay(endRaw, startRaw) : endRaw);
   const naddr    = encodeNaddr({ kind, pubkey, identifier: dTag });
 
   return {

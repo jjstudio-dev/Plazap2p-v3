@@ -19,6 +19,7 @@ import {
   VALID_ALCANCES, VALID_CURRENCIES, VALID_REPORT_TYPES,
 } from './publish-builders.js'
 import { sanitizeContact } from './publish-utils.js'
+import { allDayLastDay, shiftIsoDate } from './listing-utils.js'
 import { initMisAnuncios, refreshMisAnuncios, stopMisAnuncios } from './mis-anuncios.js'
 import { fetchReputacion } from './reputacion.js'
 import { initWallet, refreshWallet, hasWallet, payViaWallet } from './wallet-ui.js'
@@ -1242,7 +1243,11 @@ function buildPayload(type) {
         allDay,
         // datetime-local = "YYYY-MM-DDTHH:mm" → la fecha ISO es el prefijo
         startDate: allDay ? (dateRaw.slice(0, 10) || null) : null,
-        endDate:   allDay ? (endRaw.slice(0, 10) || null) : null,
+        // El formulario pide el último día; la etiqueta `end` de NIP-52 es
+        // exclusiva (el día siguiente), que es también lo que publica la app
+        // Android. Con el último día tal cual, el evento salía un día más
+        // corto en la app y en otros calendarios Nostr (VW3-06).
+        endDate:   allDay ? (shiftIsoDate(endRaw.slice(0, 10), 1) || null) : null,
         dateTs:    allDay ? null : toTs(dateRaw),
         endTs:     allDay ? null : toTs(endRaw),
         tzid,
@@ -1517,7 +1522,9 @@ function populateFormFromEvent(ev, type) {
     if (/^\d{4}-\d{2}-\d{2}$/.test(startRaw)) {
       const chk = $('e-allday'); if (chk) chk.checked = true
       set('e-date', `${startRaw}T00:00`)
-      if (/^\d{4}-\d{2}-\d{2}$/.test(endRaw)) set('e-date-end', `${endRaw}T00:00`)
+      // La etiqueta `end` es exclusiva; el formulario pide el último día.
+      const lastDay = allDayLastDay(endRaw, startRaw)
+      if (lastDay) set('e-date-end', `${lastDay}T00:00`)
     } else {
       const startTs = Number(startRaw)
       if (Number.isFinite(startTs) && startTs > 0) set('e-date', tsToLocal(startTs))
