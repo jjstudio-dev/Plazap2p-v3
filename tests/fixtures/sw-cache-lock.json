@@ -1,5 +1,5 @@
 {
-  "cache": "plazap2p-v3-r65",
+  "cache": "plazap2p-v3-r66",
   "files": {
     "./": "304ce36d5fe1ad5a",
     "./index.html": "304ce36d5fe1ad5a",
@@ -7,10 +7,10 @@
     "./css/style.css?v=42": "79ae98b2d9db3eef",
     "./css/publicar.css?v=42": "c72c4d028ff566ad",
     "./css/fonts.css?v=42": "0624ecf427c244b5",
-    "./js/app.js?v=42": "35c90a9cbe63fc01",
+    "./js/app.js?v=42": "f7f0b65ccfa316ef",
     "./js/app-shell.js?v=42": "aed353b01c5f956e",
     "./js/router.js?v=42": "137b6a020caec0aa",
-    "./js/publicar-app.js?v=42": "e3e1fd159343a1c1",
+    "./js/publicar-app.js?v=42": "8ac0a75da8bc3a98",
     "./js/btc-stats.js?v=42": "f685de9d7d03f6ac",
     "./js/btc-chart.js?v=42": "6e8e9d2983e7dae4",
     "./js/btc-market.js?v=42": "ab60bb4766e56d7f",
@@ -37,7 +37,7 @@
     "./js/profile.js": "08ff59fd34dd968f",
     "./js/zaps.js": "be1a7187824578f9",
     "./js/favorites.js": "0d66c88ab3f7a408",
-    "./js/listing-utils.js": "a39a742b735ec369",
+    "./js/listing-utils.js": "66a36ef318d48d7d",
     "./js/btc-rates.js": "cc9e87dfcc1137ab",
     "./js/reputacion.js": "b44efc6af4ef52a4",
     "./js/nostr.js": "2c16959e191b75d8",
