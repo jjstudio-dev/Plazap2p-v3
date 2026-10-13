@@ -205,9 +205,12 @@ export function fetchWalletInfo(conn, timeoutMs = 8000) {
       catch (e) { clearTimeout(timer); fail(e.message) }
     }
     ws.onerror = () => { clearTimeout(timer); fail('no se pudo conectar con el relay de la wallet') }
+    // Si el relay corta, se sabe ya: antes se esperaban los 8 s completos (VW2-04).
+    ws.onclose = () => { clearTimeout(timer); fail('el relay de la wallet cerró la conexión') }
     ws.onmessage = ({ data }) => {
       let msg
       try { msg = JSON.parse(data) } catch { return }
+      if (!Array.isArray(msg)) return   // `null` o un objeto: no es un mensaje de relay
       if (msg[0] === 'EVENT' && msg[1] === 'nwc-info' && msg[2]?.kind === 13194) {
         const ev = msg[2]
         // WAL-002: el info debe estar firmado por la wallet — un relay no
@@ -323,6 +326,9 @@ export function decodeBolt11(invoice) {
 
   const m = /^ln(bc|tb|tbs|bcrt)(\d*)([munp]?)$/.exec(hrp)
   if (!m) throw new Error('no es una factura Lightning')
+  // Testnet, signet y regtest no mueven dinero real: enseñar su importe en
+  // sats como si fuera una factura normal es engañoso (VW2-07).
+  if (m[1] !== 'bc') throw new Error('factura de una red de pruebas: no es dinero real')
 
   // Importe: hrp → msats exactos (m=milli, u=micro, n=nano, p=pico de BTC).
   // 1 BTC = 1e11 msat; se opera en enteros para poder comparar con el
