@@ -50,7 +50,7 @@ const FORM_FIELD_IDS = [
 ]
 const FALLBACK_RELAYS = [
   'wss://nos.lol', 'wss://relay.primal.net', 'wss://relay.damus.io',
-  'wss://relay.nostr.band', 'wss://nostr.mom',
+  'wss://nostr.mom',
 ]
 
 // ── Estado ────────────────────────────────────────────────────────────────────
