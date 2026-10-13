@@ -64,7 +64,12 @@ test('uploadImage: sube la imagen redibujada, y el hash autorizado es el suyo', 
   const original = globalThis.fetch
   t.after(() => { globalThis.fetch = original })
   const sent = []
-  globalThis.fetch = async (url, init) => { sent.push(init); return { ok: true, json: async () => ({ url: 'https://blossom.test/abc' }) } }
+  // Como un servidor Blossom real: devuelve la huella de lo que ha recibido.
+  globalThis.fetch = async (url, init) => {
+    sent.push(init)
+    const sha256 = await sha256Hex(await init.body.arrayBuffer())
+    return { ok: true, json: async () => ({ url: 'https://blossom.test/abc', sha256 }) }
+  }
 
   const originalFile = new Blob(['FOTO-CON-GPS-SECRETO'], { type: 'image/jpeg' })
   const clean = new Blob(['solo-pixeles'], { type: 'image/jpeg' })

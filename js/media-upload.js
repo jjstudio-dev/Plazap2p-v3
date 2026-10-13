@@ -13,6 +13,7 @@
 
 export const BLOSSOM_SERVERS = ['https://blossom.primal.net', 'https://nostr.build']
 export const MAX_BYTES = 10 * 1024 * 1024 // 10 MB
+const UPLOAD_TIMEOUT_MS = 60000
 export const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
 /** @param {{size:number, type:string}} file — objeto File real o equivalente para test. */
@@ -54,13 +55,25 @@ export function buildBlossomAuthEvent(sha256, pubkeyHex, ttlSeconds = 300) {
 }
 
 /** Sube el blob ya autorizado (evento kind 24242 YA firmado); devuelve la URL pública o lanza. */
-export async function uploadBlob(server, file, signedAuthEvent) {
+export async function uploadBlob(server, file, signedAuthEvent, { expectedSha256 = null, timeoutMs = UPLOAD_TIMEOUT_MS } = {}) {
   const authHeader = 'Nostr ' + utf8ToBase64(JSON.stringify(signedAuthEvent))
-  const res = await fetch(`${String(server).replace(/\/$/, '')}/upload`, {
-    method: 'PUT',
-    headers: { 'Authorization': authHeader, 'Content-Type': file.type || 'application/octet-stream' },
-    body: file,
-  })
+  // Con tiempo límite: con el servidor colgado, «Subiendo…» no terminaba (VW3-10).
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs)
+  let res
+  try {
+    res = await fetch(`${String(server).replace(/\/$/, '')}/upload`, {
+      method: 'PUT',
+      headers: { 'Authorization': authHeader, 'Content-Type': file.type || 'application/octet-stream' },
+      body: file,
+      signal: ctrl.signal,
+    })
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('el servidor de imágenes no respondió a tiempo')
+    throw e
+  } finally {
+    clearTimeout(timer)
+  }
   if (!res.ok) {
     let detail = ''
     try { detail = (await res.json())?.message || '' } catch { /* respuesta no-JSON: usar solo el status */ }
@@ -68,6 +81,11 @@ export async function uploadBlob(server, file, signedAuthEvent) {
   }
   const descriptor = await res.json()
   if (!descriptor?.url) throw new Error('respuesta del servidor sin URL')
+  // La huella que devuelve el servidor tiene que ser la de la foto enviada:
+  // si no, la dirección apunta a otro archivo (VW3-07).
+  if (expectedSha256 && String(descriptor.sha256 || '').toLowerCase() !== String(expectedSha256).toLowerCase()) {
+    throw new Error('el servidor devolvió un archivo que no es la foto enviada')
+  }
   return descriptor.url
 }
 
@@ -109,5 +127,5 @@ export async function uploadImage(file, pubkeyHex, sign, server = BLOSSOM_SERVER
   const hash = await sha256Hex(buf)
   const unsigned = buildBlossomAuthEvent(hash, pubkeyHex)
   const signed = await sign(unsigned)
-  return uploadBlob(server, clean, signed)
+  return uploadBlob(server, clean, signed, { expectedSha256: hash })
 }
