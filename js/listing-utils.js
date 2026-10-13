@@ -265,3 +265,30 @@ export function reviveCachedItem(item) {
         && isStr(item.note) && RE_NOTE.test(item.note)) ? item : null;
   }
 }
+
+/**
+ * Dirección que se puede poner en un enlace o una imagen, o '' si no.
+ * Solo http(s). Los identificadores Nostr sueltos se llevan a njump.me.
+ *
+ * Una dirección de la propia web solo se acepta sin parámetros: los datos
+ * vienen de eventos ajenos, y un enlace a `publicar.html?amber=…` o `?dev=1`
+ * haría que quien lo pulse cambie su identidad guardada o publique oculto
+ * (VW4-03). Ruta y fragmento sí: son navegación normal.
+ */
+export function safeHref(url, baseHref) {
+  if (!url) return ''
+  try {
+    url = String(url).trim()
+    if (/^(npub|nprofile|note|nevent|naddr)1/i.test(url)) {
+      url = `https://njump.me/${url}`
+    }
+    const base = new URL(baseHref)
+    const u = new URL(url, base)
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return ''
+    if (u.origin === base.origin) {
+      if (u.search) return ''
+      return u.pathname + u.hash
+    }
+    return url
+  } catch { return '' }
+}

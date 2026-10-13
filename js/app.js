@@ -6,7 +6,7 @@ import { isBlocked, blockPubkey, unblockPubkey, listBlocked, exportBlocked, impo
 import { trustLevel, compareSellersByRating } from './trust-signals.js';
 import { fetchZapReceipts } from './zaps.js';
 import { isFavorite, toggleFavorite } from './favorites.js';
-import { channelTagFilters, isExpired, expirationTs, isItemExpired, parseCalendarDate, calDate, detectCategory, detectPayment, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts } from './listing-utils.js';
+import { channelTagFilters, isExpired, expirationTs, isItemExpired, parseCalendarDate, calDate, detectCategory, detectPayment, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts, safeHref } from './listing-utils.js';
 
 // ── Constants ──────────────────────────────────────────────────
 const CACHE_KEY      = 'plazap2p_v3';
@@ -1737,17 +1737,7 @@ function esc(str) {
 }
 
 function safeUrl(url) {
-  if (!url) return '';
-  try {
-    url = String(url).trim();
-    if (/^(npub|nprofile|note|nevent|naddr)1/i.test(url)) {
-      url = `https://njump.me/${url}`;
-    }
-    const u = new URL(url, window.location.href);
-    if (u.protocol !== 'https:' && u.protocol !== 'http:') return '';
-    if (u.origin === window.location.origin) return esc(u.pathname + u.search + u.hash);
-    return esc(url);
-  } catch { return ''; }
+  return esc(safeHref(url, window.location.href));
 }
 
 /** Singular o plural según n. En español el plural no siempre es "+es": valoración → valoraciones (sin tilde). */

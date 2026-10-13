@@ -3,7 +3,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { detectCategory, detectPayment, parseCalendarDate, calDate, isExpired, expirationTs, isItemExpired, channelTagFilters, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts } from '../js/listing-utils.js'
+import { detectCategory, detectPayment, parseCalendarDate, calDate, isExpired, expirationTs, isItemExpired, channelTagFilters, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts, safeHref } from '../js/listing-utils.js'
 import { hexToNpub, hexToNote, encodeNaddr } from '../js/nostr.js'
 import { buildTransaccion, buildComunidad, buildHerramienta, buildServicio } from '../js/publish-builders.js'
 import { PK1 } from './fixtures/events.mjs'
@@ -205,4 +205,30 @@ test('maskContacts: los puntos y arrobas normales de un texto no se tocan (regre
   for (const texto of ['Vendo p.ej. una radio. Funciona.', 'Cambio 2 @ 3 piezas', 'Versión 2.0 del firmware', 'Acepto BTC/EUR y sats/kWh']) {
     assert.equal(maskContacts(texto), texto)
   }
+})
+
+const SITE = 'https://jjstudio-dev.github.io/Plazap2p-v3/index.html'
+
+test('safeHref: un enlace ajeno a la propia web con parámetros se rechaza (VW4-03)', () => {
+  for (const hostile of [
+    'publicar.html?amber=pubkey&res=' + 'a'.repeat(64),
+    './publicar.html?dev=1',
+    'https://jjstudio-dev.github.io/Plazap2p-v3/publicar.html?amber=pubkey&res=x',
+    '//jjstudio-dev.github.io/Plazap2p-v3/publicar.html?dev=1',
+    '/Plazap2p-v3/?dev=1#/plaza',
+    '?amber=pubkey&res=x',
+  ]) assert.equal(safeHref(hostile, SITE), '', hostile)
+})
+
+test('safeHref: la navegación interna sin parámetros y los recursos propios siguen valiendo', () => {
+  assert.equal(safeHref('./docs/bitcoin-whitepaper-es.pdf', SITE), '/Plazap2p-v3/docs/bitcoin-whitepaper-es.pdf')
+  assert.equal(safeHref('#/plaza', SITE), '/Plazap2p-v3/index.html#/plaza')
+})
+
+test('safeHref: enlaces externos, identificadores Nostr y esquemas peligrosos', () => {
+  assert.equal(safeHref('https://example.com/a?b=1#c', SITE), 'https://example.com/a?b=1#c')
+  assert.equal(safeHref('  http://example.com  ', SITE), 'http://example.com')
+  assert.equal(safeHref('npub1abc', SITE), 'https://njump.me/npub1abc')
+  for (const bad of ['javascript:alert(1)', 'data:text/html,x', 'blob:x', 'nostr:npub1x', '', null, undefined, 'http://['])
+    assert.equal(safeHref(bad, SITE), '', String(bad))
 })
