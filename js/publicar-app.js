@@ -88,11 +88,25 @@ function parseValorarRef(naddrRaw) {
 
 const $ = id => document.getElementById(id)
 
+/**
+ * El modo de pruebas marca lo que se publica y el mercado lo oculta. Basta un
+ * enlace con `?dev=1` para entrar en él, así que tiene que verse (VW3-02).
+ */
+function showDevBanner() {
+  const banner = document.createElement('div')
+  banner.id = 'dev-banner'
+  banner.className = 'f-error show'
+  banner.setAttribute('role', 'alert')
+  banner.textContent = 'Modo de pruebas (?dev=1): lo que publiques llevará una marca de prueba y NO aparecerá en el mercado. Para publicar de verdad, quita «?dev=1» de la dirección.'
+  $('app-main')?.prepend(banner)
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
   const params = new URL(location.href).searchParams
   devMode = params.get('dev') === '1'
+  if (devMode) showDevBanner()
 
   // La interfaz se activa YA; config.json y los relays llegan en segundo
   // plano. Antes se esperaba a la red para cablear los botones: con conexión
@@ -1403,6 +1417,7 @@ async function openZap(recipientHex, refTag) {
 
 async function submitZap() {
   setErr('err-zap', '')
+  setErr('err-z-amount', '')   // si no, el aviso de un intento anterior se queda puesto (VW2-06)
   $('zap-result').classList.add('hidden')
   const amountSats = Number($('z-amount').value)
   if (!Number.isInteger(amountSats) || amountSats <= 0) { setErr('err-z-amount', 'Importe inválido (sats enteros)'); return }

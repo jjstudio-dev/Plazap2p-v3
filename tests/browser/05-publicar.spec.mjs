@@ -390,6 +390,19 @@ export const tests = [
     },
   },
   {
+    name: 'el modo de pruebas (?dev=1) se anuncia en pantalla; sin él no hay aviso',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: identidad })
+      await page.goto(`${server.origin}/publicar.html?dev=1`)
+      await page.waitFor(`!!document.getElementById('dev-banner')`, { label: 'aviso de modo de pruebas' })
+      t.assert.match(await page.text('#dev-banner'), /NO aparecerá en el mercado/)
+      await page.goto(`${server.origin}/publicar.html`)
+      await page.sleep(300)
+      t.assert.equal(await page.evaluate(`!!document.getElementById('dev-banner')`), false)
+    },
+  },
+  {
     name: 'borrador: lo escrito se recupera al volver y no hereda una edición anterior',
     async run(t) {
       const server = await t.server()

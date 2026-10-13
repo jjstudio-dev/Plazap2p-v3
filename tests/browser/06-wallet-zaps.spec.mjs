@@ -356,6 +356,11 @@ export const tests = [
             t.assert.match(await page.evaluate(errText('err-z-amount')), /Importe inválido/, `importe "${malo}"`)
           }
           t.assert.ok(!(await calls(page)).includes('pay_invoice'))
+          // Al corregir el importe y enviar, el aviso anterior desaparece.
+          await page.fill('#z-amount', '21')
+          await page.click('#btn-send-zap')
+          await page.sleep(150)
+          t.assert.equal(await page.evaluate(errText('err-z-amount')), '', 'el aviso de importe inválido se borra')
         },
       },
       {
