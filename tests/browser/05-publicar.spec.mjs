@@ -142,11 +142,13 @@ export const tests = [
       const page = await t.open({ scenario: identidad })
       await page.goto(`${server.origin}/publicar.html?type=evento`)
       await page.waitFor(`!document.getElementById('publish-bar').classList.contains('hidden')`)
-      await rellenar(page, { campos: { 'e-title': 'Feria de dos días', 'e-desc': DESC, 'e-date': '2099-05-01T00:00', 'e-date-end': '2099-05-03T00:00' }, checks: ['#e-allday'] })
+      await rellenar(page, { campos: { 'e-title': 'Feria de tres días', 'e-desc': DESC, 'e-date': '2099-05-01T00:00', 'e-date-end': '2099-05-03T00:00' }, checks: ['#e-allday'] })
       t.assert.ok((await publicar(page)).ok)
       const [ev] = await publicados(page)
       t.assert.equal(ev.kind, 31922)
-      t.assert.deepEqual([tag(ev, 'start')[1], tag(ev, 'end')[1]], ['2099-05-01', '2099-05-03'])
+      // El formulario pide el último día (3 de mayo); la etiqueta `end` de NIP-52 es exclusiva:
+      // lleva el día siguiente, igual que publica la app Android (VW3-06).
+      t.assert.deepEqual([tag(ev, 'start')[1], tag(ev, 'end')[1]], ['2099-05-01', '2099-05-04'])
       t.assert.equal(tag(ev, 'start_tzid'), undefined)
     },
   },
@@ -420,25 +422,6 @@ export const tests = [
       t.assert.equal(await page.evaluate(`document.getElementById('tx-title').value`), 'Título bueno', 'lo válido se restaura')
       t.assert.equal(await page.evaluate(`document.getElementById('tx-desc').value`), '', 'lo que no es texto se ignora')
       t.assert.deepEqual(t.appErrors(page), [])
-    },
-  },
-  {
-    name: 'evento de todo el día de varios días: se publica con el fin exclusivo de NIP-52',
-    async run(t) {
-      const server = await t.server()
-      const page = await t.open({ scenario: identidad })
-      await page.goto(`${server.origin}/publicar.html?type=evento`)
-      await page.waitFor(`!document.getElementById('publish-bar').classList.contains('hidden')`)
-      await rellenar(page, {
-        campos: { 'e-title': 'Feria de tres días', 'e-desc': DESC, 'e-date': '2099-05-01T00:00', 'e-date-end': '2099-05-03T00:00', 'e-location': 'Valencia' },
-        checks: ['#e-allday'],
-      })
-      const res = await publicar(page)
-      t.assert.equal(res.ok, true, res.titulo + ' — ' + res.sub)
-      const ev = (await publicados(page)).find(e => e.kind === 31922)
-      t.assert.ok(ev, 'evento de todo el día publicado')
-      t.assert.equal(tag(ev, 'start')[1], '2099-05-01')
-      t.assert.equal(tag(ev, 'end')[1], '2099-05-04', 'el último día es el 3; la etiqueta lleva el día siguiente')
     },
   },
   {
