@@ -4350,13 +4350,25 @@ footer {
 }
 
 /* ── Shell móvil: barra de 5 destinos (MOB-003) ─────────────────
-   Solo visible ≤768px. No sustituye .main-nav (escritorio) — es
-   una capa adicional, ver js/app-shell.js. */
+   Solo visible ≤768px, ver js/app-shell.js. En móvil sustituye a
+   .main-nav: entre la barra y sus chips se llega a todas las pestañas. */
 .mobile-bottom-nav,
 .mbn-chips { display: none; }
 
 @media (max-width: 768px) {
   main.container { padding-bottom: 128px; } /* espacio para chips + barra */
+
+  /* La barra de pestañas de arriba se apilaba con la de abajo, que ya lleva a las
+     mismas secciones (VE-W1). */
+  .main-nav { display: none; }
+  /* El conversor de la cabecera no cabía y la desbordaba por la derecha; tiene su
+     propia pestaña (VE-W1). */
+  .header-conv { display: none; }
+  /* "Volver arriba" quedaba encima de la última pestaña de la barra (VE-W1). */
+  .btn-scroll-top {
+    right: 16px;
+    bottom: calc(132px + env(safe-area-inset-bottom, 0px));
+  }
 
   .mobile-bottom-nav {
     display: flex;

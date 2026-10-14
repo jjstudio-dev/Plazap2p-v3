@@ -1,10 +1,10 @@
 {
-  "cache": "plazap2p-v3-r70",
+  "cache": "plazap2p-v3-r71",
   "files": {
     "./": "970136d376741138",
     "./index.html": "970136d376741138",
     "./publicar.html": "5959515c8c6d70d0",
-    "./css/style.css?v=42": "79ae98b2d9db3eef",
+    "./css/style.css?v=42": "bd5159df1a460601",
     "./css/publicar.css?v=42": "c72c4d028ff566ad",
     "./css/fonts.css?v=42": "0624ecf427c244b5",
     "./js/app.js?v=42": "1b473b2796aba677",

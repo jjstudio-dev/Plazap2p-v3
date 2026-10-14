@@ -109,6 +109,33 @@ export const tests = [
     },
   },
   {
+    name: 'móvil (375 y 600 px): una sola barra de navegación, cabecera dentro y "Volver arriba" sin tapar la barra',
+    async run(t) {
+      const server = await t.server()
+      for (const width of [375, 600]) {
+        const page = await t.open({ scenario: { events: mundo() }, viewport: { width, height: 800, mobile: true } })
+        await page.goto(server.origin + '/index.html')
+        await page.waitFor(`document.querySelectorAll('#channel-mercado .listing-card:not(.skeleton)').length === 2`)
+        const topNav = await page.evaluate(`getComputedStyle(document.querySelector('.main-nav')).display`)
+        t.assert.equal(topNav, 'none', `${width}px: la barra de arriba no se apila con la de abajo`)
+        const header = await page.evaluate(`(() => {
+          const r = document.querySelector('.header-inner').getBoundingClientRect()
+          return Math.round(r.right - window.innerWidth)
+        })()`)
+        t.assert.ok(header <= 1, `${width}px: la cabecera se sale ${header}px`)
+        // Se fuerza a la vista: aparece al desplazarse más de 300 px.
+        await page.evaluate(`document.getElementById('btn-scroll-top').classList.add('visible')`)
+        const overlap = await page.evaluate(`(() => {
+          const a = document.getElementById('btn-scroll-top').getBoundingClientRect()
+          const bars = [...document.querySelectorAll('#mobile-bottom-nav, #mbn-chips:not([hidden])')]
+          return bars.some(b => { const r = b.getBoundingClientRect(); return a.bottom > r.top && a.top < r.bottom })
+        })()`)
+        t.assert.equal(overlap, false, `${width}px: "Volver arriba" tapa la barra inferior`)
+        await page.close()
+      }
+    },
+  },
+  {
     name: 'enlaces ?tab= y rutas hash abren la sección pedida; Atrás vuelve a la anterior',
     async run(t) {
       const server = await t.server()
