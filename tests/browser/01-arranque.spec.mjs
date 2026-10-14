@@ -240,6 +240,20 @@ export const tests = [
     },
   },
   {
+    name: 'un precio con coma de otro cliente se enseña en el detalle del anuncio (VE-W3)',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: { events: [listing({ d: 'c1', title: 'Mesa', price: ['12,50', 'EUR'] })] } })
+      await page.goto(server.origin + '/index.html')
+      await page.waitFor(`document.querySelectorAll('#channel-mercado .listing-card:not(.skeleton)').length === 1`)
+      await page.click('#channel-mercado .listing-card')
+      await page.waitFor(`!document.getElementById('listing-modal').classList.contains('hidden')`)
+      const texto = await page.evaluate(`document.getElementById('listing-modal').textContent`)
+      t.assert.match(texto, /Precio:\s*12,50 EUR/)
+      t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
+  {
     name: 'un anuncio se abre, muestra sus datos y se cierra con Escape',
     async run(t) {
       const server = await t.server()
