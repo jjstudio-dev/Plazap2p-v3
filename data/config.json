@@ -12,7 +12,6 @@
     "wss://relay.damus.io",
     "wss://nostr.bitcoiner.social",
     "wss://relay.snort.social",
-    "wss://purplepag.es",
     "wss://nostr.mom"
   ],
   "channels": [

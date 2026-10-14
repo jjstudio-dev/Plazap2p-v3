@@ -1,5 +1,5 @@
 {
-  "cache": "plazap2p-v3-r68",
+  "cache": "plazap2p-v3-r69",
   "files": {
     "./": "304ce36d5fe1ad5a",
     "./index.html": "304ce36d5fe1ad5a",
@@ -16,13 +16,13 @@
     "./js/btc-market.js?v=42": "6b45b23a96603045",
     "./js/converter.js?v=42": "52719cad69cd475a",
     "./js/mini-converter.js?v=42": "482126a2fdde1709",
-    "./data/config.json?v=42": "99cd9b664fcae448",
+    "./data/config.json?v=42": "5e672c83d1a26d05",
     "./data/comunidades.json?v=42": "9c5af14ded6a0c57",
     "./data/herramientas.json?v=42": "5bb7cf3eede3ccb3",
     "./data/multimedia.json?v=42": "3de4fc83e7149785",
     "./data/eventos.json?v=42": "9b6c217df3a93da2",
     "./data/mantenimiento.json?v=42": "7ee6595e33def6a2",
-    "./data/config.json": "99cd9b664fcae448",
+    "./data/config.json": "5e672c83d1a26d05",
     "./css/tokens.css": "ad6ad5bdcec6f1ba",
     "./js/router.js": "137b6a020caec0aa",
     "./js/app-shell.js": "aed353b01c5f956e",

@@ -74,5 +74,5 @@ export const historial = (sk = SK2) => profile({ sk, meta: { name: 'veterano' },
 /** Relays de data/config.json — el doble de WebSocket responde por cualquiera de ellos. */
 export const RELAYS = [
   'wss://nos.lol', 'wss://relay.primal.net', 'wss://relay.damus.io', 'wss://nostr.bitcoiner.social',
-  'wss://relay.snort.social', 'wss://purplepag.es', 'wss://nostr.mom',
+  'wss://relay.snort.social', 'wss://nostr.mom',
 ]
