@@ -133,7 +133,7 @@ export const tests = [
       await page.click('.nav-tab[data-tab="feed"]')
       await page.waitFor(`document.querySelector('#channel-feed .empty-title')`, { timeout: 9000, label: 'estado vacío del feed' })
       const ms = Date.now() - t0
-      t.assert.ok(ms < 3000, `el feed vacío tardó ${ms} ms en resolverse con 2 de 7 relays rechazando`)
+      t.assert.ok(ms < 3000, `el feed vacío tardó ${ms} ms en resolverse con 2 de ${RELAYS.length} relays rechazando`)
     },
   },
   {
@@ -151,7 +151,7 @@ export const tests = [
       await page.evaluate(`window.openReputacionModal(${JSON.stringify((await import('./fixtures.mjs')).PK1)})`)
       await page.waitFor(`document.querySelector('#listing-modal .no-rating-text')?.textContent.includes('Sin valoraciones')`, { timeout: 9000 })
       const ms = Date.now() - t0
-      t.assert.ok(ms < 3000, `la reputación tardó ${ms} ms con 1 de 7 relays rechazando`)
+      t.assert.ok(ms < 3000, `la reputación tardó ${ms} ms con 1 de ${RELAYS.length} relays rechazando`)
     },
   },
   {
@@ -164,7 +164,7 @@ export const tests = [
       await page.evaluate(`window.__relay.dropAll()`)
       await page.waitFor(`document.getElementById('relay-label').textContent.includes('conectando')`)
       t.assert.equal(await page.evaluate(cards), 1, 'lo ya cargado sigue en pantalla')
-      await page.waitFor(`/[1-7]\\/7 relays/.test(document.getElementById('relay-label').textContent)`, { timeout: 9000, label: 'reconexión' })
+      await page.waitFor(`/[1-9]\\/${RELAYS.length} relays/.test(document.getElementById('relay-label').textContent)`, { timeout: 9000, label: 'reconexión' })
       t.assert.deepEqual(t.appErrors(page), [])
     },
   },
