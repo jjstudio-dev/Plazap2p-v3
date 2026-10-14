@@ -924,6 +924,124 @@
       }
     },
     {
+      "name": "valoración desde un anuncio",
+      "builder": "valoracion",
+      "input": {
+        "rateeHex": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "rating": 5,
+        "aspects": {
+          "comunicacion": 4
+        },
+        "refTag": "30402:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:plazap2p-app-1-abcd"
+      },
+      "expected": {
+        "kind": 1985,
+        "tags": [
+          [
+            "L",
+            "plazap2p.reputation"
+          ],
+          [
+            "l",
+            "rating:5",
+            "plazap2p.reputation"
+          ],
+          [
+            "p",
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "a",
+            "30402:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:plazap2p-app-1-abcd"
+          ],
+          [
+            "l",
+            "aspecto/comunicacion:4",
+            "plazap2p.reputation"
+          ]
+        ],
+        "content": "",
+        "category": null
+      }
+    },
+    {
+      "name": "valoración con referencia a un evento",
+      "builder": "valoracion",
+      "input": {
+        "rateeHex": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "rating": 3,
+        "refTag": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+      },
+      "expected": {
+        "kind": 1985,
+        "tags": [
+          [
+            "L",
+            "plazap2p.reputation"
+          ],
+          [
+            "l",
+            "rating:3",
+            "plazap2p.reputation"
+          ],
+          [
+            "p",
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "e",
+            "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          ]
+        ],
+        "content": "",
+        "category": null
+      }
+    },
+    {
+      "name": "valoración con referencia rara (se ignora)",
+      "builder": "valoracion",
+      "input": {
+        "rateeHex": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "rating": 2,
+        "refTag": "no-es-una-referencia"
+      },
+      "expected": {
+        "kind": 1985,
+        "tags": [
+          [
+            "L",
+            "plazap2p.reputation"
+          ],
+          [
+            "l",
+            "rating:2",
+            "plazap2p.reputation"
+          ],
+          [
+            "p",
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ]
+        ],
+        "content": "",
+        "category": null
+      }
+    },
+    {
       "name": "retirada",
       "builder": "retirada",
       "input": {

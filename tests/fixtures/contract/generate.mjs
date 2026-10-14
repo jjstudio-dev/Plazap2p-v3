@@ -38,6 +38,9 @@ export const CASES = [
   ['URL de imagen no válida (se descarta)', 'servicio', { title: 'Servicio con imagen rara', desc: DESC, imageUrl: 'javascript:alert(1)' }],
   ['valoración con aspectos', 'valoracion', { rateeHex: RATEE, rating: 4, comment: 'Todo correcto', aspects: { comunicacion: 5, rapidez: 3 } }],
   ['valoración mínima', 'valoracion', { rateeHex: RATEE, rating: 1 }],
+  ['valoración desde un anuncio', 'valoracion', { rateeHex: RATEE, rating: 5, aspects: { comunicacion: 4 }, refTag: `30402:${RATEE}:plazap2p-app-1-abcd` }],
+  ['valoración con referencia a un evento', 'valoracion', { rateeHex: RATEE, rating: 3, refTag: 'D'.repeat(64) }],
+  ['valoración con referencia rara (se ignora)', 'valoracion', { rateeHex: RATEE, rating: 2, refTag: 'no-es-una-referencia' }],
   ['retirada', 'retirada', { kind: 30402, dTag: 'plazap2p-app-1-abcd', eventId: 'c'.repeat(64) }],
 ]
 
