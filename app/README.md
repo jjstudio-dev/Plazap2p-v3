@@ -12,9 +12,11 @@ El código fuente de la app nativa vive en un proyecto aparte, pero vinculado a 
 
 | Versión | Archivo | SHA-256 |
 |---|---|---|
-| v1 (julio de 2026) | [`PlazaP2P-3.1-Android-App-v1.apk`](PlazaP2P-3.1-Android-App-v1.apk) | `29636A90E2F5D54FBA1CB2E1CD02B449E7BEB2AF44DD1285AFB8D6B680EBED89` |
+| 1.0.2 (octubre de 2026) | [`PlazaP2P-3.1-Android-App-v1.0.2.apk`](PlazaP2P-3.1-Android-App-v1.0.2.apk) | `15523DF442AA3D5211220E66455DAEDE986C1F80931BF6BCD7230788009C8A2D` |
 
-Es un APK de instalación directa (no está en Google Play). Antes de instalarlo, comprueba que la suma SHA-256 del archivo descargado coincide con la de la tabla (también en `PlazaP2P-3.1-Android-App-v1.apk.sha256`).
+Es un APK de instalación directa (no está en Google Play). Antes de instalarlo, comprueba que la suma SHA-256 del archivo descargado coincide con la de la tabla (también en `PlazaP2P-3.1-Android-App-v1.0.2.apk.sha256`).
+
+La 1.0.2 sustituye a la v1 (1.0.0, julio de 2026), que se retiró porque podía cerrarse sola tras una hora de uso. Las dos llevan la misma firma (`CN=PlazaP2P Upload`), así que la 1.0.2 se instala encima de la v1 sin perder los datos.
 
 ## Estado de build TWA
 
