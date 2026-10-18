@@ -6,6 +6,14 @@
 // inflar la media repitiendo eventos.
 
 import { collectUntilEose } from './relay-pool.js'
+import { MAINTAINER_PUBKEY } from './signed-config.js'
+
+/** Con menos de esto, la media engaña («⭐ 5,0 · 1»): no se enseña (PZ-F8-01). */
+export const MIN_RATINGS_FOR_AVERAGE = 3
+const WOT_TTL_MS = 60 * 60_000
+const MAX_FOLLOWS_PER_LIST = 5000
+const HEX64 = /^[0-9a-f]{64}$/
+let wotCache = null   // { key, ts, trusted }
 
 const CACHE_TTL_MS = 5 * 60_000
 const NAMESPACE = 'plazap2p.reputation'
@@ -34,8 +42,8 @@ function cached(hex) {
  * @param {string} rateeHex — pubkey hex del valorado
  * @returns {Promise<{count:number, avg:number, aspects:Object, comments:Array}>}
  */
-export async function fetchReputacion(pool, rateeHex, timeoutMs = 6000) {
-  const results = await fetchReputacionBatch(pool, [rateeHex], timeoutMs)
+export async function fetchReputacion(pool, rateeHex, timeoutMs = 6000, options = {}) {
+  const results = await fetchReputacionBatch(pool, [rateeHex], timeoutMs, options)
   return results[rateeHex]
 }
 
@@ -52,7 +60,52 @@ export async function fetchReputacion(pool, rateeHex, timeoutMs = 6000) {
  * @param {string[]} hexes — pubkeys hex de los valorados
  * @returns {Promise<{ [hex]: {count:number, avg:number, aspects:Object, comments:Array} }>}
  */
-export async function fetchReputacionBatch(pool, hexes, timeoutMs = 6000) {
+/**
+ * PZ-F8-01 (VA7-01): red de confianza. El filtro de "valorador maduro" se saltaba antedatando
+ * una nota (el created_at lo elige quien firma). Ahora solo cuentan en la media quienes sigue el
+ * usuario (su kind 3) o sigue el mantenedor de PlazaP2P. Misma regla que la app Android
+ * (reputacion/WebOfTrust.kt).
+ */
+export function trustedFromFollowLists(events, roots) {
+  const trusted = new Set(roots.map(r => r.toLowerCase()))
+  for (const root of roots) {
+    let latest = null
+    for (const ev of events) {
+      if (ev.kind === 3 && ev.pubkey?.toLowerCase() === root.toLowerCase() &&
+          (!latest || ev.created_at > latest.created_at)) latest = ev
+    }
+    if (!latest) continue
+    let n = 0
+    for (const t of latest.tags || []) {
+      if (n >= MAX_FOLLOWS_PER_LIST) break
+      if (t[0] === 'p' && HEX64.test((t[1] || '').toLowerCase())) { trusted.add(t[1].toLowerCase()); n++ }
+    }
+  }
+  return trusted
+}
+
+function viewerPubkey() {
+  try {
+    const pk = globalThis.localStorage?.getItem('plazap2p_pubkey')
+    return pk && HEX64.test(pk) ? pk : null
+  } catch { return null }
+}
+
+export async function fetchTrustedRaters(pool, timeoutMs = 6000) {
+  const viewer = viewerPubkey()
+  const roots = [...new Set([viewer, MAINTAINER_PUBKEY].filter(Boolean))]
+  const key = roots.join(',')
+  if (wotCache && wotCache.key === key && Date.now() - wotCache.ts < WOT_TTL_MS) return wotCache.trusted
+  const events = []
+  const res = await collectUntilEose(pool, roots.map(r => ({ kinds: [3], authors: [r], limit: 1 })), {
+    timeoutMs, prefix: 'wot', onEvent(ev) { events.push(ev) },
+  })
+  const trusted = trustedFromFollowLists(events, roots)
+  if (res.answered > 0) wotCache = { key, ts: Date.now(), trusted }
+  return trusted
+}
+
+export async function fetchReputacionBatch(pool, hexes, timeoutMs = 6000, { trustedRaters } = {}) {
   const results = {}
   const pending = []
   for (const hex of new Set(hexes)) {
@@ -100,15 +153,18 @@ export async function fetchReputacionBatch(pool, hexes, timeoutMs = 6000) {
     if (!res.complete) complete = false
   }
 
-  const raters = new Set()
-  for (const byAuthor of byRatee.values()) for (const author of byAuthor.keys()) raters.add(author)
-  const age = await fetchMatureRaters(pool, raters, timeoutMs)
+  const trusted = trustedRaters ?? await fetchTrustedRaters(pool, timeoutMs)
+  const unknown = new Set()
+  for (const byAuthor of byRatee.values()) for (const author of byAuthor.keys()) if (!trusted.has(author)) unknown.add(author)
+  const age = await fetchMatureRaters(pool, unknown, timeoutMs)
 
   for (const [hex, byAuthor] of byRatee) {
-    const counted = new Map([...byAuthor].filter(([author]) => age.mature.has(author)))
+    const counted = new Map([...byAuthor].filter(([author]) => trusted.has(author)))
     const result = aggregate(counted, hex)
-    // Para poder decirlo en pantalla: cuántas valoraciones existen pero no cuentan.
+    // Fuera de la red de confianza: se cuentan aparte (solo cuentas con historia), sin media.
+    result.unknownCount = [...byAuthor.keys()].filter(a => !trusted.has(a) && age.mature.has(a)).length
     result.excludedRecent = byAuthor.size - counted.size
+    result.showsAverage = result.count >= MIN_RATINGS_FOR_AVERAGE
     // Para quien guarde el resultado por su cuenta: si la consulta se cortó,
     // «sin valoraciones» puede no ser verdad (VW4-07).
     result.complete = !!(complete && age.complete)
@@ -126,8 +182,9 @@ export async function fetchReputacionBatch(pool, hexes, timeoutMs = 6000) {
  * un solo valorador muy activo agotaría el límite y los demás parecerían
  * recién llegados.
  *
- * Falla abierto: si ningún relay contesta, no se descarta a nadie — un
- * problema de red no debe dejar la reputación en blanco.
+ * PZ-F8-01: falla CERRADO (antes abierto: un fallo de red contaba a todos como
+ * maduros). Solo afecta al contador de desconocidos; la media es de la red de
+ * confianza.
  */
 async function fetchMatureRaters(pool, raters, timeoutMs) {
   const mature = new Set()
@@ -154,7 +211,6 @@ async function fetchMatureRaters(pool, raters, timeoutMs) {
       },
     )
     if (res.answered === 0) {            // nadie contestó: no se sabe nada de este lote
-      for (const r of chunk) mature.add(r)
       complete = false
       continue
     }
@@ -169,7 +225,7 @@ function hasValidRating(ev) {
 }
 
 /** Solo para tests: vacía la caché en memoria. */
-export function _clearReputacionCache() { cache.clear(); matureRaters.clear() }
+export function _clearReputacionCache() { cache.clear(); matureRaters.clear(); wotCache = null }
 
 /**
  * Agrega los eventos 1985 ya filtrados/deduplicados de un valorado.

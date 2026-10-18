@@ -1331,10 +1331,11 @@ async function onValoradoChange() {
   try {
     await ready
     const rep = await fetchReputacion(pool, hex)
-    if (rep.count > 0) {
+    // PZ-F8-01: media solo con 3 o más valoraciones de la red de confianza.
+    if (rep.showsAverage) {
       setErr('err-v-npub', '')
       const errEl = $('err-v-npub')
-      errEl.textContent = `ℹ️ Reputación actual: ${rep.avg.toFixed(1)}/5 (${rep.count} ${rep.count === 1 ? 'valoración firmada' : 'valoraciones firmadas'})`
+      errEl.textContent = `ℹ️ Reputación actual en tu red: ${rep.avg.toFixed(1)}/5 (${rep.count} ${rep.count === 1 ? 'valoración firmada' : 'valoraciones firmadas'})`
       errEl.classList.add('show')
     }
   } catch { /* informativo — no bloquear */ }

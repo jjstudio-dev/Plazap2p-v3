@@ -24,7 +24,7 @@ test('fetchReputacion: el relay rápido vacío no produce "sin valoraciones"', a
   _clearReputacionCache()
   const pool = answerRaterAge(fakePool(['wss://rapido', 'wss://lento']))
   const ratee = hex('a')
-  const p = fetchReputacion(pool, ratee, 2000)
+  const p = fetchReputacion(pool, ratee, 2000, { trustedRaters: new Set([hex('1'), hex('2')]) })
   pool.eose('wss://rapido')                              // contesta primero y no tiene nada
   await flush()
   pool.emit(rating(hex('1'), ratee, 5), 'wss://lento')
@@ -39,7 +39,7 @@ test('fetchReputacionBatch: reparte por valorado, una valoración por autor, sin
   _clearReputacionCache()
   const pool = answerRaterAge(fakePool(['wss://a']))
   const [r1, r2] = [hex('b'), hex('c')]
-  const p = fetchReputacionBatch(pool, [r1, r2], 2000)
+  const p = fetchReputacionBatch(pool, [r1, r2], 2000, { trustedRaters: new Set([hex('1'), hex('2')]) })
   pool.emit(rating(hex('1'), r1, 2, { ts: 100 }), 'wss://a')
   pool.emit(rating(hex('1'), r1, 5, { ts: 200 }), 'wss://a')   // mismo autor, más reciente: gana
   pool.emit(rating(r2, r2, 5), 'wss://a')                      // auto-valoración: fuera
@@ -55,7 +55,7 @@ test('fetchReputacionBatch: un evento sin puntuación no desplaza la valoración
   _clearReputacionCache()
   const pool = answerRaterAge(fakePool(['wss://a']))
   const ratee = hex('d')
-  const p = fetchReputacionBatch(pool, [ratee], 2000)
+  const p = fetchReputacionBatch(pool, [ratee], 2000, { trustedRaters: new Set([hex('1')]) })
   pool.emit(rating(hex('1'), ratee, 4, { ts: 100 }), 'wss://a')
   pool.emit(rating(hex('1'), ratee, 0, { ts: 999, withRating: false }), 'wss://a')
   pool.eose('wss://a')
@@ -69,12 +69,13 @@ test('fetchReputacionBatch: un resultado cortado por timeout NO se cachea; uno c
   const ratee = hex('e')
 
   const mudo = fakePool(['wss://mudo'])
-  const parcial = await fetchReputacionBatch(mudo, [ratee], 50)     // nadie contesta → timeout
+  const red = { trustedRaters: new Set([hex('1')]) }
+  const parcial = await fetchReputacionBatch(mudo, [ratee], 50, red)     // nadie contesta → timeout
   assert.equal(parcial[ratee].count, 0)
   assert.equal(parcial[ratee].complete, false, 'y se dice que el resultado no es completo (VW4-07)')
 
   const pool = answerRaterAge(fakePool(['wss://a']))
-  const p = fetchReputacionBatch(pool, [ratee], 2000)
+  const p = fetchReputacionBatch(pool, [ratee], 2000, red)
   assert.equal(pool.subs.size, 1, 'vuelve a consultar: el vacío por timeout no quedó en caché')
   pool.emit(rating(hex('1'), ratee, 5), 'wss://a')
   pool.eose('wss://a')
@@ -83,7 +84,7 @@ test('fetchReputacionBatch: un resultado cortado por timeout NO se cachea; uno c
   assert.equal(completo[ratee].complete, true)
 
   const otra = fakePool(['wss://a'])
-  const again = await fetchReputacionBatch(otra, [ratee], 2000)
+  const again = await fetchReputacionBatch(otra, [ratee], 2000, red)
   assert.equal(otra.subs.size, 0, 'el resultado completo sí se sirve de caché')
   assert.equal(again[ratee].count, 1)
 })
@@ -121,11 +122,13 @@ test('reputación: una avalancha de valoraciones sobre un vendedor no deja sin l
   const reales = [rating(hex('1'), normal, 5, { ts: 100 }), rating(hex('2'), normal, 4, { ts: 101 })]
   const pool = limitHonouringPool([...basura, ...reales])
 
-  const out = await fetchReputacionBatch(pool, [inundado, normal], 2000)
+  const out = await fetchReputacionBatch(pool, [inundado, normal], 2000, { trustedRaters: new Set([hex('1'), hex('2')]) })
 
   assert.equal(out[normal].count, 2, 'las valoraciones reales del otro vendedor siguen ahí')
   assert.equal(out[normal].avg, 4.5)
-  assert.equal(out[inundado].count, RATINGS_PER_SELLER)
+  // PZ-F8-01: la basura es de cuentas fuera de la red: no hace media, se cuenta aparte.
+  assert.equal(out[inundado].count, 0)
+  assert.equal(out[inundado].unknownCount, RATINGS_PER_SELLER)
   for (const f of pool.consultas.flat()) assert.equal(f['#p'].length, 1, 'un filtro por vendedor')
 })
 
@@ -134,7 +137,7 @@ test('reputación: muchos vendedores se preguntan en lotes de 10 filtros, uno po
   const vendedores = Array.from({ length: 23 }, (_, i) => (i + 1).toString(16).padStart(2, '0').repeat(32))
   const pool = limitHonouringPool([])
 
-  const out = await fetchReputacionBatch(pool, [...vendedores, vendedores[0]], 2000)
+  const out = await fetchReputacionBatch(pool, [...vendedores, vendedores[0]], 2000, { trustedRaters: new Set() })
 
   assert.deepEqual(pool.consultas.map(c => c.length), [10, 10, 3])
   assert.deepEqual(pool.consultas.flat().map(f => f['#p'][0]), vendedores)
@@ -144,19 +147,19 @@ test('reputación: muchos vendedores se preguntan en lotes de 10 filtros, uno po
 
 // ── Antigüedad del valorador (ronda 2: misma regla que la app Android) ────────
 
-test('reputación: no cuentan las valoraciones de cuentas sin 30 días de historial', async () => {
+test('reputación: fuera de la red de confianza no hacen media; se cuentan aparte las de cuentas con historia', async () => {
   _clearReputacionCache()
   const ratee = hex('7')
   const [veterano, recien] = [hex('1'), hex('2')]
   const pool = answerRaterAge(fakePool(['wss://a']), [veterano])
-  const p = fetchReputacionBatch(pool, [ratee], 2000)
+  const p = fetchReputacionBatch(pool, [ratee], 2000, { trustedRaters: new Set() })
   pool.emit(rating(veterano, ratee, 2), 'wss://a')
   pool.emit(rating(recien, ratee, 5), 'wss://a')      // cuenta creada para inflar la nota
   pool.eose('wss://a')
   const rep = (await p)[ratee]
-  assert.equal(rep.count, 1)
-  assert.equal(rep.avg, 2, 'solo cuenta el voto del veterano')
-  assert.equal(rep.excludedRecent, 1, 'y se sabe cuántas se han dejado fuera')
+  assert.equal(rep.count, 0, 'ninguna está en la red de confianza')
+  assert.equal(rep.unknownCount, 1, 'solo el veterano cuenta como desconocido con historia')
+  assert.equal(rep.excludedRecent, 2, 'y se sabe cuántas se han dejado fuera de la media')
 })
 
 test('reputación: la antigüedad se pregunta con un filtro por autor, hasta el corte de 30 días', async () => {
@@ -168,10 +171,10 @@ test('reputación: la antigüedad se pregunta con un filtro por autor, hasta el 
   answerRaterAge(pool)
   const responder = pool.onSubscribe
   pool.onSubscribe = (id, filters, h) => { if (filters[0].authors) consultas.push(filters); responder(id, filters, h) }
-  const p = fetchReputacionBatch(pool, [ratee], 2000)
+  const p = fetchReputacionBatch(pool, [ratee], 2000, { trustedRaters: new Set() })
   for (const r of raters) pool.emit(rating(r, ratee, 4), 'wss://a')
   pool.eose('wss://a')
-  assert.equal((await p)[ratee].count, 12)
+  assert.equal((await p)[ratee].unknownCount, 12)
   assert.deepEqual(consultas.map(c => c.length), [10, 2], 'lotes de 10 filtros')
   const corte = Math.floor(Date.now() / 1000) - 30 * 86400
   for (const f of consultas.flat()) {
@@ -192,30 +195,32 @@ test('reputación: un evento posterior al corte no acredita antigüedad aunque e
       h.onEose('wss://a')
     })
   }
-  const p = fetchReputacionBatch(pool, [ratee], 2000)
+  const p = fetchReputacionBatch(pool, [ratee], 2000, { trustedRaters: new Set() })
   pool.emit(rating(hex('1'), ratee, 5), 'wss://a')
   pool.eose('wss://a')
   const rep = (await p)[ratee]
-  assert.equal(rep.count, 0)
+  assert.equal(rep.unknownCount, 0)
   assert.equal(rep.excludedRecent, 1)
 })
 
-test('reputación: si ningún relay contesta sobre la antigüedad, no se descarta a nadie (y no se cachea)', async () => {
+test('reputación: si ningún relay contesta sobre la antigüedad, se falla cerrado (y no se cachea)', async () => {
   _clearReputacionCache()
   const ratee = hex('6')
+  const sinRed = { trustedRaters: new Set() }
   const pool = fakePool(['wss://a'])      // sin answerRaterAge: la segunda consulta queda sin respuesta
-  const p = fetchReputacionBatch(pool, [ratee], 80)
+  const p = fetchReputacionBatch(pool, [ratee], 80, sinRed)
   pool.emit(rating(hex('1'), ratee, 5), 'wss://a')
   pool.eose('wss://a')
   const rep = (await p)[ratee]
-  assert.equal(rep.count, 1, 'un fallo de red no deja la reputación en blanco')
+  assert.equal(rep.unknownCount, 0, 'PZ-F8-01: un fallo de red ya no cuenta a nadie como veterano')
+  assert.equal(rep.complete, false, 'y se dice que el resultado no es completo')
   // No quedó en caché: la siguiente consulta vuelve a preguntar.
-  const otra = answerRaterAge(fakePool(['wss://a']), [])
-  const p2 = fetchReputacionBatch(otra, [ratee], 2000)
+  const otra = answerRaterAge(fakePool(['wss://a']), [hex('1')])
+  const p2 = fetchReputacionBatch(otra, [ratee], 2000, sinRed)
   assert.equal(otra.subs.size, 1)
   otra.emit(rating(hex('1'), ratee, 5), 'wss://a')
   otra.eose('wss://a')
-  assert.equal((await p2)[ratee].count, 0, 'ahora los relays sí contestan: sin historial, no cuenta')
+  assert.equal((await p2)[ratee].unknownCount, 1, 'ahora los relays sí contestan')
 })
 
 // ── Perfil ────────────────────────────────────────────────────────────────────

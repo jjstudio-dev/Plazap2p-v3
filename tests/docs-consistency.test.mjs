@@ -64,5 +64,6 @@ test('la web no presenta el filtro de 30 días como una protección de la reputa
   const visible = index.replace(/<!--[\s\S]*?-->/g, '')
   assert.doesNotMatch(visible, /solo cuenta en la reputación/i)
   const nota = read('js/app.js').split('\n').find(l => l.includes('rep-excluded-note')) ?? ''
-  assert.match(nota, /orientativo/, 'el aviso de valoraciones excluidas debe decir que el filtro es orientativo')
+  // PZ-F8-01: la media ya no depende de esa fecha, sino de la red de confianza; el aviso lo dice.
+  assert.match(nota, /red de confianza/, 'el aviso de valoraciones excluidas debe explicar la red de confianza')
 })
