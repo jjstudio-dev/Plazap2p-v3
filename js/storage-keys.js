@@ -28,6 +28,7 @@ export const SENSITIVE = [
 // re-importarse sin pasar por su ruta normal de verificación.
 export const CACHE_ONLY = [
   'plazap2p_v3', // app.js — caché de eventos ya parseados, no reverificados al cargar
+  'plazap2p_signed_config', // signed-config.js — último config firmado por el mantenedor (PZ-F1-01)
 ]
 
 // Claves que se forman con un prefijo y un sufijo variable. Exportables.

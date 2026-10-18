@@ -1,5 +1,6 @@
 import { encodeNaddr, hexToNpub, hexToNote, getTagValue, getTagValues, decodeNpub } from './nostr.js';
 import { RelayPool } from './relay-pool.js';
+import { trustServedConfig, fetchSignedConfig } from './signed-config.js';
 import { fetchReputacionBatch } from './reputacion.js';
 import { parseAnuncioHash, anuncioRoute, routeForTab } from './router.js';
 import { isBlocked, blockPubkey, unblockPubkey, listBlocked, exportBlocked, importBlocked } from './moderation.js';
@@ -77,6 +78,7 @@ async function init() {
     isInitialLoad = true;
     subscribeAll();
     loadStaticData();
+    applySignedConfig();
     setTimeout(() => { isInitialLoad = false; }, 6000);
     window._badgeInterval = setInterval(updateAllBadges, 30000);
     window.addEventListener('pagehide', () => clearInterval(window._badgeInterval), { once: true });
@@ -89,7 +91,9 @@ async function loadConfig() {
   try {
     const res = await fetch(versioned('data/config.json'));
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    config = await res.json();
+    const raw = await res.text();
+    // PZ-F1-01: sin firma del mantenedor no se aplican los campos sensibles.
+    config = trustServedConfig(raw, JSON.parse(raw));
   } catch (err) {
     console.error('[config] No se pudo cargar config.json, usando mínimos:', err);
     config = {
@@ -110,6 +114,20 @@ async function loadConfig() {
       ],
       publish_clients: [], nostr_clients: [], wallets: []
     };
+  }
+}
+
+// PZ-F1-01: la configuración firmada (kind 30078 del mantenedor) sustituye a la servida. Los
+// relays nuevos se usan en la próxima carga; lo demás (instancias de confianza), ya.
+async function applySignedConfig() {
+  try {
+    const signed = await fetchSignedConfig(pool);
+    if (!signed) return;
+    config = { ...config, ...signed, relays: config.relays, channels: config.channels };
+    resolveIntercambioConfig();
+    if (activeTab === 'intercambio') renderActiveChannel();
+  } catch (err) {
+    console.warn('[config] configuración firmada no disponible:', err?.message);
   }
 }
 
@@ -518,7 +536,8 @@ function refreshLiveRatings(hexes) {
   fetchReputacionBatch(pool, pendientes)
     .then(results => {
       for (const [hex, r] of Object.entries(results)) {
-        if (r && r.count > 0) {
+        // PZ-F8-01: media solo con 3 o más valoraciones de la red de confianza.
+        if (r && r.showsAverage) {
           liveRatings[hex] = { avg: r.avg, n: r.count, aspects: r.aspects, comments: r.comments };
         } else if (r?.complete || (liveRatingMisses[hex] = (liveRatingMisses[hex] || 0) + 1) >= 3) {
           liveRatings[hex] = null;   // null = ya consultado, sin valoraciones (evita re-fetch)
@@ -672,11 +691,11 @@ window.openReputacionModal = async function(hex) {
   // para que la cifra no parezca arbitraria frente a otros clientes Nostr.
   const excluded = Number(rep?.excludedRecent) || 0;
   const excludedHtml = excluded > 0
-    ? `<p class="no-rating-text" id="rep-excluded-note">${excluded} ${plural(excluded, 'valoración', 'valoraciones')} de cuentas con menos de 30 días de actividad en Nostr no se cuenta${excluded === 1 ? '' : 'n'}. Es un filtro orientativo: esa fecha la declara cada cuenta y no se puede comprobar.</p>`
+    ? `<p class="no-rating-text" id="rep-excluded-note">${excluded} ${plural(excluded, 'valoración', 'valoraciones')} de cuentas que ni tú ni PlazaP2P seguís no cuenta${excluded === 1 ? '' : 'n'} en la media. Cualquiera puede crear cuentas para inflar o hundir una reputación; solo cuenta tu red de confianza.</p>`
     : '';
 
   const staticR = ratingsIndex[hex];
-  if ((!rep || rep.count === 0) && (!staticR || staticR.n < 1)) {
+  if ((!rep || !rep.showsAverage) && (!staticR || staticR.n < 1)) {
     modal.innerHTML = shell(`<div class="modal-rating-section modal-rating-none">
       <span class="no-rating-text">Sin valoraciones firmadas todavía. Las valoraciones son eventos Nostr (kind 1985) verificables por cualquiera.</span>
       ${excludedHtml}
@@ -684,9 +703,9 @@ window.openReputacionModal = async function(hex) {
     return;
   }
 
-  const avg = rep && rep.count > 0 ? rep.avg : staticR.avg;
-  const n   = rep && rep.count > 0 ? rep.count : staticR.n;
-  const aspects = (rep && rep.count > 0 ? rep.aspects : staticR.aspects) || {};
+  const avg = rep && rep.showsAverage ? rep.avg : staticR.avg;
+  const n   = rep && rep.showsAverage ? rep.count : staticR.n;
+  const aspects = (rep && rep.showsAverage ? rep.aspects : staticR.aspects) || {};
   const comments = (rep?.comments || []).slice(0, 10);
 
   const commentsHtml = comments.length
@@ -701,7 +720,7 @@ window.openReputacionModal = async function(hex) {
       }).join('')
     : '';
 
-  const distributionHtml = (rep && rep.count > 0 && rep.distribution)
+  const distributionHtml = (rep && rep.showsAverage && rep.distribution)
     ? `<div class="modal-rating-header" style="margin-top:12px">Distribución (${rep.count} ${plural(rep.count, 'valoración', 'valoraciones')})</div>` +
       renderDistributionBars(rep.distribution, rep.count)
     : '';
@@ -715,7 +734,7 @@ window.openReputacionModal = async function(hex) {
   </div>`;
 
   modal.innerHTML = shell(`<div class="modal-rating-section">
-    <div class="modal-rating-header">Reputación agregada${rep && rep.count > 0 ? ' (en vivo desde los relays)' : ' (índice histórico)'}</div>
+    <div class="modal-rating-header">Reputación agregada${rep && rep.showsAverage ? ' (en vivo desde los relays)' : ' (índice histórico)'}</div>
     ${renderStarDisplay(avg, n, false)}
     ${trustHtml}
     ${excludedHtml}
@@ -1360,7 +1379,7 @@ window.openModal = function(naddr, options = {}) {
   if (pool && !(l.pubkeyHex in liveRatings)) {
     fetchReputacionBatch(pool, [l.pubkeyHex]).then(results => {
       const r = results[l.pubkeyHex];
-      liveRatings[l.pubkeyHex] = (r && r.count > 0)
+      liveRatings[l.pubkeyHex] = (r && r.showsAverage)
         ? { avg: r.avg, n: r.count, aspects: r.aspects, comments: r.comments }
         : null;
       if (modal.classList.contains('hidden') || modal.dataset.naddr !== naddr) return;
