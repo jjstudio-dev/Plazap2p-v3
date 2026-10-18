@@ -11,7 +11,7 @@
     "wss://relay.primal.net",
     "wss://relay.damus.io",
     "wss://nostr.bitcoiner.social",
-    "wss://relay.snort.social",
+    "wss://relay.nostr.net",
     "wss://nostr.mom"
   ],
   "channels": [
