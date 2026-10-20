@@ -46,12 +46,17 @@ export function restrictUntrusted(config) {
   return copy
 }
 
+/** Con el almacenamiento bloqueado, solo leer `localStorage` ya lanza SecurityError. */
+function defaultStorage() {
+  try { return globalThis.localStorage } catch { return null }
+}
+
 function lastSignedContent(storage) {
   try { return storage?.getItem(STORAGE_KEY) ?? null } catch { return null }
 }
 
 /** Aplica la regla al JSON servido junto a la web (texto crudo, tal cual llegó). */
-export function trustServedConfig(rawText, parsed, storage = globalThis.localStorage) {
+export function trustServedConfig(rawText, parsed, storage = defaultStorage()) {
   const signed = lastSignedContent(storage)
   if (signed !== null && signed === rawText) return { ...parsed, trusted: true }
   return restrictUntrusted(parsed)
@@ -61,7 +66,7 @@ export function trustServedConfig(rawText, parsed, storage = globalThis.localSto
  * Busca la configuración firmada en los relays. Devuelve el objeto ya parseado (trusted = true) o
  * null si no hay ninguna válida. Guarda el contenido para reconocerlo en la próxima carga.
  */
-export async function fetchSignedConfig(pool, { timeoutMs = 6000, storage = globalThis.localStorage } = {}) {
+export async function fetchSignedConfig(pool, { timeoutMs = 6000, storage = defaultStorage() } = {}) {
   const events = []
   await collectUntilEose(
     pool,

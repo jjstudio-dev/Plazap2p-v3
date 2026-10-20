@@ -35,3 +35,21 @@ test('el config servido solo es de fiar si es idéntico al último firmado', () 
   assert.equal(r.trusted, false)
   assert.deepEqual(r.intercambio.trustedMostroInstances, [])
 })
+
+test('con el almacenamiento bloqueado el config servido se usa, sin campos sensibles', () => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    get() { throw new DOMException('Access is denied for this document.', 'SecurityError') },
+  })
+  try {
+    const raw = '{"relays":["wss://a"],"support_url":"https://x"}'
+    const r = trustServedConfig(raw, JSON.parse(raw))
+    assert.equal(r.trusted, false)
+    assert.deepEqual(r.relays, ['wss://a'])
+    assert.equal(r.support_url, undefined)
+  } finally {
+    if (original) Object.defineProperty(globalThis, 'localStorage', original)
+    else delete globalThis.localStorage
+  }
+})

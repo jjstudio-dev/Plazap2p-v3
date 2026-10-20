@@ -4,8 +4,19 @@
 // real de relay-pool.js.
 
 import { signWith, SK1, SK2, PK1, PK2 } from '../fixtures/events.mjs'
+import { getPublicKey } from '../../js/vendor/nostr-crypto.js'
 
 export { signWith, SK1, SK2, PK1, PK2 }
+
+// Más valoradores y quien visita la web (su lista de seguidos es la red de confianza, PZ-F8-01).
+export const SK3 = Uint8Array.from({ length: 32 }, (_, i) => i + 7)
+export const SK4 = Uint8Array.from({ length: 32 }, (_, i) => i + 9)
+export const SK5 = Uint8Array.from({ length: 32 }, (_, i) => i + 11)
+export const SK_VISITANTE = Uint8Array.from({ length: 32 }, (_, i) => i + 13)
+export const PK3 = getPublicKey(SK3)
+export const PK4 = getPublicKey(SK4)
+export const PK5 = getPublicKey(SK5)
+export const PK_VISITANTE = getPublicKey(SK_VISITANTE)
 
 export const now = () => Math.floor(Date.now() / 1000)
 export const skHex = sk => [...sk].map(b => b.toString(16).padStart(2, '0')).join('')
@@ -70,6 +81,14 @@ export function profile({ sk = SK1, meta = { name: 'Vendedor', lud16: 'vendedor@
  * antigüedad de un valorador (sus votos solo cuentan con 30 días de historial).
  */
 export const historial = (sk = SK2) => profile({ sk, meta: { name: 'veterano' }, created_at: now() - 60 * 86400 })
+
+/** Lista de seguidos kind 3 de `sk`: la media de reputación solo cuenta a quien sigue el visitante. */
+export function follows({ sk = SK_VISITANTE, pubkeys, created_at = now() - 100 } = {}) {
+  return signWith(sk, { kind: 3, created_at, tags: pubkeys.map(pk => ['p', pk]), content: '' })
+}
+
+/** El visitante ha conectado su identidad (la web lee su pubkey para su red de confianza). */
+export const visitante = { localStorage: { plazap2p_pubkey: PK_VISITANTE } }
 
 /** Relays de data/config.json — el doble de WebSocket responde por cualquiera de ellos. */
 export const RELAYS = [

@@ -2,7 +2,7 @@
 // puede convertirse en marcado o en código. Cada carga hostil, si llegara a
 // ejecutarse, escribe en window.__xss.
 
-import { listing, note, article, calendar, order, rating, historial, signWith, SK1, SK2, PK1, PK2, now } from './fixtures.mjs'
+import { listing, note, article, calendar, order, rating, follows, visitante, signWith, SK1, SK2, SK3, SK4, SK5, PK1, PK2, PK3, PK4, now } from './fixtures.mjs'
 
 // Variantes que rompen cada contexto: HTML, atributo con ", atributo con ',
 // cadena JS dentro de onclick='…', y esquema de URL.
@@ -61,8 +61,11 @@ const mundoHostil = () => [
   calendar({ d: 'ev-2', kind: 31922, title: P('ev2-titulo'), start: P('ev2-inicio'), end: P('ev2-fin') }),
   order({ pm: [P('pago'), P('pago2')], fa: ['100', '500'], f: 'EUR' }),
   order({ d: 'orden-2', f: 'EUR', k: 'buy', premium: '5', pm: [P('pago-compra')] }),
+  // Tres valoradores que sigue el visitante: con menos no hay media y los comentarios no se pintan (PZ-F8-01).
   rating({ sk: SK2, ratee: PK1, comment: P('comentario'), aspects: { [P('aspecto')]: '5', comunicacion: '4' } }),
-  historial(SK2),   // para que la valoración de arriba cuente y su comentario llegue a pintarse
+  rating({ sk: SK3, ratee: PK1, comment: P('comentario2') }),
+  rating({ sk: SK4, ratee: PK1, comment: P('comentario3') }),
+  follows({ pubkeys: [PK2, PK3, PK4] }),
 ]
 
 export const tests = [
@@ -70,7 +73,7 @@ export const tests = [
     name: 'eventos hostiles de un relay no ejecutan código en ninguna pestaña ni en los modales',
     async run(t) {
       const server = await t.server()
-      const page = await t.open({ scenario: { events: mundoHostil() } })
+      const page = await t.open({ scenario: { events: mundoHostil(), ...visitante } })
       await page.goto(server.origin + '/index.html')
       await page.waitFor(`document.querySelectorAll('#channel-mercado .listing-card:not(.skeleton)').length >= 1`)
       await assertLimpio(t, page, 'mercado')
@@ -242,12 +245,14 @@ export const tests = [
     name: 'al abrir un anuncio se piden las valoraciones de su autor, sin pasar por «Vendedores»',
     async run(t) {
       const server = await t.server()
-      const page = await t.open({ scenario: { events: [listing(), historial(SK2), rating({ sk: SK2, stars: 4 })] } })
+      const events = [listing(), rating({ sk: SK2, stars: 4 }), rating({ sk: SK3, stars: 4 }), rating({ sk: SK4, stars: 4 }),
+        follows({ pubkeys: [PK2, PK3, PK4] })]
+      const page = await t.open({ scenario: { events, ...visitante } })
       await page.goto(server.origin + '/index.html')
       await page.waitFor(`document.querySelectorAll('#channel-mercado .listing-card:not(.skeleton)').length === 1`)
       await page.click('#channel-mercado .listing-card')
       await page.waitFor(`document.querySelector('#listing-modal .star-count-full')`, { timeout: 9000, label: 'estrellas del vendedor en la ficha' })
-      t.assert.match(await page.text('#listing-modal .star-count-full'), /^4\.0 · 1 valoración$/)
+      t.assert.match(await page.text('#listing-modal .star-count-full'), /^4\.0 · 3 valoraciones$/)
       t.assert.deepEqual(t.appErrors(page), [])
     },
   },
@@ -258,47 +263,50 @@ export const tests = [
       const NS = 'plazap2p.reputation'
       const events = [
         listing(),
-        historial(SK2),
         rating({ sk: SK2, stars: 5 }),
         // Mismo autor, más reciente, con puntuación fuera de rango y aspectos absurdos.
         signWith(SK2, { kind: 1985, created_at: now() - 5, content: 'x',
           tags: [['L', NS], ['l', 'rating:999', NS], ['l', 'comunicacion:999', NS], ['p', PK1]] }),
-        // Auto-valoración del propio vendedor.
-        rating({ sk: SK1, ratee: PK1, stars: 5, comment: 'me valoro yo' }),
+        // Auto-valoración del propio vendedor (aunque el visitante lo siga, no cuenta).
+        rating({ sk: SK1, ratee: PK1, stars: 1, comment: 'me valoro yo' }),
+        rating({ sk: SK3, stars: 5 }),
+        rating({ sk: SK4, stars: 5 }),
+        follows({ pubkeys: [PK1, PK2, PK3, PK4] }),
       ]
-      const page = await t.open({ scenario: { events } })
+      const page = await t.open({ scenario: { events, ...visitante } })
       await page.goto(server.origin + '/index.html')
       await page.waitFor(`document.querySelectorAll('#channel-mercado .listing-card:not(.skeleton)').length === 1`)
       await page.evaluate(`window.openReputacionModal(${JSON.stringify(PK1)})`)
       await page.waitFor(`document.querySelector('#listing-modal .star-count-full')`, { timeout: 9000 })
       const resumen = await page.text('#listing-modal .star-count-full')
-      t.assert.match(resumen, /^5\.0 · 1 valoración$/, `resumen mostrado: ${resumen}`)
+      t.assert.match(resumen, /^5\.0 · 3 valoraciones$/, `resumen mostrado: ${resumen}`)
       const anchos = await page.evaluate(`[...document.querySelectorAll('#listing-modal .aspect-bar-fill')].map(el => parseFloat(el.style.width))`)
       t.assert.ok(anchos.every(w => w >= 0 && w <= 100), `barras fuera de rango: ${anchos}`)
     },
   },
   {
-    name: 'valoraciones de cuentas recién creadas no mueven la nota, y se dice cuántas hay',
+    name: 'valoraciones de cuentas fuera de tu red no mueven la nota, y se dice cuántas hay',
     async run(t) {
       const server = await t.server()
-      const SK3 = Uint8Array.from({ length: 32 }, (_, i) => i + 7)
-      const SK4 = Uint8Array.from({ length: 32 }, (_, i) => i + 9)
+      const SK6 = Uint8Array.from({ length: 32 }, (_, i) => i + 15)
       const events = [
-        listing(), historial(SK2),
-        rating({ sk: SK2, stars: 2, comment: 'Tardó mucho' }),      // cuenta con historial
-        rating({ sk: SK3, stars: 5, comment: 'Genial' }),            // dos cuentas creadas hoy
-        rating({ sk: SK4, stars: 5, comment: 'Perfecto' }),
+        listing(),
+        rating({ sk: SK2, stars: 2, comment: 'Tardó mucho' }),      // tres cuentas que sigue el visitante
+        rating({ sk: SK3, stars: 2, comment: 'Lento' }),
+        rating({ sk: SK4, stars: 2, comment: 'Regular' }),
+        rating({ sk: SK5, stars: 5, comment: 'Genial' }),            // dos cuentas que nadie sigue
+        rating({ sk: SK6, stars: 5, comment: 'Perfecto' }),
+        follows({ pubkeys: [PK2, PK3, PK4] }),
       ]
-      const page = await t.open({ scenario: { events } })
+      const page = await t.open({ scenario: { events, ...visitante } })
       await page.goto(server.origin + '/index.html')
       await page.waitFor(`document.querySelectorAll('#channel-mercado .listing-card:not(.skeleton)').length === 1`)
       await page.evaluate(`window.openReputacionModal(${JSON.stringify(PK1)})`)
       await page.waitFor(`document.querySelector('#listing-modal .star-count-full')`, { timeout: 9000 })
-      t.assert.match(await page.text('#listing-modal .star-count-full'), /^2.0 · 1 valoración$/)
-      t.assert.match(await page.text('#rep-excluded-note'), /^2 valoraciones de cuentas con menos de 30 días .* no se cuentan\. Es un filtro orientativo/)
+      t.assert.match(await page.text('#listing-modal .star-count-full'), /^2\.0 · 3 valoraciones$/)
+      t.assert.match(await page.text('#rep-excluded-note'), /^2 valoraciones de cuentas que ni tú ni PlazaP2P seguís no cuentan en la media\. Cualquiera puede crear cuentas/)
       const comentarios = await page.evaluate(`[...document.querySelectorAll('#listing-modal .modal-notice')].map(e => e.innerText)`)
       t.assert.ok(comentarios.some(c => c.includes('Tardó mucho')) && !comentarios.some(c => c.includes('Genial')), 'solo se muestran los comentarios que cuentan')
-      t.assert.ok(PK2)
     },
   },
 ]
