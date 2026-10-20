@@ -66,7 +66,7 @@ Breve cronología de cómo llegamos a "una app" para PlazaP2P, aparte de esta we
 
 1. **Bot de Telegram V3** — la primera idea de app/asistente fuera del navegador. Diseño completo (wizards de publicación, reputación dual Supabase+Nostr, anti-scam), pero **nunca se desplegó en producción**. Retirado de este repositorio.
 2. **Wrapper TWA** (carpeta [`app/`](app/)) — instalar esta misma web como si fuera una app, en pantalla completa y sin barra de navegador. Se llegó a preparar y firmar una build interna, pero **nunca se publicó en abierto ni se distribuyó**: en el propio proceso de diseño se decidió que, por usabilidad, merecía más la pena portar la idea a una app nativa de verdad. Ver [`app/README.md`](app/README.md) para el detalle.
-3. **PlazaP2P Android** (vía activa) — app nativa, con su propia interfaz e integraciones (Amber, Wallet, Mensajería), en un proyecto aparte (código todavía privado). Es la que sustituye de verdad al bot y al wrapper TWA, y comparte identidad, reputación y red Nostr con esta web. Su versión actual (1.0.2) está publicada como APK de instalación directa en [`app/`](app/), junto a su suma SHA-256.
+3. **PlazaP2P Android** (vía activa) — app nativa, con su propia interfaz e integraciones (Amber, Wallet, Mensajería), en un proyecto aparte (código todavía privado). Es la que sustituye de verdad al bot y al wrapper TWA, y comparte identidad, reputación y red Nostr con esta web. Su versión actual (1.1.0) está publicada como APK de instalación directa en [`app/`](app/), junto a su suma SHA-256.
 
 Ni el bot ni el wrapper TWA están publicados — ambos quedaron desplazados por la app nativa. La vía activa es PlazaP2P Android.
 
@@ -94,7 +94,7 @@ Presentación breve — el detalle técnico se publicará junto con el código:
 | [Amber](https://github.com/greenart7c3/Amber) | Firmador NIP-55 — necesaria | `github.com/greenart7c3/Amber` | `com.greenart7c3.nostrsigner` |
 | [Minibits Wallet](https://minibits.cash) | Wallet Lightning con NWC — recomendada | `minibits.cash` | `com.minibits_wallet` |
 
-Descarga: APK 1.0.2 en la pestaña [📱 App Android](https://jjstudio-dev.github.io/Plazap2p-v3/?tab=app-android) de esta web y en [`app/`](app/), junto a su suma SHA-256.
+Descarga: APK 1.1.0 en la pestaña [📱 App Android](https://jjstudio-dev.github.io/Plazap2p-v3/?tab=app-android) de esta web y en [`app/`](app/), junto a su suma SHA-256.
 
 ---
 
@@ -173,7 +173,7 @@ plazap2p-v3/
 │   ├── herramientas.json   # 34+ herramientas Bitcoin
 │   └── multimedia.json
 ├── icons/
-├── app/                    # APK de PlazaP2P Android 1.0.2 + su SHA-256, e historia bot → TWA → app nativa (ver app/README.md)
+├── app/                    # APK de PlazaP2P Android 1.1.0 + su SHA-256, e historia bot → TWA → app nativa (ver app/README.md)
 └── .github/
     ├── workflows/app.yml   # CI: sintaxis, JSON, tests, enlaces, versión de assets; publica en Pages solo si todo pasa
     └── ISSUE_TEMPLATE/     # plantillas para contribuciones al JSON
@@ -182,7 +182,7 @@ plazap2p-v3/
         └── multimedia.yml
 ```
 
-`app/` no forma parte de la app web activa: contiene el APK publicado de PlazaP2P Android (1.0.2) con su suma SHA-256, y el registro histórico bot → wrapper TWA → app nativa. Ver [`app/README.md`](app/README.md) para el detalle, y la sección [V3.1 — Del bot a la app nativa](#v31--del-bot-a-la-app-nativa) más arriba para el resumen.
+`app/` no forma parte de la app web activa: contiene el APK publicado de PlazaP2P Android (1.1.0) con su suma SHA-256, y el registro histórico bot → wrapper TWA → app nativa. Ver [`app/README.md`](app/README.md) para el detalle, y la sección [V3.1 — Del bot a la app nativa](#v31--del-bot-a-la-app-nativa) más arriba para el resumen.
 
 ---
 
