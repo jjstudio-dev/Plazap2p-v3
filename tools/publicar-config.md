@@ -28,8 +28,8 @@ APK y de `js/signed-config.js`; la propia configuración no puede cambiarlo).
 1. Editar el JSON y subirlo a GitHub como siempre (sirve de respaldo y para arrancar).
 2. Esperar a que GitHub sirva la versión nueva y preparar los eventos **desde GitHub**:
    `node tools/preparar-eventos-firmados.mjs --desde-github > eventos-sin-firmar.json`
-3. El `content` debe ser el archivo **tal como lo sirve GitHub**, byte a byte (hoy el repositorio lo
-   guarda y lo sirve con finales de línea CRLF). Por eso se descarga de ahí y no se lee del disco.
+3. El `content` debe ser el archivo **tal como lo sirve GitHub**, byte a byte (hoy lo sirve con
+   finales de línea LF; la copia del disco puede llevar CRLF). Por eso se descarga de ahí y no se lee del disco.
 4. Firmar cada evento con la clave del mantenedor, sin cambiar `content` ni un byte:
    - con **nak** (firma los eventos tal cual, `content` incluido; no usar `-c "$(…)"`, que quita el salto de
      línea final): `jq -c '.[]' eventos-sin-firmar.json | nak event --sec <nsec o bunker://…> wss://nos.lol wss://relay.primal.net wss://relay.damus.io wss://nostr.bitcoiner.social wss://relay.nostr.net wss://nostr.mom`
