@@ -224,7 +224,8 @@ export const tests = [
         { id: 'f', title: 'Congreso futuro', location: 'Madrid', start: '2099-11-18T09:00:00', recurrente: true, aprobado: true },
         { id: 'x', title: 'Sin aprobar', start: '2099-01-01T00:00:00', aprobado: false },
       ]
-      const page = await t.open({ scenario: { events: [], fetch: [{ match: 'data/eventos\\.json', json: eventos }] } })
+      // eventos.json llega después que los relays: la pestaña ya pintada tiene que repintarse con él.
+      const page = await t.open({ scenario: { events: [], fetch: [{ match: 'data/eventos\\.json', json: eventos, delayMs: 1500 }] } })
       await page.goto(server.origin + '/index.html?tab=eventos')
       await page.waitFor(`document.querySelectorAll('#channel-eventos .event-card').length === 3`)
       const tarjetas = await page.evaluate(`[...document.querySelectorAll('#channel-eventos .event-card')].map(c => ({

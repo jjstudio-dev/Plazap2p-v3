@@ -1970,7 +1970,9 @@ async function loadStaticData() {
     staticEvents = eventosData.filter(e => e.aprobado);
     ratingsIndex = ratingsData.sellers || {};
     if (activeTab === 'vendedores') renderSellersDirectory();
-    if (activeTab === 'mercado') renderActiveChannel();
+    // Eventos también: si los relays contestaron antes que eventos.json, la
+    // pestaña quedaba pintada sin los eventos curados hasta otro repintado.
+    if (activeTab === 'mercado' || activeTab === 'eventos') renderActiveChannel();
   } catch (err) {
     console.warn('[static] Error cargando datos estáticos:', err);
   }
