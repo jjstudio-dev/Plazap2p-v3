@@ -11,34 +11,30 @@
 //      archivo de STATICS y CACHE no)
 // Regla: cada entrada de STATICS es EXACTAMENTE una URL que el navegador
 // pide de verdad. Los imports internos de ES modules van SIN query.
-const CACHE    = 'plazap2p-v3-r79';
+const CACHE    = 'plazap2p-v3-r80';
 const STATICS  = [
   './',
   './index.html',
   './publicar.html',
   // Assets versionados (los pide el HTML / versioned() con ?v=)
-  './css/style.css?v=43',
-  './css/publicar.css?v=43',
-  './css/fonts.css?v=43',
-  './js/app.js?v=43',
-  './js/app-shell.js?v=43',
-  './js/router.js?v=43',
-  './js/publicar-app.js?v=43',
-  './js/btc-stats.js?v=43',
-  './js/btc-chart.js?v=43',
-  './js/btc-market.js?v=43',
-  './js/converter.js?v=43',
-  './js/mini-converter.js?v=43',
-  './data/config.json?v=43',
-  './data/comunidades.json?v=43',
-  './data/herramientas.json?v=43',
-  './data/multimedia.json?v=43',
-  './data/eventos.json?v=43',
-  './data/mantenimiento.json?v=43',
-  // publicar-app.js pide la configuración SIN query (no lleva número de
-  // versión propio): sin esta entrada, publicar.html sin red se quedaba con
-  // los relays de reserva y sin los aspectos de valoración.
-  './data/config.json',
+  './css/style.css?v=44',
+  './css/publicar.css?v=44',
+  './css/fonts.css?v=44',
+  './js/app.js?v=44',
+  './js/app-shell.js?v=44',
+  './js/router.js?v=44',
+  './js/publicar-app.js?v=44',
+  './js/btc-stats.js?v=44',
+  './js/btc-chart.js?v=44',
+  './js/btc-market.js?v=44',
+  './js/converter.js?v=44',
+  './js/mini-converter.js?v=44',
+  './data/config.json?v=44',
+  './data/comunidades.json?v=44',
+  './data/herramientas.json?v=44',
+  './data/multimedia.json?v=44',
+  './data/eventos.json?v=44',
+  './data/mantenimiento.json?v=44',
   // Imports internos (@import CSS / ES modules, siempre sin query)
   './css/tokens.css',
   // app.js importa router.js (y este, app-shell.js) SIN query: son URLs
@@ -47,6 +43,7 @@ const STATICS  = [
   './js/router.js',
   './js/app-shell.js',
   './js/signer.js',
+  './js/config-loader.js',
   './js/publish-utils.js',
   './js/publish-builders.js',
   './js/mis-anuncios.js',

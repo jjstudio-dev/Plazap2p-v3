@@ -25,6 +25,7 @@ import { fetchReputacion } from './reputacion.js'
 import { initWallet, refreshWallet, hasWallet, payViaWallet } from './wallet-ui.js'
 import { fetchProfileMeta } from './profile.js'
 import { sendZap } from './zaps.js'
+import { loadServedConfig, FALLBACK_PUBLISH_CONFIG } from './config-loader.js'
 import { saveDraft, loadDraft, deleteDraft } from './drafts.js'
 import { uploadImage } from './media-upload.js'
 
@@ -49,10 +50,9 @@ const FORM_FIELD_IDS = [
   'tx-title', 'tx-desc', 'tx-price', 'tx-currency', 'tx-negociar', 'tx-image', 'tx-contact',
   'v-npub', 'v-comment', 'r-npub', 'r-comment',
 ]
-const FALLBACK_RELAYS = [
-  'wss://nos.lol', 'wss://relay.primal.net', 'wss://relay.damus.io',
-  'wss://nostr.mom',
-]
+// W-02: el número de versión sale de la propia URL del módulo
+// (publicar-app.js?v=43), para que config.json use el mismo que el HTML y el SW.
+const ASSET_VERSION = new URL(import.meta.url).searchParams.get('v') || ''
 
 // ── Estado ────────────────────────────────────────────────────────────────────
 
@@ -218,20 +218,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 })
 
 async function loadConfig() {
-  const ctrl = new AbortController()
-  const timer = setTimeout(() => ctrl.abort(), 6000)   // red colgada: seguir con los relays por defecto
-  try {
-    const res = await fetch('data/config.json', { signal: ctrl.signal })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const loaded = await res.json()
-    if (!loaded || typeof loaded !== 'object') throw new Error('config ilegible')
-    if (!Array.isArray(loaded.relays) || loaded.relays.length === 0) loaded.relays = FALLBACK_RELAYS
-    config = loaded
-  } catch {
-    config = { relays: FALLBACK_RELAYS, ratings: { aspects: [] } }
-  } finally {
-    clearTimeout(timer)
-  }
+  // W-02: URL versionada + configuración firmada + una sola lista de reserva,
+  // igual que index.html. Antes se creía el JSON servido tal cual.
+  config = await loadServedConfig({
+    version: ASSET_VERSION,
+    timeoutMs: 6000,
+    fallback: FALLBACK_PUBLISH_CONFIG,
+  })
 }
 
 // ── Cableado de UI ────────────────────────────────────────────────────────────

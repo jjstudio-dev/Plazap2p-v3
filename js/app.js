@@ -1,6 +1,7 @@
 import { encodeNaddr, hexToNpub, hexToNote, getTagValue, getTagValues, decodeNpub } from './nostr.js';
 import { RelayPool } from './relay-pool.js';
-import { trustServedConfig, fetchSignedConfig } from './signed-config.js';
+import { fetchSignedConfig } from './signed-config.js';
+import { loadServedConfig } from './config-loader.js';
 import { fetchReputacionBatch } from './reputacion.js';
 import { parseAnuncioHash, anuncioRoute, routeForTab } from './router.js';
 import { isBlocked, blockPubkey, unblockPubkey, listBlocked, exportBlocked, importBlocked } from './moderation.js';
@@ -14,7 +15,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '43';
+const ASSET_VERSION  = '44';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -88,33 +89,8 @@ async function init() {
 }
 
 async function loadConfig() {
-  try {
-    const res = await fetch(versioned('data/config.json'));
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const raw = await res.text();
-    // PZ-F1-01: sin firma del mantenedor no se aplican los campos sensibles.
-    config = trustServedConfig(raw, JSON.parse(raw));
-  } catch (err) {
-    console.error('[config] No se pudo cargar config.json, usando mínimos:', err);
-    config = {
-      community_tags: ['plazap2p'],
-      relays: ['wss://nos.lol', 'wss://relay.primal.net', 'wss://relay.damus.io'],
-      channels: [
-        { id: 'mercado',   kinds: [30402], label: 'Mercado',   icon: '🛒' },
-        { id: 'feed',      kinds: [1],     label: 'Feed',      icon: '💬' },
-        { id: 'articulos', kinds: [30023], label: 'Artículos', icon: '📄' },
-        { id: 'eventos',   kinds: [31922, 31923], label: 'Eventos', icon: '📅' }
-      ],
-      refresh_interval_ms: 300000,
-      categories: [
-        { id: 'venta',    label: 'Venta',    color: '#00d4ff' },
-        { id: 'compra',   label: 'Compra',   color: '#30d158' },
-        { id: 'servicio', label: 'Servicio', color: '#bf5af2' },
-        { id: 'trueque',  label: 'Trueque',  color: '#ffd60a' }
-      ],
-      publish_clients: [], nostr_clients: [], wallets: []
-    };
-  }
+  // W-02: misma carga (URL versionada + config firmada + reserva) que publicar.html.
+  config = await loadServedConfig({ version: ASSET_VERSION });
 }
 
 // PZ-F1-01: la configuración firmada (kind 30078 del mantenedor) sustituye a la servida. Los

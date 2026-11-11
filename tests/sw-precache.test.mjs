@@ -76,8 +76,10 @@ test('todo JSON local que el código pide con fetch() está precacheado', () => 
     for (const m of src.matchAll(/versioned\(\s*['"]([^'"]+)['"]\s*\)/g)) wanted.add(`${m[1]}?v=${version}`)
     for (const m of src.matchAll(/fetch(?:WithTimeout)?\(\s*['"]((?!https?:)[^'"]+)['"]/g)) wanted.add(m[1])
   }
-  assert.ok(wanted.has('data/config.json'), 'publicar-app.js pide data/config.json sin query')
-  assert.ok(wanted.has(`data/config.json?v=${version}`), 'app.js lo pide versionado')
+  assert.ok(statics.has(`data/config.json?v=${version}`), 'la configuración versionada está precacheada (W-02)')
+  assert.match(read('js/config-loader.js'), /data\/config\.json\?v=/, 'config-loader.js la pide versionada')
+  assert.doesNotMatch(read('js/publicar-app.js'), /fetch\(\s*['"]data\/config\.json/, 'publicar.html ya usa config-loader.js')
+  assert.match(read('js/publicar-app.js'), /from '\.\/config-loader\.js'/, 'publicar.html carga la configuración compartida')
   const missing = [...wanted].filter(u => !statics.has(u))
   assert.deepEqual(missing, [], `datos pedidos pero NO precacheados (faltan sin red): ${missing.join(', ')}`)
 })
