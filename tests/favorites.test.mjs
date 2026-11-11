@@ -12,7 +12,8 @@ function makeLocalStorageStub() {
 }
 globalThis.localStorage = makeLocalStorageStub()
 
-const { isFavorite, addFavorite, removeFavorite, toggleFavorite, listFavorites, favoritesCount } = await import('../js/favorites.js')
+const { isFavorite, addFavorite, removeFavorite, toggleFavorite } = await import('../js/favorites.js')
+const guardadas = () => JSON.parse(globalThis.localStorage.getItem('plazap2p_favorites') || '[]')
 
 const N1 = 'naddr1qqxnzd3cxg6nywfk8qcrjwfhxs6z6wpkxu6rvv3c'
 const N2 = 'naddr1qqzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz'
@@ -29,7 +30,7 @@ test('addFavorite: no duplica el mismo naddr', () => {
   globalThis.localStorage = makeLocalStorageStub()
   addFavorite(N1)
   addFavorite(N1)
-  assert.equal(favoritesCount(), 1)
+  assert.equal(guardadas().length, 1)
 })
 
 test('removeFavorite: quita de la lista', () => {
@@ -37,7 +38,7 @@ test('removeFavorite: quita de la lista', () => {
   addFavorite(N1)
   addFavorite(N2)
   removeFavorite(N1)
-  assert.deepEqual(listFavorites(), [N2])
+  assert.deepEqual(guardadas(), [N2])
 })
 
 test('toggleFavorite: alterna y devuelve el nuevo estado', () => {
@@ -52,7 +53,7 @@ test('addFavorite/removeFavorite/isFavorite: ignoran naddr vacío sin lanzar', (
   globalThis.localStorage = makeLocalStorageStub()
   addFavorite('')
   addFavorite(null)
-  assert.equal(favoritesCount(), 0)
+  assert.equal(guardadas().length, 0)
   assert.equal(isFavorite(''), false)
   assert.equal(isFavorite(null), false)
 })

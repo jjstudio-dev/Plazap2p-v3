@@ -1,5 +1,4 @@
-// drafts.js — Borradores locales persistentes (UX-002, ver
-// txt/PLAN_VERIFICACION_APP_PURA.md §6). Guarda el MISMO snapshot que ya usa
+// drafts.js — Borradores locales persistentes (UX-002). Guarda el MISMO snapshot que ya usa
 // publicar-app.js para no perder el formulario al saltar a Amber
 // (takeFormSnapshot/restoreFormSnapshot) — este módulo solo le da más vida
 // que la sesión de firma: sobrevive a cerrar la pestaña o recargar.
@@ -48,8 +47,4 @@ export function loadDraft(type) {
 export function deleteDraft(type) {
   if (!type) return
   try { localStorage.removeItem(keyFor(type)) } catch { /* no-op: nada que borrar si localStorage falla */ }
-}
-
-export function hasDraft(type) {
-  return loadDraft(type) !== null
 }

@@ -7,7 +7,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { sendZap, verifyZapInvoice } from '../js/zaps.js'
-import { lnAddressToInvoice } from '../js/nwc.js'
 import { SK1, PK1, PK2, signWith } from './fixtures/events.mjs'
 import { buildInvoice } from './fixtures/bolt11.mjs'
 
@@ -92,9 +91,3 @@ test('sendZap: si el servidor no admite zaps, no se pide firma ni se paga', asyn
   assert.equal(calls.length, 1, 'tampoco se pide la factura')
 })
 
-test('lnAddressToInvoice: rechaza una factura que no coincide con el importe pedido', async (t) => {
-  withLnurlServer(t, buildInvoice({ hrp: 'lnbc10m' }))
-  await assert.rejects(lnAddressToInvoice('vendedor@ln.example', 21), /no coincide con el importe/)
-  withLnurlServer(t, buildInvoice({ hrp: 'lnbc210n' }))
-  assert.ok((await lnAddressToInvoice('vendedor@ln.example', 21)).startsWith('lnbc210n1'))
-})

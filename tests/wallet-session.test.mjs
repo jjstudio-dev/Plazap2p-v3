@@ -27,7 +27,6 @@ test('por defecto nada de la wallet queda guardado de forma permanente: ni el se
   assert.ok(session.getItem('plazap2p_nwc_session').includes(CONN.secret))
   assert.equal(local.getItem('plazap2p_nwc_persist'), null)
   assert.equal(local.getItem('plazap2p_nwc_meta'), null, 'sin "recordar" tampoco se guarda qué wallet es ni su relay')
-  assert.equal(ws.isPersisted(), false)
   assert.equal(ws.loadMeta(), null)
 })
 
@@ -41,7 +40,7 @@ test('con "recordar", los metadatos persistidos no llevan el secret', () => {
 test('con "recordar" se persiste; sin él, una persistencia anterior se borra', () => {
   const { local } = install()
   ws.save(CONN, { remember: true })
-  assert.equal(ws.isPersisted(), true)
+  assert.ok(local.getItem('plazap2p_nwc_persist'))
   ws.save(CONN, { remember: false })
   assert.equal(local.getItem('plazap2p_nwc_persist'), null)
   assert.equal(local.getItem('plazap2p_nwc_meta'), null)
@@ -90,7 +89,6 @@ test('almacenamiento bloqueado por el navegador: nada lanza', () => {
   assert.doesNotThrow(() => ws.save(CONN))
   assert.equal(ws.load(), null)
   assert.equal(ws.loadMeta(), null)
-  assert.equal(ws.isPersisted(), false)
   assert.doesNotThrow(() => ws.clear())
 })
 

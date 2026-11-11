@@ -25,13 +25,6 @@ export const FALLBACK_CONFIG = {
     { id: 'eventos',   kinds: [31922, 31923], label: 'Eventos', icon: '📅' },
   ],
   refresh_interval_ms: 300000,
-  categories: [
-    { id: 'venta',    label: 'Venta',    color: '#00d4ff' },
-    { id: 'compra',   label: 'Compra',   color: '#30d158' },
-    { id: 'servicio', label: 'Servicio', color: '#bf5af2' },
-    { id: 'trueque',  label: 'Intercambio',  color: '#ffd60a' },
-  ],
-  publish_clients: [], nostr_clients: [], wallets: [],
 }
 
 /** Configuración mínima de publicar.html si no se puede leer el archivo. */

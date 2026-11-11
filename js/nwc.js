@@ -257,7 +257,6 @@ export function isOperationNotAllowed(e) {
 // ── Métodos NWC ───────────────────────────────────────────────────────────────
 
 export const getBalance   = (conn) => nwcRequest(conn, 'get_balance')                    // → { balance } msats
-export const getInfo      = (conn) => nwcRequest(conn, 'get_info')
 export const makeInvoice  = (conn, amountSats, description = '') =>
   nwcRequest(conn, 'make_invoice', { amount: Math.round(amountSats * 1000), description })  // → { invoice, ... }
 export const payInvoice   = (conn, bolt11) =>
@@ -412,35 +411,3 @@ function wordsToBytes(words) {
 }
 const wordsToUtf8 = w => { try { return new TextDecoder().decode(new Uint8Array(wordsToBytes(w))) } catch { return '' } }
 const wordsToHex = w => wordsToBytes(w).map(b => b.toString(16).padStart(2, '0')).join('')
-
-// ── LNURL-pay (lud16) para el botón "⚡ Pagar" en anuncios ───────────────────
-
-/**
- * Resuelve una Lightning address (user@dominio) a una factura BOLT11.
- * @returns {Promise<string>} bolt11
- */
-export async function lnAddressToInvoice(lud16, amountSats, comment = '') {
-  const m = /^([\w.+-]+)@([\w.-]+\.[a-z]{2,})$/i.exec(String(lud16 || '').trim())
-  if (!m) throw new Error('Lightning address inválida')
-  const metaRes = await fetch(`https://${m[2]}/.well-known/lnurlp/${m[1]}`)
-  if (!metaRes.ok) throw new Error('el servidor LNURL no respondió')
-  const meta = await metaRes.json()
-  if (meta.status === 'ERROR') throw new Error(meta.reason || 'error LNURL')
-  const msats = Math.round(amountSats * 1000)
-  if (msats < meta.minSendable || msats > meta.maxSendable)
-    throw new Error(`importe fuera de rango (${Math.ceil(meta.minSendable / 1000)}–${Math.floor(meta.maxSendable / 1000)} sats)`)
-  const cbUrl = new URL(meta.callback)
-  // Solo https: por http en claro, cualquiera en la ruta de red podría cambiar
-  // la factura por una suya del mismo importe (misma regla que zaps.js y Android).
-  if (cbUrl.protocol !== 'https:') throw new Error('callback LNURL inválido')
-  cbUrl.searchParams.set('amount', String(msats))
-  if (comment && meta.commentAllowed) cbUrl.searchParams.set('comment', comment.slice(0, meta.commentAllowed))
-  const invRes = await fetch(cbUrl)
-  if (!invRes.ok) throw new Error('el servidor LNURL no emitió la factura')
-  const inv = await invRes.json()
-  if (inv.status === 'ERROR' || !inv.pr) throw new Error(inv.reason || 'el servidor LNURL no emitió la factura')
-  // El servidor es de la otra parte: nunca devolver una factura cuyo importe
-  // no sea exactamente el solicitado.
-  if (decodeBolt11(inv.pr).amountMsats !== msats) throw new Error('la factura recibida no coincide con el importe solicitado')
-  return inv.pr
-}

@@ -1,5 +1,5 @@
 // router.js — Router hash aditivo sobre el shell de 5 destinos (CODE-016,
-// ver txt/PLAN_VERIFICACION_APP_PURA.md §19.3). NO sustituye a switchTab()
+// auditoría 2026-10). NO sustituye a switchTab()
 // ni a la sincronización ?tab= ya existente en app.js (initTabFromUrl/
 // window.switchTab) — las dos conviven: ?tab= sigue funcionando para
 // enlaces/atajos antiguos (p.ej. los shortcuts del manifest PWA), y el hash

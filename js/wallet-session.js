@@ -77,11 +77,6 @@ export function loadMeta() {
   } catch { return null }
 }
 
-/** ¿Hay un secret persistido en localStorage (opt-in "recordar")? */
-export function isPersisted() {
-  try { return !!localStorage.getItem(LS_KEY) } catch { return false }
-}
-
 /**
  * Saca del almacenamiento permanente una conexión recordada en una visita
  * anterior: sigue activa en esta pestaña, pero deja de estar escrita. La

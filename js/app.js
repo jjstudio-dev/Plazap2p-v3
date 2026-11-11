@@ -15,7 +15,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '55';
+const ASSET_VERSION  = '56';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -1210,12 +1210,6 @@ function showSkeletons(channelId, n = 6) {
     <div class="skel skel-line"></div>
     <div class="skel skel-line short"></div>
   </div>`).join('');
-}
-
-function hideSkeletons(channelId) {
-  document.getElementById(`channel-${channelId}`)
-    ?.querySelectorAll('.listing-card.skeleton')
-    .forEach(el => el.remove());
 }
 
 function showNoRelays(channelId) {

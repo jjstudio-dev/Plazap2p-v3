@@ -1,7 +1,7 @@
 // app-shell.js — Barra móvil de 5 destinos (Plaza · Explorar · Publicar · Actividad · Info)
 // El destino interno sigue llamándose "perfil" (rutas #/perfil/...), pero lo que abre es
 // información (Acerca, Nostr, Relays, App): la etiqueta visible dice "Info" (VE-W2).
-// MOB-003 (ver txt/PLAN_VERIFICACION_APP_PURA.md §19). Agrupa las 16 pestañas
+// MOB-003 (auditoría 2026-10). Agrupa las pestañas
 // existentes sin sustituir la navegación de escritorio (.main-nav) ni el
 // cambio de tab ya implementado en app.js — reutiliza window.switchTab().
 //

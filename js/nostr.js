@@ -150,14 +150,6 @@ export function decodeNpub(npub) {
   return bytes.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-export function decodeNote(note) {
-  const decoded = bech32Decode(note);
-  if (!decoded || decoded.hrp !== 'note') throw new Error('Not a note');
-  const bytes = convertBits(decoded.data, 5, 8, false);
-  if (bytes.length !== 32) throw new Error('Not a note');
-  return bytes.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
 export function getTagValue(tags, name) {
   return tags.find(t => t[0] === name)?.[1] ?? null;
 }

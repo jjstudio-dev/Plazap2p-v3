@@ -40,11 +40,3 @@ export function toggleFavorite(naddr) {
   addFavorite(naddr)
   return true
 }
-
-export function listFavorites() {
-  return load()
-}
-
-export function favoritesCount() {
-  return load().length
-}

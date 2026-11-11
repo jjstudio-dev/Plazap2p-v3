@@ -14,7 +14,7 @@ function makeLocalStorageStub() {
 }
 globalThis.localStorage = makeLocalStorageStub()
 
-const { saveDraft, loadDraft, deleteDraft, hasDraft, isSnapshotMeaningful } = await import('../js/drafts.js')
+const { saveDraft, loadDraft, deleteDraft, isSnapshotMeaningful } = await import('../js/drafts.js')
 
 const snap = (fields) => ({ fields, pills: {}, checks: [], platforms: [], selectedType: 'servicio', editingDTag: null, editingPublishedAt: null })
 
@@ -29,7 +29,7 @@ test('isSnapshotMeaningful: vacío o solo espacios → false; con contenido → 
 test('saveDraft rechaza snapshots vacíos (no ensucia el storage)', () => {
   globalThis.localStorage = makeLocalStorageStub()
   assert.equal(saveDraft('servicio', snap({})), false)
-  assert.equal(hasDraft('servicio'), false)
+  assert.equal(loadDraft('servicio'), null)
 })
 
 test('saveDraft + loadDraft: round-trip conserva el snapshot', () => {
@@ -42,12 +42,11 @@ test('saveDraft + loadDraft: round-trip conserva el snapshot', () => {
   assert.equal(typeof loaded.savedAt, 'number')
 })
 
-test('deleteDraft elimina y hasDraft pasa a false', () => {
+test('deleteDraft elimina el borrador', () => {
   globalThis.localStorage = makeLocalStorageStub()
   saveDraft('evento', snap({ 'e-title': 'Meetup' }))
-  assert.equal(hasDraft('evento'), true)
+  assert.ok(loadDraft('evento'))
   deleteDraft('evento')
-  assert.equal(hasDraft('evento'), false)
   assert.equal(loadDraft('evento'), null)
 })
 
@@ -67,6 +66,6 @@ test('los borradores son independientes por tipo', () => {
   assert.equal(loadDraft('servicio').snapshot.fields['s-title'], 'A')
   assert.equal(loadDraft('venta').snapshot.fields['tx-title'], 'B')
   deleteDraft('servicio')
-  assert.equal(hasDraft('servicio'), false)
-  assert.equal(hasDraft('venta'), true)
+  assert.equal(loadDraft('servicio'), null)
+  assert.ok(loadDraft('venta'))
 })

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import { EXPORTABLE, SENSITIVE, CACHE_ONLY, isRegistered } from '../js/storage-keys.js'
+import { EXPORTABLE, SENSITIVE, CACHE_ONLY, isRegistered } from '../tools/storage-keys.js'
 
 const JS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'js')
 

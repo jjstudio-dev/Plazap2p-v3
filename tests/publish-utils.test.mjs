@@ -3,7 +3,7 @@
 // mutación quitó la comprobación de esquema de validateUrl() y nada falló.
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { validateUrl, sanitizeContact, parseEventDate, formatStars } from '../js/publish-utils.js'
+import { validateUrl, sanitizeContact } from '../js/publish-utils.js'
 import { buildComunidad, buildHerramienta, buildServicio } from '../js/publish-builders.js'
 import { PK1 } from './fixtures/events.mjs'
 
@@ -50,13 +50,4 @@ test('sanitizeContact: quita enlaces y acortadores, conserva alias, correo y npu
   assert.equal(sanitizeContact('x'.repeat(500)).length, 200)
   assert.equal(sanitizeContact(''), null)
   assert.equal(sanitizeContact(null), null)
-})
-
-test('parseEventDate y formatStars', () => {
-  assert.equal(parseEventDate('2025-07-12T18:00Z'), Math.floor(Date.parse('2025-07-12T18:00Z') / 1000))
-  assert.equal(parseEventDate('no es fecha'), null)
-  assert.equal(parseEventDate(''), null)
-  assert.equal(formatStars(3), '⭐⭐⭐☆☆')
-  assert.equal(formatStars(99), '⭐⭐⭐⭐⭐')
-  assert.equal(formatStars(-2), '☆☆☆☆☆')
 })
