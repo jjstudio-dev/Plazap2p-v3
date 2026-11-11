@@ -124,6 +124,15 @@ function render(timedOut = false) {
       edit.addEventListener('click', () => deps.onEdit(ev))
       actions.appendChild(edit)
 
+      // W-11: republicar con nueva caducidad reutilizando el flujo de Editar.
+      if (deps.onRenovar && getTagValue(ev.tags, 'expiration')) {
+        const renew = document.createElement('button')
+        renew.type = 'button'
+        renew.textContent = '♻️ Renovar'
+        renew.addEventListener('click', () => deps.onRenovar(ev))
+        actions.appendChild(renew)
+      }
+
       // ADS-001: solo tiene sentido "vendido" para lo que se vende (mercado,
       // no eventos/comunidades/herramientas ni compra/intercambio).
       const tTags_ = ev.tags.filter(t => t[0] === 't').map(t => t[1])

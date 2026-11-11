@@ -247,6 +247,41 @@ export const tests = [
     },
   },
   {
+    name: 'un anuncio de mercado enseña cuándo caduca y se puede renovar',
+    async run(t) {
+      const server = await t.server()
+      const original = listing({
+        d: 'renovable', title: 'Anuncio renovable', summary: DESC, price: ['10', 'EUR'],
+        extraTags: [['expiration', String(now() + 10 * 86400)], ['published_at', String(now() - 1000)]],
+      })
+      const page = await t.open({ scenario: { ...identidad, events: [original] } })
+      await page.goto(`${server.origin}/publicar.html?type=venta`)
+      await page.waitFor(`!document.getElementById('publish-bar').classList.contains('hidden')`)
+      const hint = await page.text('#tx-expiration-hint')
+      t.assert.match(hint, /Tu anuncio caduca el .+ \(60 días\)\./)
+
+      // La vista previa repite la fecha antes de firmar.
+      await rellenar(page, TIPOS.venta)
+      await page.click('#btn-publicar')
+      await page.waitFor(`document.querySelector('#res-box .res-title')?.textContent.includes('Revisa antes de firmar')`)
+      t.assert.match(await page.text('#res-box'), /Caduca.+\(60 días\)/)
+
+      // Renovar desde Mis anuncios: reutiliza Editar y recalcula la caducidad.
+      await page.goto(`${server.origin}/publicar.html`)
+      await page.click('#nav-actividad')
+      await page.waitFor(`document.querySelectorAll('#ma-list .ma-item').length === 1`)
+      await page.evaluate(`[...document.querySelectorAll('#ma-list .ma-item button')].find(b => b.textContent.includes('Renovar')).click()`)
+      t.assert.equal(await page.evaluate(`document.getElementById('tx-title').value`), 'Anuncio renovable')
+      t.assert.match(await page.text('#btn-publicar'), /Renovar anuncio/)
+      const res = await publicar(page)
+      t.assert.ok(res.ok, `${res.titulo} — ${res.sub}`)
+      const ev = (await publicados(page)).at(-1)
+      t.assert.equal(tag(ev, 'd')[1], 'renovable')
+      t.assert.ok(Number(tag(ev, 'expiration')[1]) > now() + 59 * 86400, 'la caducidad se renueva al republicar')
+      t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
+  {
     name: 'Mis anuncios: editar conserva identificador y fecha; duplicar crea uno nuevo; vendido y retirar lo quitan del Mercado',
     async run(t) {
       const server = await t.server()

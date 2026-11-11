@@ -16,7 +16,7 @@ import {
   buildServicio, buildEvento, buildComunidad, buildHerramienta,
   buildTransaccion, buildValoracion, buildRetirada, buildReporte, normalizePrice,
   VALID_CATS_SERVICIO, VALID_PLATS_COMUNIDAD, VALID_CATS_HERRAMIENTA,
-  VALID_ALCANCES, VALID_CURRENCIES, VALID_REPORT_TYPES,
+  VALID_ALCANCES, VALID_CURRENCIES, VALID_REPORT_TYPES, MERCADO_EXPIRATION_DAYS,
 } from './publish-builders.js'
 import { sanitizeContact } from './publish-utils.js'
 import { allDayLastDay, shiftIsoDate } from './listing-utils.js'
@@ -361,6 +361,7 @@ function wireUi() {
     listEl: () => $('ma-list'),
     statusEl: () => $('ma-status'),
     onEdit: startEdit,
+    onRenovar: startRenovar,
     onRetirar: startRetirada,
     onDuplicar: startDuplicar,
     onMarcarVendido: startMarcarVendido,
@@ -479,7 +480,26 @@ function navigateTo(type, options = {}) {
     $('tx-form-title').textContent = TX_META[type].label
   }
   showSection(secId)
+  renderExpirationHints(type)
   $('btn-publicar').textContent = editingDTag ? '💾 Guardar cambios' : '📢 Publicar'
+}
+
+// W-11: la caducidad de 60 días deja de ser invisible.
+function expirationDateLabel(tsSec) {
+  return new Date(tsSec * 1000).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+function nextExpirationText() {
+  const ts = Math.floor(Date.now() / 1000) + MERCADO_EXPIRATION_DAYS * 86400
+  return `Tu anuncio caduca el ${expirationDateLabel(ts)} (${MERCADO_EXPIRATION_DAYS} días).`
+}
+
+function renderExpirationHints(type) {
+  const text = (type === 'servicio' || TX_META[type]) ? nextExpirationText() : ''
+  const s = $('s-expiration-hint')
+  const tx = $('tx-expiration-hint')
+  if (s) s.textContent = type === 'servicio' ? text : ''
+  if (tx) tx.textContent = TX_META[type] ? text : ''
 }
 
 // ── Identidad ─────────────────────────────────────────────────────────────────
@@ -742,6 +762,10 @@ function renderPreview(unsignedEvent, meta, queue = []) {
   addRow('Precio', priceTag ? `${priceTag[1]} ${priceTag[2] || ''}`.trim() : null)
   addRow('Contacto', getTagValue(unsignedEvent.tags, 'contact'))
   addRow('Imagen', getTagValue(unsignedEvent.tags, 'image') ? 'adjunta' : null)
+  const expRaw = getTagValue(unsignedEvent.tags, 'expiration')
+  if (expRaw && Number.isFinite(Number(expRaw))) {
+    addRow('Caduca', `${expirationDateLabel(Number(expRaw))} (${MERCADO_EXPIRATION_DAYS} días)`)
+  }
   addRow('Relays', `${(config?.relays || []).length} configurados`)
   if (queue.length) addRow('Firmas', `${1 + queue.length} — el evento cambia de tipo y hay que retirar la versión anterior`)
   card.appendChild(fields)
@@ -1597,6 +1621,13 @@ function startEdit(ev) {
   editingPublishedAt = (Number.isInteger(pubAtRaw) && pubAtRaw > 0) ? pubAtRaw : ev.created_at
   populateFormFromEvent(ev, type)
   navigateTo(type)
+}
+
+/** W-11 — Renovar: mismo flujo que Editar. Al volver a firmar, el builder
+ * recalcula `expiration` desde ahora (60 días), así que basta con confirmar. */
+function startRenovar(ev) {
+  startEdit(ev)
+  if (editingDTag) $('btn-publicar').textContent = '♻️ Renovar anuncio'
 }
 
 /** ADS-001 — Duplicar: parte de un anuncio propio (activo o no) para publicar

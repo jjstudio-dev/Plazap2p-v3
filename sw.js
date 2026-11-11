@@ -11,30 +11,30 @@
 //      archivo de STATICS y CACHE no)
 // Regla: cada entrada de STATICS es EXACTAMENTE una URL que el navegador
 // pide de verdad. Los imports internos de ES modules van SIN query.
-const CACHE    = 'plazap2p-v3-r90';
+const CACHE    = 'plazap2p-v3-r91';
 const STATICS  = [
   './',
   './index.html',
   './publicar.html',
   // Assets versionados (los pide el HTML / versioned() con ?v=)
-  './css/style.css?v=51',
-  './css/publicar.css?v=51',
-  './css/fonts.css?v=51',
-  './js/app.js?v=51',
-  './js/app-shell.js?v=51',
-  './js/router.js?v=51',
-  './js/publicar-app.js?v=51',
-  './js/btc-stats.js?v=51',
-  './js/btc-chart.js?v=51',
-  './js/btc-market.js?v=51',
-  './js/converter.js?v=51',
-  './js/mini-converter.js?v=51',
-  './data/config.json?v=51',
-  './data/comunidades.json?v=51',
-  './data/herramientas.json?v=51',
-  './data/multimedia.json?v=51',
-  './data/eventos.json?v=51',
-  './data/mantenimiento.json?v=51',
+  './css/style.css?v=52',
+  './css/publicar.css?v=52',
+  './css/fonts.css?v=52',
+  './js/app.js?v=52',
+  './js/app-shell.js?v=52',
+  './js/router.js?v=52',
+  './js/publicar-app.js?v=52',
+  './js/btc-stats.js?v=52',
+  './js/btc-chart.js?v=52',
+  './js/btc-market.js?v=52',
+  './js/converter.js?v=52',
+  './js/mini-converter.js?v=52',
+  './data/config.json?v=52',
+  './data/comunidades.json?v=52',
+  './data/herramientas.json?v=52',
+  './data/multimedia.json?v=52',
+  './data/eventos.json?v=52',
+  './data/mantenimiento.json?v=52',
   // Imports internos (@import CSS / ES modules, siempre sin query)
   './css/tokens.css',
   // app.js importa router.js (y este, app-shell.js) SIN query: son URLs

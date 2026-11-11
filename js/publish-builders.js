@@ -113,7 +113,7 @@ function assembleEvent(kind, tags, content, userPubHex, dTag = null, publishedAt
 // ADS-002: solo los anuncios de "mercado" caducan (evita listados fantasma);
 // comunidades/herramientas son directorio curado, sin fecha de caducidad —
 // y los eventos ya tienen su propio fin vía NIP-52 start/end.
-const MERCADO_EXPIRATION_DAYS = 60
+export const MERCADO_EXPIRATION_DAYS = 60
 
 // ── buildServicio ─────────────────────────────────────────────────────────────
 // Schema (mismo que publish.js del bot, sin alias):
