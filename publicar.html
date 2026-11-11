@@ -26,8 +26,8 @@
   <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/fonts.css?v=42">
-  <link rel="stylesheet" href="css/publicar.css?v=42">
+  <link rel="stylesheet" href="css/fonts.css?v=43">
+  <link rel="stylesheet" href="css/publicar.css?v=43">
 </head>
 <body>
 
@@ -635,6 +635,13 @@
       </div>
 
       <button class="btn-primary" id="btn-send-zap" type="button">⚡ Enviar zap</button>
+
+      <div id="zap-confirm-box" class="res-card hidden" style="margin-top:12px;text-align:left">
+        <div class="res-title" id="zap-confirm-summary">.</div>
+        <button class="btn-primary" id="zap-btn-confirm" type="button">⚡ Confirmar pago</button>
+        <button class="btn-secondary" id="zap-btn-cancel" type="button">Cancelar</button>
+      </div>
+
       <div class="f-error" id="err-zap"></div>
       <div id="zap-result" class="res-sub hidden"></div>
     </div>
@@ -790,6 +797,6 @@
   </button>
 </nav>
 
-<script type="module" src="js/publicar-app.js?v=42"></script>
+<script type="module" src="js/publicar-app.js?v=43"></script>
 </body>
 </html>

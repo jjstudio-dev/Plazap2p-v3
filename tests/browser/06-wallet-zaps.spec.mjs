@@ -296,10 +296,36 @@ export const tests = [
       await page.fill('#z-amount', String(sats))
       await page.fill('#z-comment', '¡Gracias!')
       await page.click('#btn-send-zap')
+      await page.waitFor(visible('zap-confirm-box'), { label: 'revisión del zap' })
+      await page.click('#zap-btn-confirm')
     }
     const buena = buildInvoice({ hrp: 'lnbc210n' })   // 21 sats
 
     return [
+      {
+        name: 'zap: un clic no paga; dos clics sí',
+        async run(t) {
+          const page = await abrirZap(t, base({ behaviors: { ...OK, pay_invoice: { result: { preimage: 'ab'.repeat(32) } } } },
+            { sessionStorage: SESSION, events: [vendedor], fetch: lnurl(buena) }))
+          await page.waitFor(visible('zap-form-fields'))
+          await page.fill('#z-amount', '21')
+          await page.click('#btn-send-zap')
+          await page.waitFor(visible('zap-confirm-box'), { label: 'revisión del zap' })
+          t.assert.match(await page.text('#zap-confirm-summary'), /Vas a enviar 21 sats a Vendedora \(vendedora@pagos\.test\)/)
+          t.assert.ok(!(await calls(page)).includes('pay_invoice'), 'el primer clic no paga')
+          t.assert.equal((await page.evaluate('window.__fetchLog')).filter(f => f.url.includes('/cb')).length, 0, 'ni pide factura')
+          // Cancelar cierra la revisión y no paga.
+          await page.click('#zap-btn-cancel')
+          t.assert.equal(await page.evaluate(visible('zap-confirm-box')), false)
+          t.assert.ok(!(await calls(page)).includes('pay_invoice'), 'cancelar no paga')
+          // Segundo intento: revisar y confirmar.
+          await page.click('#btn-send-zap')
+          await page.waitFor(visible('zap-confirm-box'))
+          await page.click('#zap-btn-confirm')
+          await page.waitFor(visible('zap-result'), { timeout: 9000, label: 'zap enviado' })
+          t.assert.equal((await calls(page)).filter(m => m === 'pay_invoice').length, 1)
+        },
+      },
       {
         name: 'zap: firma la petición con la identidad, paga la factura exacta y lo confirma',
         async run(t) {
@@ -374,7 +400,9 @@ export const tests = [
             { sessionStorage: SESSION, events: [vendedor], fetch: lnurl(buena) }))
           await page.waitFor(visible('zap-form-fields'))
           await page.fill('#z-amount', '21')
-          await page.evaluate(`(() => { const b = document.getElementById('btn-send-zap'); b.click(); b.click(); b.click() })()`)
+          await page.click('#btn-send-zap')
+          await page.waitFor(visible('zap-confirm-box'))
+          await page.evaluate(`(() => { const b = document.getElementById('zap-btn-confirm'); b.click(); b.click(); b.click() })()`)
           await page.waitFor(visible('zap-result'), { timeout: 9000 })
           t.assert.equal((await calls(page)).filter(m => m === 'pay_invoice').length, 1)
           t.assert.equal((await page.evaluate('window.__fetchLog')).filter(f => f.url.includes('/cb')).length, 1)

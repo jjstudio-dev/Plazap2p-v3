@@ -73,7 +73,9 @@ let valorarRefFor = null     // ...válida solo mientras v-npub siga siendo ESTE
 let reportRefTag = null      // MOD-002: misma idea que valorarRefTag, para sec-reportar
 let zapTargetHex = null      // ZAP-001: pubkey del receptor de la sección zap actualmente abierta
 let zapTargetLud16 = null
+let zapTargetLabel = null    // W-01: nombre (o npub corto) que se muestra en la revisión del pago
 let zapRefTag = null
+let zapPending = null        // W-01: importe y comentario confirmados, a la espera del segundo clic
 
 /** REP-002: naddr de ?ref= → tag 'a' `<kind>:<pubkey>:<d>`, o null si no hay/está roto. */
 function parseValorarRef(naddrRaw) {
@@ -304,6 +306,8 @@ function wireUi() {
 
   // Zap (ZAP-001)
   $('btn-send-zap').addEventListener('click', submitZap)
+  $('zap-btn-confirm').addEventListener('click', confirmZap)
+  $('zap-btn-cancel').addEventListener('click', cancelZap)
   $('zap-btn-goto-wallet').addEventListener('click', () => openPerfil('wallet'))
 
   // Bottom nav — 5 destinos alineados con el shell de index.html (MOB-002).
@@ -1391,11 +1395,14 @@ async function openZap(recipientHex, refTag) {
   showSection('sec-zap')
   zapTargetHex = recipientHex
   zapTargetLud16 = null
+  zapTargetLabel = null
+  zapPending = null
   zapRefTag = refTag
   $('zap-target-info').textContent = `Enviando a ${hexToNpub(recipientHex).slice(0, 20)}…`
   $('zap-form-fields').classList.add('hidden')
   $('zap-no-wallet').classList.add('hidden')
   $('zap-no-lud16').classList.add('hidden')
+  $('zap-confirm-box').classList.add('hidden')
   setErr('err-zap', '')
   $('zap-result').classList.add('hidden')
 
@@ -1417,7 +1424,8 @@ async function openZap(recipientHex, refTag) {
     return
   }
   zapTargetLud16 = profile.lud16
-  $('zap-target-info').textContent = `Enviando a ${profile.displayName || profile.name || hexToNpub(recipientHex).slice(0, 20) + '…'} (${profile.lud16})`
+  zapTargetLabel = profile.displayName || profile.name || null
+  $('zap-target-info').textContent = `Enviando a ${zapTargetLabel || hexToNpub(recipientHex).slice(0, 20) + '…'} (${profile.lud16})`
   $('zap-form-fields').classList.remove('hidden')
 }
 
@@ -1438,9 +1446,34 @@ async function submitZap() {
   setErr('err-zap', '')
   setErr('err-z-amount', '')   // si no, el aviso de un intento anterior se queda puesto (VW2-06)
   $('zap-result').classList.add('hidden')
+  $('zap-confirm-box').classList.add('hidden')
+  zapPending = null
   const amountSats = Number($('z-amount').value)
   if (!Number.isInteger(amountSats) || amountSats <= 0) { setErr('err-z-amount', 'Importe inválido (sats enteros)'); return }
   if (!zapTargetHex || !zapTargetLud16) { setErr('err-zap', 'Falta el destinatario o su lightning address'); return }
+
+  // W-01: el primer clic solo revisa. El pago se hace en confirmZap().
+  zapPending = { amountSats, comment: val('z-comment') }
+  const destino = zapTargetLabel ? `${zapTargetLabel} (${zapTargetLud16})` : zapTargetLud16
+  $('zap-confirm-summary').textContent =
+    `Vas a enviar ${amountSats.toLocaleString('es-ES')} sats a ${destino}. ¿Confirmas el pago?`
+  $('zap-confirm-box').classList.remove('hidden')
+  $('zap-btn-confirm').focus()
+}
+
+function cancelZap() {
+  zapPending = null
+  $('zap-confirm-box').classList.add('hidden')
+  setErr('err-zap', '')
+}
+
+async function confirmZap() {
+  if (!zapPending) return
+  const { amountSats, comment } = zapPending
+  zapPending = null
+  setErr('err-zap', '')
+  $('zap-result').classList.add('hidden')
+  $('zap-confirm-box').classList.add('hidden')
 
   const btn = $('btn-send-zap')
   btn.disabled = true
@@ -1451,7 +1484,7 @@ async function submitZap() {
       recipientLud16: zapTargetLud16,
       amountMsats: amountSats * 1000,
       relays: config.relays,
-      comment: val('z-comment'),
+      comment,
       addressableRef: (zapRefTag && /^\d+:[0-9a-f]{64}:.*$/i.test(zapRefTag)) ? zapRefTag : null,
     }, userPubkey, signZapRequestChecked, null, (_conn, bolt11) => payViaWallet(bolt11))
 
