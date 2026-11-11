@@ -301,6 +301,28 @@ export const tests = [
     },
   },
   {
+    name: 'el botón central Publicar abre el asistente, y la cabecera enlaza a Mis anuncios y Wallet',
+    async run(t) {
+      const server = await t.server()
+      const desktop = await t.open({ scenario: { events: mundo() } })
+      await desktop.goto(server.origin + '/index.html')
+      const enlaces = await desktop.evaluate(`[...document.querySelectorAll('header a')].map(a => a.getAttribute('href'))`)
+      t.assert.ok(enlaces.includes('publicar.html?seccion=misanuncios'), 'cabecera: Mis anuncios')
+      t.assert.ok(enlaces.includes('publicar.html?seccion=wallet'), 'cabecera: Wallet')
+
+      const movil = await t.open({ scenario: { events: mundo() }, viewport: { width: 375, height: 800, mobile: true } })
+      await movil.goto(server.origin + '/index.html')
+      await movil.click('.mbn-btn--central')
+      await movil.waitFor(`location.pathname.endsWith('/publicar.html')`, { timeout: 9000, label: 'publicar.html desde el botón central' })
+
+      const wallet = await t.open({ scenario: { events: mundo() } })
+      await wallet.goto(server.origin + '/publicar.html?seccion=wallet')
+      await wallet.waitFor(`!document.getElementById('sec-wallet').classList.contains('hidden')`, { label: 'sección Wallet' })
+      await wallet.goto(server.origin + '/publicar.html?seccion=misanuncios')
+      await wallet.waitFor(`!document.getElementById('sec-identidad').classList.contains('hidden')`, { label: 'identidad si no hay clave' })
+    },
+  },
+  {
     name: 'un enlace a un anuncio que no existe avisa a los 8 s en vez de esperar siempre',
     async run(t) {
       const server = await t.server()

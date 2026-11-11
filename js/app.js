@@ -15,7 +15,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '50';
+const ASSET_VERSION  = '51';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -1246,7 +1246,7 @@ function showEmpty(channelId) {
     <div class="empty-icon">${esc(ch?.icon || '📡')}</div>
     <p class="empty-title">Sin contenido aún</p>
     <p class="empty-sub">Publica en Nostr con el tag <code>#${esc(tag)}</code> y aparecerá aquí.</p>
-    <button class="btn-primary" onclick="switchTab('publicar')">¿Cómo aparecer?</button>
+    <a class="btn-primary" href="publicar.html">Publicar en PlazaP2P</a>
   </div>`;
 }
 

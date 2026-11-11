@@ -35,8 +35,8 @@
   <meta name="twitter:title" content="PlazaP2P — Economía Circular P2P en Nostr" />
   <meta name="twitter:description" content="Mercado, comunidad y recursos Bitcoin sobre Nostr. Publicaciones abiertas, sin registro y sin intermediarios." />
   <link rel="canonical" href="https://jjstudio-dev.github.io/Plazap2p-v3/" />
-  <link rel="stylesheet" href="css/fonts.css?v=50" />
-  <link rel="stylesheet" href="css/style.css?v=50" />
+  <link rel="stylesheet" href="css/fonts.css?v=51" />
+  <link rel="stylesheet" href="css/style.css?v=51" />
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg" />
@@ -81,6 +81,8 @@
     </div>
 
     <button class="btn-donar" id="btn-donar-header" onclick="window.openDonarModal?.()" title="Apoyar el proyecto" style="display:none">♥</button>
+    <a href="publicar.html?seccion=misanuncios" class="header-github header-only-desktop">📋 Mis anuncios</a>
+    <a href="publicar.html?seccion=wallet" class="header-github header-only-desktop">⚡ Wallet</a>
     <a href="https://github.com/jjstudio-dev/Plazap2p-v3" target="_blank" rel="noopener" class="header-github">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
       GitHub
@@ -1504,15 +1506,15 @@
 <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <!-- ESM module — app.js imports nostr.js and relay-pool.js -->
-<script type="module" src="js/app.js?v=50"></script>
+<script type="module" src="js/app.js?v=51"></script>
 <script type="module">
-  import { initBtcStats }      from './js/btc-stats.js?v=50';
-  import { initPriceChart }    from './js/btc-chart.js?v=50';
-  import { initConverter }     from './js/converter.js?v=50';
-  import { initMiniConverter } from './js/mini-converter.js?v=50';
-  import { initBtcMarket }     from './js/btc-market.js?v=50';
-  import { initAppShell }      from './js/app-shell.js?v=50';
-  import { initRouter }        from './js/router.js?v=50';
+  import { initBtcStats }      from './js/btc-stats.js?v=51';
+  import { initPriceChart }    from './js/btc-chart.js?v=51';
+  import { initConverter }     from './js/converter.js?v=51';
+  import { initMiniConverter } from './js/mini-converter.js?v=51';
+  import { initBtcMarket }     from './js/btc-market.js?v=51';
+  import { initAppShell }      from './js/app-shell.js?v=51';
+  import { initRouter }        from './js/router.js?v=51';
 
   initAppShell();
   initRouter();

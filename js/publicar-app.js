@@ -210,6 +210,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     return
   }
 
+  // 3e. Accesos directos de la cabecera de escritorio (?seccion=…, W-10).
+  const seccion = params.get('seccion')
+  if (seccion === 'misanuncios') { openActividad('misanuncios'); return }
+  if (seccion === 'wallet') { openPerfil('wallet'); return }
+
   // 4. Routing normal (deep link ?type=servicio como el mini-app)
   const rawType = params.get('type') ?? ''
   if (userPubkey && VALID_TYPES.includes(rawType)) navigateTo(rawType)

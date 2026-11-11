@@ -13,7 +13,7 @@ export const GROUPS = {
   explorar:  { tabs: ['feed', 'articulos', 'eventos', 'comunidades', 'herramientas', 'multimedia', 'bitcoin'], default: 'feed' },
   publicar:  { tabs: ['publicar'], default: 'publicar' },
   actividad: { external: 'publicar.html' },
-  perfil:    { tabs: ['acerca', 'nostr', 'relays', 'app-android'], default: 'acerca' },
+  perfil:    { tabs: ['acerca', 'nostr', 'relays', 'app-android', 'publicar'], default: 'acerca' },
 };
 
 const CHIP_LABELS = {
@@ -22,6 +22,7 @@ const CHIP_LABELS = {
   feed: '💬 Feed', articulos: '📄 Artículos', eventos: '📅 Eventos', comunidades: '🏘 Comunidades',
   herramientas: '🔧 Herramientas', multimedia: '🎙 Multimedia', bitcoin: '₿ Bitcoin',
   acerca: '📋 Acerca', nostr: '⚡ Nostr', relays: '🔗 Relays', 'app-android': '📱 App',
+  publicar: '✍️ Cómo aparecer',
 };
 
 const ALL_TABS = Object.values(GROUPS).flatMap(g => g.tabs || []);
@@ -55,6 +56,9 @@ function renderChips(dest, activeTab) {
 function onShellNav(dest) {
   const g = GROUPS[dest];
   if (!g) return;
+  // W-10: el botón central Publicar abre el asistente real, no la pestaña
+  // informativa «Cómo aparecer» (esa sigue en Info).
+  if (dest === 'publicar') { window.location.href = 'publicar.html'; return; }
   if (g.external) { window.location.href = g.external; return; }
   window.switchTab(g.default);
 }
