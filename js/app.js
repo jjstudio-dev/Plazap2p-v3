@@ -15,7 +15,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '54';
+const ASSET_VERSION  = '55';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -1910,6 +1910,18 @@ function resolveIntercambioConfig() {
     }
     return /^[0-9a-f]{64}$/i.test(pk) ? pk.toLowerCase() : null;
   }).filter(Boolean);
+  applyIntercambioModeUi();
+}
+
+/** W-14: sin instancias de confianza no hay «modo Comunidad» que ofrecer. */
+function applyIntercambioModeUi() {
+  const hasTrusted = trustedMostroHexPubkeys.length > 0;
+  if (!hasTrusted) intercambioShowAll = true;
+  const comunidad = document.getElementById('btn-inter-comunidad');
+  const red = document.getElementById('btn-inter-red');
+  comunidad?.classList.toggle('hidden', !hasTrusted);
+  comunidad?.classList.toggle('active', hasTrusted && !intercambioShowAll);
+  red?.classList.toggle('active', !hasTrusted || intercambioShowAll);
 }
 
 function renderIntercambioOrders(grid) {
@@ -1934,15 +1946,10 @@ function renderIntercambioOrders(grid) {
   const buyOrders  = orders.filter(o => o.orderType === 'buy');   // maker wants to buy BTC → taker can sell
   const sellOrders = orders.filter(o => o.orderType === 'sell');  // maker wants to sell BTC → taker can buy
 
-  const noTrustNote = (!hasTrusted && !intercambioShowAll)
-    ? `<div class="intercambio-no-trust-note">Sin instancias de confianza configuradas — mostrando toda la red. Añade pubkeys de bots Mostro en <code>config.json → intercambio.trustedMostroInstances</code> para filtrar por comunidad.</div>`
-    : '';
-
   const emptyCol = (label) =>
     `<div class="intercambio-col-empty">Sin órdenes de ${esc(label)} ahora mismo.</div>`;
 
   grid.innerHTML = `
-    ${noTrustNote}
     <div class="intercambio-book-inner">
       <div class="intercambio-col intercambio-col--buy">
         <div class="intercambio-col-header">
@@ -1996,9 +2003,10 @@ function renderOrderCard(o) {
 }
 
 window.setIntercambioMode = function(showAll) {
+  // W-14: si no hay instancias de confianza, «Comunidad» no existe.
+  if (!showAll && trustedMostroHexPubkeys.length === 0) showAll = true;
   intercambioShowAll = showAll;
-  document.getElementById('btn-inter-comunidad')?.classList.toggle('active', !showAll);
-  document.getElementById('btn-inter-red')?.classList.toggle('active', showAll);
+  applyIntercambioModeUi();
   if (activeTab === 'intercambio') renderActiveChannel();
 };
 

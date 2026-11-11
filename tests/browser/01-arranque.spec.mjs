@@ -323,6 +323,21 @@ export const tests = [
     },
   },
   {
+    name: 'sin instancias de confianza, Intercambio solo ofrece toda la red',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: { events: [order()] } })
+      await page.goto(server.origin + '/index.html')
+      await page.click('.nav-tab[data-tab="intercambio"]')
+      await page.waitFor(`!document.getElementById('tab-intercambio').classList.contains('hidden')`)
+      t.assert.equal(await page.evaluate(`document.getElementById('btn-inter-comunidad').classList.contains('hidden')`), true)
+      t.assert.equal(await page.evaluate(`document.getElementById('btn-inter-red').classList.contains('active')`), true)
+      const texto = await page.evaluate(`document.getElementById('tab-intercambio').innerText`)
+      t.assert.doesNotMatch(texto, /trustedMostroInstances|config\.json/, 'sin jerga técnica')
+      t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
+  {
     name: 'un enlace a un anuncio que no existe avisa a los 8 s en vez de esperar siempre',
     async run(t) {
       const server = await t.server()
