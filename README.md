@@ -253,7 +253,7 @@ Si PlazaP2P te ayuda a encontrar comunidad, mover economía circular o publicar 
 
 ## Licencia
 
-MIT — libre para usar, modificar y redistribuir manteniendo el aviso de copyright.
+MIT para el código: libre para usar, modificar y redistribuir manteniendo el aviso de copyright. Los contenidos (textos, guías y datos del directorio) se publican bajo CC BY 4.0.
 
 ---
 

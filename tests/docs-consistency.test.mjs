@@ -58,6 +58,18 @@ test('el README no anuncia como disponible lo que ninguna página carga', () => 
   }
 })
 
+test('la licencia es la misma en LICENSE, README y la web (W-12)', () => {
+  assert.match(read('LICENSE'), /^MIT License/m, 'LICENSE debe ser MIT')
+  for (const file of ['README.md', 'index.html']) {
+    const src = read(file)
+    assert.match(src, /MIT/, `${file} debe decir que el código es MIT`)
+    assert.match(src, /CC BY 4\.0/, `${file} debe atribuir CC BY 4.0 a los contenidos`)
+  }
+  const visible = index.replace(/<!--[\s\S]*?-->/g, '')
+  assert.doesNotMatch(visible, /código abierto \(CC BY 4\.0\)/i, 'el código no puede presentarse como CC BY')
+  assert.doesNotMatch(visible, /licencia CC BY 4\.0[^.]*forkear/i, 'CC BY no puede atribuirse al código')
+})
+
 test('la web no presenta el filtro de 30 días como una protección de la reputación', () => {
   // La fecha de un evento Nostr la escribe quien lo firma: una clave creada hoy
   // pasa el filtro con una nota de fecha atrasada (auditoría 2026-10, W4-01).

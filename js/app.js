@@ -15,7 +15,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '52';
+const ASSET_VERSION  = '53';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
