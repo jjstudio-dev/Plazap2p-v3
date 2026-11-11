@@ -304,6 +304,33 @@ export const tests = [
     },
   },
   {
+    name: 'F7-05: aviso opcional en el muro — desmarcado por defecto; marcado añade una nota que enlaza al anuncio',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: identidad })
+      await page.goto(`${server.origin}/publicar.html?type=venta`)
+      await page.waitFor(`!document.getElementById('publish-bar').classList.contains('hidden')`)
+      await rellenar(page, TIPOS.venta)
+      await page.click('#btn-publicar')
+      await page.waitFor(`document.getElementById('chk-aviso-muro')`, { label: 'casilla del muro' })
+      t.assert.equal(await page.evaluate(`document.getElementById('chk-aviso-muro').checked`), false, 'desmarcada por defecto')
+      await page.evaluate(`document.getElementById('chk-aviso-muro').click()`)
+      await page.click('#res-box .res-actions .btn-primary')
+      await page.waitFor(`document.querySelector('#res-box .res-title')?.textContent.includes('Paso 1 de 2')`, { timeout: 12000 })
+      t.assert.match(await page.text('#res-box'), /aviso para tu muro/)
+      await page.evaluate(`[...document.querySelectorAll('#res-box button')].find(b => b.textContent.includes('Firmar paso')).click()`)
+      await page.waitFor(`document.querySelector('#res-box .res-title')?.textContent.includes('anunciado en tu muro')`, { timeout: 12000 })
+      const evs = await publicados(page)
+      const anuncio = evs.find(e => e.kind === 30402)
+      const nota = evs.find(e => e.kind === 1)
+      t.assert.ok(anuncio && nota, 'se publican el anuncio y la nota')
+      t.assert.deepEqual(tag(nota, 'a'), ['a', `30402:${PK1}:${tag(anuncio, 'd')[1]}`])
+      t.assert.match(nota.content, /#\/anuncio\/naddr1/)
+      t.assert.ok(await page.evaluate(`!!document.querySelector('#res-box a[href^="./#/anuncio/naddr1"]')`), 'el resultado enlaza al anuncio')
+      t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
+  {
     name: 'F7-01: se elige cuánto dura el anuncio, también «hasta que lo retire»',
     async run(t) {
       const server = await t.server()

@@ -402,6 +402,40 @@ export function buildTransaccion(data, userPubHex, dTag = null, publishedAt = nu
   return { ok: true, unsignedEvent, dTag: uid }
 }
 
+// ── buildAvisoMuro — kind 1 (F7-05) ──────────────────────────────────────────
+// Nota corta opcional que anuncia un anuncio o evento recién publicado en el
+// muro de quien publica: las apps sociales (Damus, Primal, Amethyst…) no
+// muestran clasificados NIP-99 ni eventos NIP-52, pero sí notas. Enlaza a la
+// web de PlazaP2P (que abre el anuncio) y lo referencia con `a`.
+// Schema: { kind, dTag, naddr, title, price?, currency? }
+
+export function buildAvisoMuro(data, userPubHex) {
+  const pkErr = validatePubkey(userPubHex)
+  if (pkErr) return { ok: false, error: pkErr }
+  const baseErr = validateBase(data)
+  if (baseErr) return { ok: false, error: baseErr }
+  if (![30402, 31922, 31923].includes(data.kind)) return { ok: false, error: 'solo se anuncian anuncios y eventos' }
+  if (!data.dTag || typeof data.dTag !== 'string') return { ok: false, error: 'falta el identificador del anuncio' }
+  if (!/^naddr1[0-9a-z]+$/.test(String(data.naddr || ''))) return { ok: false, error: 'falta el enlace del anuncio' }
+  const titleErr = validateTitle(data.title, 1, 200)
+  if (titleErr) return { ok: false, error: titleErr }
+
+  const priceTxt = data.price ? ` — ${data.price}${data.currency ? ' ' + data.currency : ''}` : ''
+  const lead = data.kind === 30402 ? '📢' : '📅'
+  const content = `${lead} ${String(data.title).trim()}${priceTxt}\n\n${CLIENT_URL}#/anuncio/${data.naddr}\n\n#plazap2p`
+  const pubkey = String(userPubHex).toLowerCase()
+  return {
+    ok: true,
+    unsignedEvent: {
+      kind: 1,
+      created_at: Math.floor(Date.now() / 1000),
+      tags: [['t', 'plazap2p'], ['a', `${data.kind}:${pubkey}:${data.dTag}`], CLIENT_TAG],
+      content,
+      pubkey,
+    },
+  }
+}
+
 // ── buildValoracion — kind 1985 (NIP-32) ─────────────────────────────────────
 // Port de publishLabel (bot/src/nostr.js) firmado por el usuario.
 // Sin tag proof (existía para trazar el Telegram ID; aquí el autor es el rater

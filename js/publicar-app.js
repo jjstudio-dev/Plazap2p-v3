@@ -15,7 +15,7 @@ import { encodeNaddr, decodeNaddr, getTagValue, getTagValues, hexToNpub } from '
 import * as signer from './signer.js'
 import {
   buildServicio, buildEvento, buildComunidad, buildHerramienta,
-  buildTransaccion, buildValoracion, buildRetirada, buildReporte, normalizePrice,
+  buildTransaccion, buildValoracion, buildRetirada, buildReporte, normalizePrice, buildAvisoMuro,
   VALID_CATS_SERVICIO, VALID_PLATS_COMUNIDAD, VALID_CATS_HERRAMIENTA,
   VALID_ALCANCES, VALID_CURRENCIES, VALID_REPORT_TYPES,
   DURATION_OPTIONS, DEFAULT_DURATION_DAYS, NO_EXPIRATION, durationDaysOf,
@@ -825,19 +825,55 @@ function renderPreview(unsignedEvent, meta, queue = []) {
   })
   actions.appendChild(editBtn)
 
+  // F7-05: aviso opcional en el muro. Solo al publicar algo nuevo (no al
+  // editar ni en cambios que ya llevan más firmas) y desmarcado por defecto:
+  // lo verán los seguidores de quien publica.
+  let wallCheck = null
+  if (!meta.editing && !queue.length && meta.dTag && [30402, 31922, 31923].includes(unsignedEvent.kind)
+      && (durationGroupFor(meta.type) || meta.type === 'evento')) {
+    const label = document.createElement('label')
+    label.className = 'negociar-label res-wall'
+    wallCheck = document.createElement('input')
+    wallCheck.type = 'checkbox'
+    wallCheck.id = 'chk-aviso-muro'
+    label.append(wallCheck, ' 📣 Anunciarlo también en mi muro: una nota con el título y el enlace que verán tus seguidores en Damus, Primal, Amethyst… (una firma más)')
+    card.appendChild(label)
+  }
+
   const confirmBtn = document.createElement('button')
   confirmBtn.className = 'btn-primary'
   confirmBtn.type = 'button'
   confirmBtn.textContent = '🔑 Confirmar y firmar'
   confirmBtn.addEventListener('click', () => {
     confirmBtn.disabled = true
-    signAndPublish(unsignedEvent, meta, queue)
+    const fullQueue = [...queue]
+    if (wallCheck?.checked) {
+      const aviso = buildWallNote(unsignedEvent, meta)
+      if (aviso) fullQueue.push(aviso)
+    }
+    signAndPublish(unsignedEvent, meta, fullQueue)
   })
   actions.appendChild(confirmBtn)
 
   card.appendChild(actions)
   box.appendChild(card)
   showSection('sec-resultado')
+}
+
+/** F7-05: la nota kind 1 que anuncia `unsignedEvent` (aún sin firmar: su
+ * dirección kind:pubkey:d ya se conoce). null si no se puede construir. */
+function buildWallNote(unsignedEvent, meta) {
+  let naddr = null
+  try {
+    naddr = encodeNaddr({ kind: unsignedEvent.kind, pubkey: unsignedEvent.pubkey, identifier: meta.dTag, relays: (config?.relays || []).slice(0, 3) })
+  } catch { return null }
+  const price = unsignedEvent.tags.find(t => t[0] === 'price')
+  const built = buildAvisoMuro({
+    kind: unsignedEvent.kind, dTag: meta.dTag, naddr,
+    title: getTagValue(unsignedEvent.tags, 'title'),
+    price: price?.[1], currency: price?.[2],
+  }, userPubkey)
+  return built.ok ? built.unsignedEvent : null
 }
 
 function runBuilder(type, payload) {
@@ -993,7 +1029,9 @@ async function broadcastAndReportInner(signedEvent, pending) {
         ok: true, title: `Paso ${done} de ${total} publicado`,
         sub: next.kind === 5
           ? 'Falta firmar la solicitud de borrado (kind 5) para completar la retirada.'
-          : 'Falta firmar la retirada de la versión anterior del evento.',
+          : next.kind === 1
+            ? 'Tu anuncio ya está publicado. Falta firmar el aviso para tu muro (si lo cancelas, el anuncio sigue publicado).'
+            : 'Falta firmar la retirada de la versión anterior del evento.',
         results,
         nextInQueue: { unsignedEvent: next, meta: pending.meta, queue: rest, label: `✍️ Firmar paso ${done + 1} de ${total}` },
       })
@@ -1001,10 +1039,15 @@ async function broadcastAndReportInner(signedEvent, pending) {
     }
 
     const isAnuncio = signedEvent.kind === 30402 || signedEvent.kind === 31922 || signedEvent.kind === 31923
-    const dTag = getTagValue(signedEvent.tags, 'd')
+    // F7-05: tras el aviso del muro (kind 1) el enlace es el del anuncio al que apunta.
+    const wallCoord = signedEvent.kind === 1 ? getTagValue(signedEvent.tags, 'a') : null
+    const [coordKind, , ...coordRest] = wallCoord ? wallCoord.split(':') : []
+    const coordD = coordRest.join(':')
+    const dTag = isAnuncio ? getTagValue(signedEvent.tags, 'd') : coordD
+    const naddrKind = isAnuncio ? signedEvent.kind : Number(coordKind)
     let naddr = null
-    if (isAnuncio && dTag) {
-      try { naddr = encodeNaddr({ kind: signedEvent.kind, pubkey: signedEvent.pubkey, identifier: dTag, relays: config.relays.slice(0, 3) }) }
+    if ((isAnuncio || wallCoord) && dTag) {
+      try { naddr = encodeNaddr({ kind: naddrKind, pubkey: signedEvent.pubkey, identifier: dTag, relays: config.relays.slice(0, 3) }) }
       catch { /* naddr es opcional */ }
     }
     deleteDraft(pending?.meta?.type) // UX-002: publicado con éxito → ya no es un borrador pendiente
@@ -1014,6 +1057,7 @@ async function broadcastAndReportInner(signedEvent, pending) {
     renderResult({
       ok: true,
       title: signedEvent.kind === 1985 ? '⭐ Valoración publicada'
+           : wallCoord                 ? '📣 Publicado y anunciado en tu muro'
            : editingDTagWas(pending)   ? '💾 Anuncio actualizado'
            : signedEvent.kind === 5    ? '🗑 Solicitud de borrado enviada'
            : '🎉 ¡Publicado en Nostr!',

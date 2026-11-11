@@ -166,3 +166,16 @@ test('F7-03: comunidades y herramientas piden a las tiendas no listarlas; los an
   assert.equal(vis(buildTransaccion({ tipoTag: 'plazap2p-venta', title: 'Mesa', desc }, PK1)), undefined)
   assert.equal(vis(buildServicio({ title: 'Diseño gráfico', desc }, PK1)), undefined)
 })
+
+test('F7-05: buildAvisoMuro — nota kind 1 con título, precio, enlace y referencia `a`', async () => {
+  const { buildAvisoMuro, CLIENT_URL } = await import('../js/publish-builders.js')
+  const naddr = 'naddr1qqxyz'
+  const r = buildAvisoMuro({ kind: 30402, dTag: 'plazap2p-app-1-ab', naddr, title: 'Vendo bici', price: '100', currency: 'EUR' }, PK1)
+  assert.equal(r.ok, true)
+  assert.equal(r.unsignedEvent.kind, 1)
+  assert.equal(r.unsignedEvent.content, `📢 Vendo bici — 100 EUR\n\n${CLIENT_URL}#/anuncio/${naddr}\n\n#plazap2p`)
+  assert.deepEqual(r.unsignedEvent.tags.find(t => t[0] === 'a'), ['a', `30402:${PK1}:plazap2p-app-1-ab`])
+  assert.ok(r.unsignedEvent.tags.some(t => t[0] === 't' && t[1] === 'plazap2p'), 'el hashtag del texto lleva su etiqueta t')
+  assert.equal(buildAvisoMuro({ kind: 1985, dTag: 'x', naddr, title: 'x' }, PK1).ok, false, 'solo anuncios y eventos')
+  assert.equal(buildAvisoMuro({ kind: 30402, dTag: 'x', naddr: 'javascript:1', title: 'x' }, PK1).ok, false)
+})
