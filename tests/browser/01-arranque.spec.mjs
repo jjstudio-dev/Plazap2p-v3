@@ -2,6 +2,7 @@
 // enseña exactamente su panel.
 
 import { listing, note, article, calendar, order, PK1 } from './fixtures.mjs'
+import { encodeNaddr } from '../../js/nostr.js'
 
 const mundo = () => [
   listing({ d: 'a1', title: 'Bicicleta de montaña' }),
@@ -297,6 +298,29 @@ export const tests = [
       await page.waitFor(`document.getElementById('modal-donar-addresses').textContent.includes('donaciones@ejemplo.test')`, { label: 'donación recargada' })
       t.assert.equal(await page.evaluate(`document.getElementById('modal-donar-retry').classList.contains('hidden')`), true)
       t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
+  {
+    name: 'un enlace a un anuncio que no existe avisa a los 8 s en vez de esperar siempre',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: { events: mundo() } })
+      await page.goto(server.origin + '/index.html#/anuncio/naddr1inexistente')
+      await page.waitFor(`[...document.querySelectorAll('.toast')].some(el => el.textContent.includes('No encontramos ese anuncio'))`, { timeout: 10000, label: 'aviso de anuncio no encontrado' })
+      t.assert.match(await page.evaluate(`document.getElementById('toast-container').textContent`), /puede haber caducado/)
+    },
+  },
+  {
+    name: 'un enlace a un evento de la red abre la pestaña Eventos',
+    async run(t) {
+      const server = await t.server()
+      const ev = calendar({ d: 'evento-enlazado', title: 'Evento enlazado' })
+      const naddr = encodeNaddr({ kind: 31923, pubkey: PK1, identifier: 'evento-enlazado' })
+      const page = await t.open({ scenario: { events: [ev] } })
+      await page.goto(`${server.origin}/index.html#/anuncio/${naddr}`)
+      await page.waitFor(`[...document.querySelectorAll('.section-panel.active')].some(p => p.id === 'tab-eventos')`, { timeout: 9000, label: 'pestaña Eventos' })
+      await page.waitFor(`[...document.querySelectorAll('.toast')].some(el => el.textContent.includes('Evento encontrado'))`, { timeout: 9000 })
+      t.assert.match(await page.evaluate(`document.getElementById('channel-eventos').textContent`), /Evento enlazado/)
     },
   },
   {

@@ -15,7 +15,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '48';
+const ASSET_VERSION  = '49';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -363,7 +363,7 @@ function addEvent(channelId, event) {
     } else {
       tombs.delete(key);       // versión activa más reciente que la lápida (republicado)
       ch.set(key, parsed);
-      if (channelId === 'mercado' && pendingAnuncioNaddr === parsed.naddr) tryOpenPendingAnuncio();
+      if (pendingAnuncioNaddr === parsed.naddr) tryOpenPendingAnuncio();
     }
     lastUpdated = new Date();
 
@@ -1277,39 +1277,65 @@ function showToast(msg) {
 // anuncio es una vista superpuesta sobre el tab Mercado.
 function initAnuncioDeepLink() {
   const naddr = parseAnuncioHash(window.location.hash);
-  if (naddr) { pendingAnuncioNaddr = naddr; tryOpenPendingAnuncio(); }
+  if (naddr) watchPendingAnuncio(naddr);
 
   window.addEventListener('hashchange', () => {
     const n = parseAnuncioHash(window.location.hash);
-    if (n) { pendingAnuncioNaddr = n; tryOpenPendingAnuncio(); return; }
+    if (n) { watchPendingAnuncio(n); return; }
     // El hash ya no apunta a un anuncio (Atrás/Adelante a otra sección):
     // si el modal seguía abierto, cerrarlo para no dejar UI y URL desincronizadas.
+    clearTimeout(anuncioTimer);
+    pendingAnuncioNaddr = null;
     const modal = document.getElementById('listing-modal');
     if (modal && !modal.classList.contains('hidden')) window.closeModal({ syncHash: false });
   });
 }
 
+let anuncioTimer = null;
+
+/** W-08: un enlace roto no puede quedarse esperando para siempre. */
+function watchPendingAnuncio(naddr) {
+  pendingAnuncioNaddr = naddr;
+  clearTimeout(anuncioTimer);
+  anuncioTimer = setTimeout(() => {
+    if (pendingAnuncioNaddr !== naddr) return;
+    pendingAnuncioNaddr = null;
+    showToast('No encontramos ese anuncio (puede haber caducado)');
+  }, 8000);
+}
+
+/** Busca un naddr en todos los canales: mercado, directorio o eventos. */
+function findItemByNaddr(naddr) {
+  for (const ch of Object.values(channels)) {
+    const found = [...ch.values()].find(x => x.naddr === naddr);
+    if (found) return found;
+  }
+  return null;
+}
+
 // Los eventos de mercado llegan async desde los relays (o ya están en
 // caché) — reintenta cada vez que hay datos nuevos hasta encontrar el naddr
-// pendiente. Sin timeout propio: si el relay no lo tiene, simplemente no
-// aparece (igual que cualquier otro anuncio no encontrado).
+// pendiente. Si a los 8 s no apareció, se avisa (W-08).
 function tryOpenPendingAnuncio() {
   if (!pendingAnuncioNaddr) return;
-  const ch = channels['mercado'];
-  const found = ch && [...ch.values()].find(x => x.naddr === pendingAnuncioNaddr);
+  const found = findItemByNaddr(pendingAnuncioNaddr);
   if (!found) return;
   const target = pendingAnuncioNaddr;
+  clearTimeout(anuncioTimer);
   pendingAnuncioNaddr = null;
+  if (found.kind === 31922 || found.kind === 31923) {
+    window.switchTab('eventos', { syncUrl: false, syncHash: false });
+    showToast('Evento encontrado en la pestaña Eventos');
+    return;
+  }
   if (activeTab !== 'mercado') window.switchTab('mercado', { syncUrl: false, syncHash: false });
   window.openModal(target, { syncHash: false });
 }
 
 // ── Modal (mercado / kind:30402) ───────────────────────────────
 window.openModal = function(naddr, options = {}) {
-  const ch = channels['mercado'];
-  if (!ch) return;
-  const l = [...ch.values()].find(x => x.naddr === naddr);
-  if (!l) return;
+  const l = findItemByNaddr(naddr);
+  if (!l || l.kind !== 30402) return;
 
   const color    = CAT_COLORS[l.category] || '#86868b';
   const njumpUrl = `https://njump.me/${l.naddr}`;
