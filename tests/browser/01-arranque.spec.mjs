@@ -255,6 +255,29 @@ export const tests = [
     },
   },
   {
+    name: 'un fallo de red al cargar el directorio se dice y se puede reintentar',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: {
+        events: mundo(),
+        fetch: [{ match: 'data/comunidades', fail: true }],
+      } })
+      await page.goto(server.origin + '/index.html')
+      await page.waitFor(`document.querySelector('#channel-comunidades .empty-title')?.textContent.includes('No se pudieron cargar')`, { label: 'error de comunidades' })
+      await page.click('.nav-tab[data-tab="comunidades"]')
+      const texto = await page.evaluate(`document.getElementById('channel-comunidades').textContent`)
+      t.assert.doesNotMatch(texto, /Sin comunidades todavía/, 'un fallo de red no se disfraza de directorio vacío')
+      t.assert.match(texto, /Reintentar/)
+
+      await page.evaluate(`window.__fetchRoutes = [{ match: 'data/comunidades', json: [
+        { id: 'c1', nombre: 'Comunidad recargada', plataforma: 'Telegram', descripcion: 'Ya carga', link: 'https://t.me/recargada', aprobado: true }
+      ] }]`)
+      await page.click('#channel-comunidades .btn-primary')
+      await page.waitFor(`document.getElementById('channel-comunidades').textContent.includes('Comunidad recargada')`, { label: 'comunidades tras reintentar' })
+      t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
+  {
     name: 'si la información de donación no carga, el modal lo dice y deja reintentar',
     async run(t) {
       const server = await t.server()

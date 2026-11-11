@@ -15,7 +15,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '47';
+const ASSET_VERSION  = '48';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -42,6 +42,9 @@ const STATIC_TABS = new Set(['comunidades', 'herramientas', 'multimedia', 'vende
 let staticEvents = [];  // curated fallback events loaded from data/eventos.json
 let staticComunidades = [];
 let staticHerramientas = [];
+let staticComunidadesError = false;
+let staticHerramientasError = false;
+let staticMultimediaError = false;
 const GITHUB_REPO_URL = 'https://github.com/jjstudio-dev/Plazap2p-v3';
 let pendingAnuncioNaddr = null; // CODE-004: naddr de #/anuncio/<naddr> aún no cargado
 
@@ -87,7 +90,22 @@ async function init() {
     window.addEventListener('pagehide', () => clearInterval(window._badgeInterval), { once: true });
   } catch (err) {
     console.error('PlazaP2P init error:', err);
+    showInitError();
   }
+}
+
+/** W-07: si el arranque falla, se dice y se ofrece reintentar en vez de dejar la página en blanco. */
+function showInitError() {
+  if (document.getElementById('init-error')) return;
+  const main = document.querySelector('main') || document.body;
+  const box = document.createElement('div');
+  box.id = 'init-error';
+  box.className = 'empty-state';
+  box.innerHTML = `<div class="empty-icon">⚠️</div>
+    <p class="empty-title">No se pudo iniciar PlazaP2P</p>
+    <p class="empty-sub">Algo falló al cargar la aplicación. Comprueba tu conexión y vuelve a intentarlo.</p>
+    <button class="btn-primary" onclick="location.reload()">Reintentar</button>`;
+  main.prepend(box);
 }
 
 async function loadConfig() {
@@ -746,8 +764,17 @@ function renderActiveChannel() {
 
 function renderActiveChannelInner() {
   if (activeTab === 'vendedores') { renderSellersDirectory(); return; }
-  if (activeTab === 'comunidades') { renderComunidades(staticComunidades, GITHUB_REPO_URL); return; }
-  if (activeTab === 'herramientas') { renderHerramientas(staticHerramientas, GITHUB_REPO_URL); return; }
+  if (activeTab === 'comunidades') {
+    if (staticComunidadesError) renderStaticError('comunidades', 'las comunidades');
+    else renderComunidades(staticComunidades, GITHUB_REPO_URL);
+    return;
+  }
+  if (activeTab === 'herramientas') {
+    if (staticHerramientasError) renderStaticError('herramientas', 'las herramientas');
+    else renderHerramientas(staticHerramientas, GITHUB_REPO_URL);
+    return;
+  }
+  if (activeTab === 'multimedia' && staticMultimediaError) { renderStaticError('multimedia', 'los recursos multimedia'); return; }
   if (STATIC_TABS.has(activeTab)) return;
 
   const grid = document.getElementById(`channel-${activeTab}`);
@@ -889,6 +916,15 @@ function renderCalendarEvents(grid, items) {
         ...(past.length ? [`<div class="event-archive-divider"><span>Eventos anteriores</span></div>`, ...past.map(renderStaticEventCard)] : [])
       ];
       grid.innerHTML = html.join('');
+    } else if (staticEventsError) {
+      grid.innerHTML = `<div class="event-empty-card">
+        <div class="event-empty-icon">⚠️</div>
+        <div>
+          <p class="event-empty-title">No se pudieron cargar los eventos curados</p>
+          <p class="event-empty-sub">No es que no haya eventos: falló la descarga. Comprueba tu conexión.</p>
+          <button class="btn-primary" onclick="window.retryStaticData?.()">Reintentar</button>
+        </div>
+      </div>`;
     } else {
       grid.innerHTML = `<div class="event-empty-card">
         <div class="event-empty-icon">📅</div>
@@ -1942,20 +1978,58 @@ window.setIntercambioFiat = function(fiat) {
 };
 
 // ── Static data (GitHub JSON) ──────────────────────────────────
+// W-07: un fallo de red no es «no hay nada». Se devuelve un centinela para
+// pintar un estado de error con Reintentar en vez de un vacío engañoso.
+const STATIC_ERROR = Symbol('static-error');
+let staticEventsError = false;
+
+async function fetchStaticJson(path) {
+  try {
+    const res = await fetchWithTimeout(versioned(path));
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!Array.isArray(data)) throw new Error('respuesta sin lista');
+    return data;
+  } catch (err) {
+    console.warn(`[static] No se pudo cargar ${path}:`, err?.message || err);
+    return STATIC_ERROR;
+  }
+}
+
+function renderStaticError(targetId, label) {
+  const container = document.getElementById(`channel-${targetId}`);
+  if (!container) return;
+  container.innerHTML = `<div class="empty-state">
+    <div class="empty-icon">⚠️</div>
+    <p class="empty-title">No se pudieron cargar ${esc(label)}</p>
+    <p class="empty-sub">No es que el directorio esté vacío: no se pudo descargar. Comprueba tu conexión.</p>
+    <button class="btn-primary" onclick="window.retryStaticData?.()">Reintentar</button>
+  </div>`;
+}
+
+window.retryStaticData = function() { loadStaticData(); };
+
 async function loadStaticData() {
   try {
     const [comunidades, herramientas, multimedia, eventosData] = await Promise.all([
-      fetchWithTimeout(versioned('data/comunidades.json')).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetchWithTimeout(versioned('data/herramientas.json')).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetchWithTimeout(versioned('data/multimedia.json')).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetchWithTimeout(versioned('data/eventos.json')).then(r => r.ok ? r.json() : []).catch(() => [])
+      fetchStaticJson('data/comunidades.json'),
+      fetchStaticJson('data/herramientas.json'),
+      fetchStaticJson('data/multimedia.json'),
+      fetchStaticJson('data/eventos.json')
     ]);
-    staticComunidades = comunidades.filter(c => c.aprobado);
-    staticHerramientas = herramientas.filter(h => h.aprobado);
-    renderComunidades(staticComunidades, GITHUB_REPO_URL);
-    renderHerramientas(staticHerramientas, GITHUB_REPO_URL);
-    renderMultimedia(multimedia.filter(m => m.aprobado), GITHUB_REPO_URL);
-    staticEvents = eventosData.filter(e => e.aprobado);
+    staticComunidadesError = comunidades === STATIC_ERROR;
+    staticHerramientasError = herramientas === STATIC_ERROR;
+    staticMultimediaError = multimedia === STATIC_ERROR;
+    staticComunidades = staticComunidadesError ? [] : comunidades.filter(c => c.aprobado);
+    staticHerramientas = staticHerramientasError ? [] : herramientas.filter(h => h.aprobado);
+    staticEvents = eventosData === STATIC_ERROR ? [] : eventosData.filter(e => e.aprobado);
+    staticEventsError = eventosData === STATIC_ERROR;
+    if (staticComunidadesError) renderStaticError('comunidades', 'las comunidades');
+    else renderComunidades(staticComunidades, GITHUB_REPO_URL);
+    if (staticHerramientasError) renderStaticError('herramientas', 'las herramientas');
+    else renderHerramientas(staticHerramientas, GITHUB_REPO_URL);
+    if (staticMultimediaError) renderStaticError('multimedia', 'los recursos multimedia');
+    else renderMultimedia(multimedia.filter(m => m.aprobado), GITHUB_REPO_URL);
     if (activeTab === 'vendedores') renderSellersDirectory();
     // Eventos también: si los relays contestaron antes que eventos.json, la
     // pestaña quedaba pintada sin los eventos curados hasta otro repintado.
