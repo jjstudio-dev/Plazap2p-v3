@@ -255,6 +255,28 @@ export const tests = [
     },
   },
   {
+    name: 'si la información de donación no carga, el modal lo dice y deja reintentar',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: {
+        events: mundo(),
+        fetch: [{ match: 'data/mantenimiento', fail: true }],
+      } })
+      await page.goto(server.origin + '/index.html')
+      await page.waitFor(`document.getElementById('modal-donar-error').classList.contains('show')`, { label: 'fallo de donación' })
+      await page.evaluate('window.openDonarModal()')
+      t.assert.match(await page.text('#modal-donar-mensaje'), /No se pudo cargar\. Reintentar\./)
+      t.assert.equal(await page.evaluate(`document.getElementById('modal-donar-retry').classList.contains('hidden')`), false)
+      t.assert.equal(await page.evaluate(`document.getElementById('modal-donar-addresses').children.length`), 0, 'no hay filas vacías')
+
+      await page.evaluate(`window.__fetchRoutes = [{ match: 'data/mantenimiento', json: { ln_address: 'donaciones@ejemplo.test', mensaje: 'Gracias por apoyar' } }]`)
+      await page.click('#modal-donar-retry')
+      await page.waitFor(`document.getElementById('modal-donar-addresses').textContent.includes('donaciones@ejemplo.test')`, { label: 'donación recargada' })
+      t.assert.equal(await page.evaluate(`document.getElementById('modal-donar-retry').classList.contains('hidden')`), true)
+      t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
+  {
     name: 'un anuncio se abre, muestra sus datos y se cierra con Escape',
     async run(t) {
       const server = await t.server()

@@ -15,7 +15,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '46';
+const ASSET_VERSION  = '47';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -1966,12 +1966,15 @@ async function loadStaticData() {
   loadMantenimiento();
 }
 
+let donarState = 'loading';   // loading | ok | error — W-06
+
 async function loadMantenimiento() {
+  donarState = 'loading';
   try {
     const res = await fetchWithTimeout(versioned('data/mantenimiento.json'));
-    if (!res.ok) return;
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    if (!data.ln_address && !data.btc_address) return;
+    if (!data.ln_address && !data.btc_address) throw new Error('sin direcciones de donación');
 
     const addressesHtml = buildDonarAddresses(data);
     const msgHtml  = `<p>${esc(data.mensaje || '')}</p>`;
@@ -1991,10 +1994,41 @@ async function loadMantenimiento() {
     document.getElementById('modal-donar-mensaje').innerHTML   = msgHtml;
     document.getElementById('modal-donar-addresses').innerHTML = addressesHtml;
     document.getElementById('modal-donar-gracias').innerHTML   = gracHtml;
+    donarState = 'ok';
+    applyDonarState();
   } catch (err) {
     console.warn('[mantenimiento] No se pudo cargar:', err);
+    donarState = 'error';
+    applyDonarState();
   }
 }
+
+/** Muestra el error y el botón Reintentar dentro del modal, o los quita. */
+function applyDonarState() {
+  const err = document.getElementById('modal-donar-error');
+  const retry = document.getElementById('modal-donar-retry');
+  const failed = donarState === 'error';
+  if (err) {
+    err.textContent = failed ? 'No se pudo cargar la información de donación.' : '';
+    err.classList.toggle('show', failed);
+  }
+  if (retry) retry.classList.toggle('hidden', !failed);
+  if (failed) {
+    const msg = document.getElementById('modal-donar-mensaje');
+    if (msg) msg.textContent = 'No se pudo cargar. Reintentar.';
+    document.getElementById('modal-donar-addresses')?.replaceChildren();
+    const gracias = document.getElementById('modal-donar-gracias');
+    if (gracias) gracias.textContent = '';
+  }
+}
+
+window.reintentarDonar = async function() {
+  const msg = document.getElementById('modal-donar-mensaje');
+  if (msg) msg.textContent = 'Cargando la información de donación…';
+  donarState = 'loading';
+  applyDonarState();
+  await loadMantenimiento();
+};
 
 function buildDonarAddresses(data) {
   let html = '';
@@ -2018,6 +2052,17 @@ function buildDonarAddresses(data) {
 }
 
 window.openDonarModal = function() {
+  // W-06: si la información no cargó, el modal no se abre vacío.
+  if (donarState !== 'ok') {
+    const msg = document.getElementById('modal-donar-mensaje');
+    if (msg) msg.textContent = donarState === 'error'
+      ? 'No se pudo cargar. Reintentar.'
+      : 'Cargando la información de donación…';
+    document.getElementById('modal-donar-addresses')?.replaceChildren();
+    const gracias = document.getElementById('modal-donar-gracias');
+    if (gracias) gracias.textContent = '';
+  }
+  applyDonarState();
   const overlay = document.getElementById('modal-donar-overlay');
   if (overlay) {
     overlay.classList.remove('hidden');
