@@ -252,19 +252,19 @@ export const tests = [
       const server = await t.server()
       const original = listing({
         d: 'renovable', title: 'Anuncio renovable', summary: DESC, price: ['10', 'EUR'],
-        extraTags: [['expiration', String(now() + 10 * 86400)], ['published_at', String(now() - 1000)]],
+        extraTags: [['expiration', String(now() + 180 * 86400)], ['published_at', String(now() - 1000)]],
       })
       const page = await t.open({ scenario: { ...identidad, events: [original] } })
       await page.goto(`${server.origin}/publicar.html?type=venta`)
       await page.waitFor(`!document.getElementById('publish-bar').classList.contains('hidden')`)
       const hint = await page.text('#tx-expiration-hint')
-      t.assert.match(hint, /Tu anuncio caduca el .+ \(60 días\)\./)
+      t.assert.match(hint, /Tu anuncio caduca el .+ \(90 días\)\./)
 
       // La vista previa repite la fecha antes de firmar.
       await rellenar(page, TIPOS.venta)
       await page.click('#btn-publicar')
       await page.waitFor(`document.querySelector('#res-box .res-title')?.textContent.includes('Revisa antes de firmar')`)
-      t.assert.match(await page.text('#res-box'), /Caduca.+\(60 días\)/)
+      t.assert.match(await page.text('#res-box'), /Caduca.+\(90 días\)/)
 
       // Renovar desde Mis anuncios: reutiliza Editar y recalcula la caducidad.
       await page.goto(`${server.origin}/publicar.html`)
@@ -277,7 +277,32 @@ export const tests = [
       t.assert.ok(res.ok, `${res.titulo} — ${res.sub}`)
       const ev = (await publicados(page)).at(-1)
       t.assert.equal(tag(ev, 'd')[1], 'renovable')
-      t.assert.ok(Number(tag(ev, 'expiration')[1]) > now() + 59 * 86400, 'la caducidad se renueva al republicar')
+      const exp = Number(tag(ev, 'expiration')[1])
+      t.assert.ok(exp > now() + 179 * 86400 && exp < now() + 181 * 86400, 'renovar conserva los 180 días elegidos')
+      t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
+  {
+    name: 'F7-01: se elige cuánto dura el anuncio, también «hasta que lo retire»',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: identidad })
+      await page.goto(`${server.origin}/publicar.html?type=venta`)
+      await page.waitFor(`!document.getElementById('publish-bar').classList.contains('hidden')`)
+      t.assert.equal(await page.evaluate(`document.querySelector('#pills-tx-duracion .pill.active')?.dataset.value`), '90')
+      await rellenar(page, TIPOS.venta)
+      await page.click('#pills-tx-duracion .pill[data-value="365"]')
+      t.assert.match(await page.text('#tx-expiration-hint'), /\(1 año\)/)
+      await page.click('#pills-tx-duracion .pill[data-value="0"]')
+      t.assert.match(await page.text('#tx-expiration-hint'), /no caduca/)
+      await page.click('#btn-publicar')
+      await page.waitFor(`document.querySelector('#res-box .res-title')?.textContent.includes('Revisa antes de firmar')`)
+      t.assert.match(await page.text('#res-box'), /visible hasta que lo retires/)
+      const res = await publicar(page)
+      t.assert.ok(res.ok, `${res.titulo} — ${res.sub}`)
+      const ev = (await publicados(page)).at(-1)
+      t.assert.equal(tag(ev, 'expiration'), undefined, 'sin caducidad no lleva etiqueta expiration')
+      t.assert.deepEqual(tag(ev, 'type'), ['type', 'simple', 'physical'])
       t.assert.deepEqual(t.appErrors(page), [])
     },
   },

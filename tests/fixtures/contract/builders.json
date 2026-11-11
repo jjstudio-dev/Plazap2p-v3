@@ -68,7 +68,7 @@
           ],
           [
             "expiration",
-            "<ahora+60d>"
+            "<ahora+90d>"
           ]
         ],
         "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📢 Publicado vía PlazaP2P",
@@ -124,7 +124,7 @@
           ],
           [
             "expiration",
-            "<ahora+60d>"
+            "<ahora+90d>"
           ]
         ],
         "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📢 Publicado vía PlazaP2P",
@@ -186,7 +186,7 @@
           ],
           [
             "expiration",
-            "<ahora+60d>"
+            "<ahora+90d>"
           ]
         ],
         "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📢 Publicado vía PlazaP2P",
@@ -581,6 +581,11 @@
             "local"
           ],
           [
+            "type",
+            "simple",
+            "physical"
+          ],
+          [
             "image",
             "https://ejemplo.test/b.png"
           ],
@@ -599,7 +604,7 @@
           ],
           [
             "expiration",
-            "<ahora+60d>"
+            "<ahora+90d>"
           ]
         ],
         "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📦 Venta publicado vía PlazaP2P\nPrecio: 120.50 EUR\nZona: local\n⚠️ Verifica la reputación antes de operar",
@@ -662,7 +667,7 @@
           ],
           [
             "expiration",
-            "<ahora+60d>"
+            "<ahora+90d>"
           ]
         ],
         "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n🛒 Compra publicado vía PlazaP2P\nPrecio: 300\nZona: nacional\n⚠️ Verifica la reputación antes de operar",
@@ -720,7 +725,7 @@
           ],
           [
             "expiration",
-            "<ahora+60d>"
+            "<ahora+90d>"
           ]
         ],
         "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n🔄 Intercambio publicado vía PlazaP2P\nZona: online\n⚠️ Verifica la reputación antes de operar",
@@ -764,6 +769,11 @@
             "plazap2p-venta"
           ],
           [
+            "type",
+            "simple",
+            "physical"
+          ],
+          [
             "contact",
             "escribe a [url] o [url]"
           ],
@@ -778,7 +788,7 @@
           ],
           [
             "expiration",
-            "<ahora+60d>"
+            "<ahora+90d>"
           ]
         ],
         "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📦 Venta publicado vía PlazaP2P\n⚠️ Verifica la reputación antes de operar",
@@ -835,7 +845,7 @@
           ],
           [
             "expiration",
-            "<ahora+60d>"
+            "<ahora+90d>"
           ]
         ],
         "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📢 Publicado vía PlazaP2P",
@@ -1039,6 +1049,125 @@
         ],
         "content": "",
         "category": null
+      }
+    },
+    {
+      "name": "venta visible un año",
+      "builder": "transaccion",
+      "input": {
+        "tipoTag": "plazap2p-venta",
+        "title": "Vendo sofá",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario.",
+        "price": "80",
+        "currency": "EUR",
+        "durationDays": 365
+      },
+      "expected": {
+        "kind": 30402,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Vendo sofá"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-venta"
+          ],
+          [
+            "price",
+            "80",
+            "EUR"
+          ],
+          [
+            "type",
+            "simple",
+            "physical"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ],
+          [
+            "expiration",
+            "<ahora+365d>"
+          ]
+        ],
+        "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📦 Venta publicado vía PlazaP2P\nPrecio: 80 EUR\n⚠️ Verifica la reputación antes de operar",
+        "category": "venta"
+      }
+    },
+    {
+      "name": "servicio sin caducidad",
+      "builder": "servicio",
+      "input": {
+        "title": "Reparación de nodos",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario.",
+        "durationDays": 0
+      },
+      "expected": {
+        "kind": 30402,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Reparación de nodos"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-servicio"
+          ],
+          [
+            "service_type",
+            "otros"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ]
+        ],
+        "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📢 Publicado vía PlazaP2P",
+        "category": "servicio"
       }
     },
     {

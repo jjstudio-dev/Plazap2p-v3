@@ -16,7 +16,8 @@ import {
   buildServicio, buildEvento, buildComunidad, buildHerramienta,
   buildTransaccion, buildValoracion, buildRetirada, buildReporte, normalizePrice,
   VALID_CATS_SERVICIO, VALID_PLATS_COMUNIDAD, VALID_CATS_HERRAMIENTA,
-  VALID_ALCANCES, VALID_CURRENCIES, VALID_REPORT_TYPES, MERCADO_EXPIRATION_DAYS,
+  VALID_ALCANCES, VALID_CURRENCIES, VALID_REPORT_TYPES,
+  DURATION_OPTIONS, DEFAULT_DURATION_DAYS, NO_EXPIRATION, durationDaysOf,
 } from './publish-builders.js'
 import { sanitizeContact } from './publish-utils.js'
 import { allDayLastDay, shiftIsoDate } from './listing-utils.js'
@@ -255,6 +256,7 @@ function wireUi() {
       if (!pill) return
       group.querySelectorAll('.pill').forEach(p => p.classList.remove('active'))
       pill.classList.add('active')
+      if (group.classList.contains('pills-duracion')) renderExpirationHints(selectedType)
     })
   })
 
@@ -484,18 +486,44 @@ function navigateTo(type, options = {}) {
   $('btn-publicar').textContent = editingDTag ? '💾 Guardar cambios' : '📢 Publicar'
 }
 
-// W-11: la caducidad de 60 días deja de ser invisible.
+// W-11 / F7-01: la caducidad se ve y se elige. Cada formulario de mercado
+// tiene su grupo «Visible durante» (pills-<prefijo>-duracion).
+const DURATION_VALUES = DURATION_OPTIONS.map(String)
+
 function expirationDateLabel(tsSec) {
   return new Date(tsSec * 1000).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-function nextExpirationText() {
-  const ts = Math.floor(Date.now() / 1000) + MERCADO_EXPIRATION_DAYS * 86400
-  return `Tu anuncio caduca el ${expirationDateLabel(ts)} (${MERCADO_EXPIRATION_DAYS} días).`
+function durationLabel(days) {
+  return days === 365 ? '1 año' : `${days} días`
+}
+
+function durationGroupFor(type) {
+  if (type === 'servicio') return 'pills-s-duracion'
+  return TX_META[type] ? 'pills-tx-duracion' : null
+}
+
+function selectedDurationDays(type) {
+  const groupId = durationGroupFor(type)
+  const v = groupId ? pillVal(groupId, DURATION_VALUES) : null
+  return v == null ? DEFAULT_DURATION_DAYS : Number(v)
+}
+
+function durationHintText(days) {
+  if (days === NO_EXPIRATION) {
+    return 'Tu anuncio no caduca: se verá hasta que lo retires. Recuerda retirarlo cuando ya no esté disponible.'
+  }
+  const ts = Math.floor(Date.now() / 1000) + days * 86400
+  return `Tu anuncio caduca el ${expirationDateLabel(ts)} (${durationLabel(days)}).`
 }
 
 function renderExpirationHints(type) {
-  const text = (type === 'servicio' || TX_META[type]) ? nextExpirationText() : ''
+  const groupId = durationGroupFor(type)
+  // Sin elección (formulario nuevo o recién vaciado) se marca la opción por defecto.
+  if (groupId && !document.querySelector(`#${groupId} .pill.active`)) {
+    document.querySelector(`#${groupId} .pill[data-value="${DEFAULT_DURATION_DAYS}"]`)?.classList.add('active')
+  }
+  const text = groupId ? durationHintText(selectedDurationDays(type)) : ''
   const s = $('s-expiration-hint')
   const tx = $('tx-expiration-hint')
   if (s) s.textContent = type === 'servicio' ? text : ''
@@ -764,7 +792,9 @@ function renderPreview(unsignedEvent, meta, queue = []) {
   addRow('Imagen', getTagValue(unsignedEvent.tags, 'image') ? 'adjunta' : null)
   const expRaw = getTagValue(unsignedEvent.tags, 'expiration')
   if (expRaw && Number.isFinite(Number(expRaw))) {
-    addRow('Caduca', `${expirationDateLabel(Number(expRaw))} (${MERCADO_EXPIRATION_DAYS} días)`)
+    addRow('Caduca', `${expirationDateLabel(Number(expRaw))} (${durationLabel(durationDaysOf(unsignedEvent))})`)
+  } else if (durationGroupFor(meta.type)) {
+    addRow('Caduca', 'No — visible hasta que lo retires')
   }
   addRow('Relays', `${(config?.relays || []).length} configurados`)
   if (queue.length) addRow('Firmas', `${1 + queue.length} — el evento cambia de tipo y hay que retirar la versión anterior`)
@@ -1247,6 +1277,7 @@ function buildPayload(type) {
       return {
         title: val('s-title'), desc: val('s-desc'),
         catId: pillVal('pills-s-cat', VALID_CATS_SERVICIO),
+        durationDays: pillVal('pills-s-duracion', DURATION_VALUES),
         price: neg ? null : normalizePrice(val('s-price')),
         currency: neg ? null : (VALID_CURRENCIES.includes(val('s-currency')) ? val('s-currency') : null),
         imageUrl: val('s-image') || null,
@@ -1305,6 +1336,7 @@ function buildPayload(type) {
       return {
         title: val('tx-title'), desc: val('tx-desc'),
         alcanceId: pillVal('pills-tx-alcance', VALID_ALCANCES),
+        durationDays: pillVal('pills-tx-duracion', DURATION_VALUES),
         price: neg ? null : normalizePrice(val('tx-price')),
         currency: neg ? null : (VALID_CURRENCIES.includes(val('tx-currency')) ? val('tx-currency') : null),
         imageUrl: val('tx-image') || null,
@@ -1565,6 +1597,9 @@ function populateFormFromEvent(ev, type) {
   // Restaurar selección de pills/checkboxes desde los tags (si no, la edición
   // perdería categoría/plataforma/alcance en silencio al re-publicar).
   if (type === 'servicio') setPill('pills-s-cat', getTagValue(tags, 'service_type'))
+  // F7-01: editar, renovar o duplicar conserva la duración elegida al publicar.
+  const durGroup = durationGroupFor(type)
+  if (durGroup) setPill(durGroup, String(durationDaysOf(ev)))
   if (type === 'evento') {
     set('e-location', getTagValue(tags, 'location'))
     // PROT-001: start puede ser Unix (31923, o 31922 legado con bug) o
@@ -1624,7 +1659,8 @@ function startEdit(ev) {
 }
 
 /** W-11 — Renovar: mismo flujo que Editar. Al volver a firmar, el builder
- * recalcula `expiration` desde ahora (60 días), así que basta con confirmar. */
+ * recalcula `expiration` desde ahora con la duración que tenía el anuncio
+ * (F7-01), así que basta con confirmar. */
 function startRenovar(ev) {
   startEdit(ev)
   if (editingDTag) $('btn-publicar').textContent = '♻️ Renovar anuncio'

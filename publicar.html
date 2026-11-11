@@ -26,8 +26,8 @@
   <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/fonts.css?v=57">
-  <link rel="stylesheet" href="css/publicar.css?v=57">
+  <link rel="stylesheet" href="css/fonts.css?v=58">
+  <link rel="stylesheet" href="css/publicar.css?v=58">
 </head>
 <body>
 
@@ -200,6 +200,7 @@
         </select>
       </div>
       <div class="f-error" id="err-s-price"></div>
+      <div class="img-hint">ℹ️ Con precio, tu anuncio también aparece en tiendas Nostr como Shopstr o Plebeian Market.</div>
       <label class="negociar-label">
         <input type="checkbox" id="s-negociar">
         A negociar
@@ -223,7 +224,17 @@
         placeholder="@usuario, correo o npub (sin enlaces)" autocomplete="off">
       <div class="f-error" id="err-s-contact"></div>
     </div>
-    <p class="id-hint" id="s-expiration-hint"></p>
+    <div class="field-group">
+      <label class="field-label" id="lbl-s-duracion">Visible durante</label>
+      <div class="pills pills-duracion" id="pills-s-duracion" role="group" aria-labelledby="lbl-s-duracion">
+        <div class="pill" data-value="30">30 días</div>
+        <div class="pill" data-value="90">90 días</div>
+        <div class="pill" data-value="180">180 días</div>
+        <div class="pill" data-value="365">1 año</div>
+        <div class="pill" data-value="0">Hasta que lo retire</div>
+      </div>
+      <p class="id-hint" id="s-expiration-hint"></p>
+    </div>
   </section>
 
   <!-- ══════════════════════════════════════════════
@@ -485,6 +496,7 @@
         </select>
       </div>
       <div class="f-error" id="err-tx-price"></div>
+      <div class="img-hint">ℹ️ Con precio, tu anuncio también aparece en tiendas Nostr como Shopstr o Plebeian Market.</div>
       <label class="negociar-label">
         <input type="checkbox" id="tx-negociar">
         A negociar
@@ -508,7 +520,17 @@
         placeholder="@usuario, correo o npub (sin enlaces)" autocomplete="off">
       <div class="f-error" id="err-tx-contact"></div>
     </div>
-    <p class="id-hint" id="tx-expiration-hint"></p>
+    <div class="field-group">
+      <label class="field-label" id="lbl-tx-duracion">Visible durante</label>
+      <div class="pills pills-duracion" id="pills-tx-duracion" role="group" aria-labelledby="lbl-tx-duracion">
+        <div class="pill" data-value="30">30 días</div>
+        <div class="pill" data-value="90">90 días</div>
+        <div class="pill" data-value="180">180 días</div>
+        <div class="pill" data-value="365">1 año</div>
+        <div class="pill" data-value="0">Hasta que lo retire</div>
+      </div>
+      <p class="id-hint" id="tx-expiration-hint"></p>
+    </div>
   </section>
 
   <!-- ══════════════════════════════════════════════
@@ -799,6 +821,6 @@
   </button>
 </nav>
 
-<script type="module" src="js/publicar-app.js?v=57"></script>
+<script type="module" src="js/publicar-app.js?v=58"></script>
 </body>
 </html>

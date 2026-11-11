@@ -41,6 +41,8 @@ export const CASES = [
   ['valoración desde un anuncio', 'valoracion', { rateeHex: RATEE, rating: 5, aspects: { comunicacion: 4 }, refTag: `30402:${RATEE}:plazap2p-app-1-abcd` }],
   ['valoración con referencia a un evento', 'valoracion', { rateeHex: RATEE, rating: 3, refTag: 'D'.repeat(64) }],
   ['valoración con referencia rara (se ignora)', 'valoracion', { rateeHex: RATEE, rating: 2, refTag: 'no-es-una-referencia' }],
+  ['venta visible un año', 'transaccion', { tipoTag: 'plazap2p-venta', title: 'Vendo sofá', desc: DESC, price: '80', currency: 'EUR', durationDays: 365 }],
+  ['servicio sin caducidad', 'servicio', { title: 'Reparación de nodos', desc: DESC, durationDays: 0 }],
   ['retirada', 'retirada', { kind: 30402, dTag: 'plazap2p-app-1-abcd', eventId: 'c'.repeat(64) }],
 ]
 
@@ -49,9 +51,13 @@ const BUILDERS = {
   transaccion: buildTransaccion, valoracion: buildValoracion, retirada: buildRetirada,
 }
 
-/** Valores que dependen del momento o del azar: se sustituyen por un marcador. */
-const VOLATILE = { d: '<d>', published_at: '<ahora>', expiration: '<ahora+60d>' }
-export const normalizeTags = tags => tags.map(t => (t[0] in VOLATILE && t.length >= 2) ? [t[0], VOLATILE[t[0]]] : t)
+/** Valores que dependen del momento o del azar: se sustituyen por un marcador.
+ * La caducidad conserva los días elegidos (`<ahora+90d>`), relativos a created_at. */
+const VOLATILE = { d: '<d>', published_at: '<ahora>' }
+export const normalizeTags = (tags, createdAt) => tags.map(t => {
+  if (t[0] === 'expiration' && t.length >= 2) return [t[0], `<ahora+${Math.round((Number(t[1]) - createdAt) / 86400)}d>`]
+  return (t[0] in VOLATILE && t.length >= 2) ? [t[0], VOLATILE[t[0]]] : t
+})
 
 export function generate() {
   return CASES.map(([name, builder, input]) => {
@@ -63,7 +69,7 @@ export function generate() {
       name, builder, input,
       expected: {
         kind: ev.kind,
-        tags: normalizeTags(ev.tags),
+        tags: normalizeTags(ev.tags, ev.created_at),
         content: ev.content,
         // Cómo lo clasifica el lector (pestaña/categoría del Mercado); solo para anuncios.
         category: ev.kind === 30402 ? detectCategory(tTags) : null,

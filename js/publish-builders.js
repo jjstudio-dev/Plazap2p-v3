@@ -113,7 +113,40 @@ function assembleEvent(kind, tags, content, userPubHex, dTag = null, publishedAt
 // ADS-002: solo los anuncios de "mercado" caducan (evita listados fantasma);
 // comunidades/herramientas son directorio curado, sin fecha de caducidad —
 // y los eventos ya tienen su propio fin vía NIP-52 start/end.
-export const MERCADO_EXPIRATION_DAYS = 60
+//
+// F7-01: quien publica elige cuánto tiempo se ve su anuncio. 0 = sin
+// caducidad (sigue visible hasta que lo retire). El valor por defecto (90)
+// se usa cuando el formulario no manda nada. Misma lista en la app Android
+// (ListingDuration.kt).
+export const NO_EXPIRATION = 0
+export const DURATION_OPTIONS = [30, 90, 180, 365, NO_EXPIRATION]
+export const DEFAULT_DURATION_DAYS = 90
+
+/** Días elegidos → número válido, o null si el valor no es una opción. */
+export function resolveDurationDays(raw) {
+  if (raw == null || raw === '') return DEFAULT_DURATION_DAYS
+  const n = Number(raw)
+  return DURATION_OPTIONS.includes(n) ? n : null
+}
+
+/**
+ * Duración con la que se publicó un anuncio, para conservarla al editar o
+ * renovar: sin `expiration` → NO_EXPIRATION; con ella, la opción más cercana
+ * a (expiration − created_at). En empate gana la más larga (60 → 90).
+ */
+export function durationDaysOf(event) {
+  const raw = Number((event?.tags || []).find(t => t[0] === 'expiration')?.[1])
+  if (!Number.isFinite(raw) || raw <= 0) return NO_EXPIRATION
+  const days = (raw - Number(event.created_at || 0)) / 86400
+  let best = DEFAULT_DURATION_DAYS
+  let bestDiff = Infinity
+  for (const opt of DURATION_OPTIONS) {
+    if (opt === NO_EXPIRATION) continue
+    const diff = Math.abs(opt - days)
+    if (diff <= bestDiff) { best = opt; bestDiff = diff }
+  }
+  return best
+}
 
 // ── buildServicio ─────────────────────────────────────────────────────────────
 // Schema (mismo que publish.js del bot, sin alias):
@@ -130,6 +163,8 @@ export function buildServicio(data, userPubHex, dTag = null, publishedAt = null)
   if (descErr) return { ok: false, error: descErr }
   if (data.catId && !VALID_CATS_SERVICIO.includes(String(data.catId)))
     return { ok: false, error: `categoría inválida: ${data.catId}` }
+  const durationDays = resolveDurationDays(data.durationDays)
+  if (durationDays == null) return { ok: false, error: 'duración inválida' }
 
   const tags = [
     ['title',        String(data.title).trim().slice(0, 200)],
@@ -140,7 +175,7 @@ export function buildServicio(data, userPubHex, dTag = null, publishedAt = null)
   ]
   applyCommonOptionalTags(tags, data)
 
-  const { unsignedEvent, dTag: uid } = assembleEvent(30402, tags, String(data.desc) + FOOTER, userPubHex, dTag, publishedAt, MERCADO_EXPIRATION_DAYS)
+  const { unsignedEvent, dTag: uid } = assembleEvent(30402, tags, String(data.desc) + FOOTER, userPubHex, dTag, publishedAt, durationDays)
   return { ok: true, unsignedEvent, dTag: uid }
 }
 
@@ -323,6 +358,8 @@ export function buildTransaccion(data, userPubHex, dTag = null, publishedAt = nu
     return { ok: false, error: `tipo inválido: ${data.tipoTag}` }
   if (data.alcanceId && !VALID_ALCANCES.includes(String(data.alcanceId)))
     return { ok: false, error: `alcance inválido: ${data.alcanceId}` }
+  const durationDays = resolveDurationDays(data.durationDays)
+  if (durationDays == null) return { ok: false, error: 'duración inválida' }
 
   const tipoLabel = data.tipoTag === 'plazap2p-venta'  ? '📦 Venta'
                   : data.tipoTag === 'plazap2p-compra' ? '🛒 Compra'
@@ -347,9 +384,12 @@ export function buildTransaccion(data, userPubHex, dTag = null, publishedAt = nu
   if (data.price && data.currency) tags.push(['price', String(data.price), String(data.currency)])
   else if (data.price)             tags.push(['price', String(data.price)])
   if (alcanceClean) tags.push(['location', alcanceClean])
+  // F7-02 (estándar de tiendas Nostr, Gamma Markets): sin `type` esas tiendas
+  // tratan el anuncio como producto digital. Una venta es un objeto físico.
+  if (data.tipoTag === 'plazap2p-venta') tags.push(['type', 'simple', 'physical'])
   applyCommonOptionalTags(tags, data)
 
-  const { unsignedEvent, dTag: uid } = assembleEvent(30402, tags, content, userPubHex, dTag, publishedAt, MERCADO_EXPIRATION_DAYS)
+  const { unsignedEvent, dTag: uid } = assembleEvent(30402, tags, content, userPubHex, dTag, publishedAt, durationDays)
   return { ok: true, unsignedEvent, dTag: uid }
 }
 

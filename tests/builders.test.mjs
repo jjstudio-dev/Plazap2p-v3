@@ -2,7 +2,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  buildServicio, buildTransaccion, buildValoracion, buildRetirada, buildReporte, normalizePrice,
+  buildServicio, buildTransaccion, buildValoracion, buildRetirada, buildReporte, normalizePrice, durationDaysOf,
 } from '../js/publish-builders.js'
 import { PK1, PK2 } from './fixtures/events.mjs'
 
@@ -89,16 +89,16 @@ test('buildRetirada referencia kind:pubkey:dTag y e opcional', () => {
   assert.deepEqual(sinEvento.unsignedEvent.tags, [['a', `31923:${PK1}:d-2`], ['k', '31923']])
 })
 
-test('ADS-002: buildServicio y buildTransaccion añaden expiration ≈ 60 días; buildValoracion/buildRetirada no', () => {
+test('ADS-002 / F7-01: buildServicio y buildTransaccion caducan por defecto a los 90 días; buildValoracion/buildRetirada no', () => {
   const s = buildServicio({ title: 'Diseño gráfico', desc: 'Identidad visual para proyectos.', catId: 'diseno' }, PK1)
   const expS = Number(tag(s.unsignedEvent, 'expiration'))
-  assert.ok(Math.abs(expS - (now + 60 * 86400)) < 10, 'servicio: expiration ≈ ahora + 60 días')
+  assert.ok(Math.abs(expS - (now + 90 * 86400)) < 10, 'servicio: expiration ≈ ahora + 90 días')
 
   const t = buildTransaccion({
     tipoTag: 'plazap2p-venta', title: 'Antminer S19', desc: 'Minero usado, funciona perfecto, se entrega en mano.',
   }, PK1)
   const expT = Number(tag(t.unsignedEvent, 'expiration'))
-  assert.ok(Math.abs(expT - (now + 60 * 86400)) < 10, 'transacción: expiration ≈ ahora + 60 días')
+  assert.ok(Math.abs(expT - (now + 90 * 86400)) < 10, 'transacción: expiration ≈ ahora + 90 días')
 
   const v = buildValoracion({ rateeHex: PK2, rating: 4 }, PK1)
   assert.equal(tag(v.unsignedEvent, 'expiration'), undefined, 'valoración no caduca')
@@ -130,4 +130,29 @@ test('normalizePrice: coma, punto y basura', () => {
   assert.equal(normalizePrice('12abc'), null)
   assert.equal(normalizePrice(''), null)
   assert.equal(normalizePrice('-5'), null)
+})
+
+test('F7-01: duración elegida, sin caducidad y valor inválido', () => {
+  const base = { tipoTag: 'plazap2p-venta', title: 'Antminer S19', desc: 'Minero usado, funciona perfecto, se entrega en mano.' }
+  for (const days of [30, 90, 180, 365]) {
+    const r = buildTransaccion({ ...base, durationDays: String(days) }, PK1)
+    assert.ok(Math.abs(Number(tag(r.unsignedEvent, 'expiration')) - (now + days * 86400)) < 10, `${days} días`)
+    assert.equal(durationDaysOf(r.unsignedEvent), days, `durationDaysOf recupera ${days}`)
+  }
+  const sin = buildServicio({ title: 'Diseño gráfico', desc: 'Identidad visual para proyectos.', durationDays: 0 }, PK1)
+  assert.equal(tag(sin.unsignedEvent, 'expiration'), undefined, 'sin caducidad → sin etiqueta')
+  assert.equal(durationDaysOf(sin.unsignedEvent), 0)
+  assert.equal(buildTransaccion({ ...base, durationDays: 45 }, PK1).ok, false, '45 no es una opción')
+  // Anuncios antiguos de 60 días: al renovar pasan a la opción más cercana (empate → la larga).
+  assert.equal(durationDaysOf({ created_at: 1000, tags: [['expiration', String(1000 + 60 * 86400)]] }), 90)
+})
+
+test('F7-02: una venta lleva type simple/physical; compra e intercambio no', () => {
+  const base = { title: 'Antminer S19', desc: 'Minero usado, funciona perfecto, se entrega en mano.' }
+  const venta = buildTransaccion({ ...base, tipoTag: 'plazap2p-venta' }, PK1)
+  assert.deepEqual(venta.unsignedEvent.tags.find(t => t[0] === 'type'), ['type', 'simple', 'physical'])
+  for (const tipoTag of ['plazap2p-compra', 'plazap2p-intercambio']) {
+    const r = buildTransaccion({ ...base, tipoTag }, PK1)
+    assert.equal(r.unsignedEvent.tags.find(t => t[0] === 'type'), undefined, tipoTag)
+  }
 })
