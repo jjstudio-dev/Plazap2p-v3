@@ -22,12 +22,12 @@ const TIPOS = {
   comunidad: {
     campos: { 'c-title': 'Bitcoin Sevilla', 'c-desc': DESC, 'c-access': 'https://t.me/bitcoinsevilla' },
     pills: { 'pills-c-plat': 'telegram' },
-    kind: 30402, tTag: 'plazap2p-comunidad', categoria: 'comunidad', tabs: ['mercado'],
+    kind: 30402, tTag: 'plazap2p-comunidad', categoria: 'comunidad', tabs: ['comunidades'],
   },
   herramienta: {
     campos: { 'h-title': 'Mi wallet', 'h-desc': DESC, 'h-url': 'https://ejemplo.test/wallet' },
     pills: { 'pills-h-cat': 'wallet' }, checks: ['input[name="h-platform"][value="android"]'],
-    kind: 30402, tTag: 'plazap2p-herramienta', categoria: 'herramienta', tabs: ['mercado'],
+    kind: 30402, tTag: 'plazap2p-herramienta', categoria: 'herramienta', tabs: ['herramientas'],
   },
   venta: {
     campos: { 'tx-title': 'Vendo bicicleta', 'tx-desc': DESC, 'tx-price': '120.50', 'tx-currency': 'EUR', 'tx-contact': '@vendedor' },
@@ -58,7 +58,12 @@ async function publicar(page) {
   await page.waitFor(`document.querySelector('#res-box .res-title')?.textContent.includes('Revisa antes de firmar')`, { label: 'pantalla de revisión' })
   await page.click('#res-box .res-actions .btn-primary')
   await page.waitFor(`document.querySelector('#res-box .res-card.ok, #res-box .res-card.err')`, { timeout: 12000, label: 'resultado de la publicación' })
-  return page.evaluate(`({ ok: !!document.querySelector('#res-box .res-card.ok'), titulo: document.querySelector('#res-box .res-title').textContent, sub: document.querySelector('#res-box .res-sub').textContent })`)
+  return page.evaluate(`({
+    ok: !!document.querySelector('#res-box .res-card.ok'),
+    titulo: document.querySelector('#res-box .res-title').textContent,
+    sub: document.querySelector('#res-box .res-sub').textContent,
+    mercado: document.querySelector('#res-box .res-actions a[href*="#/anuncio/"]')?.getAttribute('href') ?? null,
+  })`)
 }
 
 const publicados = page => page.evaluate(`[...new Map(window.__published.map(p => [p.event.id, p.event])).values()]`)
@@ -92,6 +97,7 @@ export const tests = [
         t.assert.ok(tTags(ev).includes('plazap2p') && tTags(ev).includes(def.tTag), `${tipo}: tags t ${tTags(ev)}`)
         t.assert.ok(ev.tags.every(x => x.every(v => typeof v === 'string' && v !== '')), `${tipo}: ningún valor vacío en los tags`)
         t.assert.match(tag(ev, 'published_at')[1], /^\d{10}$/, `${tipo}: published_at`)
+        t.assert.match(res.mercado, /^\.\/#\/anuncio\/naddr1/, `${tipo}: «Ver en el Mercado» abre el anuncio publicado (W-09)`)
         t.assert.deepEqual(t.appErrors(page), [], tipo)
         await page.close()
       }
@@ -111,7 +117,12 @@ export const tests = [
       // ── Lectura: cada uno aparece donde el usuario espera ──
       const lector = await t.open({ scenario: { events: Object.values(eventos) } })
       await lector.goto(server.origin + '/index.html')
-      await lector.waitFor(`document.querySelectorAll('#channel-mercado .listing-card:not(.skeleton)').length === 6`, { label: '6 publicaciones en Mercado' })
+      await lector.waitFor(`document.querySelectorAll('#channel-mercado .listing-card:not(.skeleton)').length === 4`, { label: '4 publicaciones en Mercado' })
+      const tituloComunidad = tag(eventos.comunidad, 'title')[1]
+      const tituloHerramienta = tag(eventos.herramienta, 'title')[1]
+      const mercadoTexto = await lector.evaluate(`document.getElementById('channel-mercado').innerText`)
+      t.assert.ok(!mercadoTexto.includes(tituloComunidad), 'la comunidad propuesta no se mezcla con Mercado (W-04)')
+      t.assert.ok(!mercadoTexto.includes(tituloHerramienta), 'la herramienta propuesta no se mezcla con Mercado (W-04)')
       for (const [tipo, def] of Object.entries(TIPOS)) {
         const titulo = tag(eventos[tipo], 'title')[1]
         for (const tab of def.tabs) {
@@ -127,11 +138,13 @@ export const tests = [
           await lector.click('.filter-btn[data-filter="all"]')
         }
       }
-      // Comunidad y herramienta no son ofertas: sin "medio de pago"
-      const sinPago = await lector.evaluate(`[...document.querySelectorAll('#channel-mercado .listing-card')]
-        .filter(c => /COMUNIDAD|HERRAMIENTA/.test(c.querySelector('.card-badge').textContent))
-        .map(c => !!c.querySelector('.card-payment'))`)
-      t.assert.deepEqual(sinPago, [false, false])
+      // Comunidad y herramienta se enseñan como propuestas, sin medio de pago.
+      for (const [tab, titulo] of [['comunidades', tituloComunidad], ['herramientas', tituloHerramienta]]) {
+        await lector.click(`.nav-tab[data-tab="${tab}"]`)
+        const texto = await lector.evaluate(`document.getElementById('channel-${tab}').innerText`)
+        t.assert.ok(texto.includes(titulo), `${titulo} debe verse en ${tab}`)
+        t.assert.match(texto, /sin revisar/i)
+      }
       t.assert.deepEqual(t.appErrors(lector), [])
     },
   },

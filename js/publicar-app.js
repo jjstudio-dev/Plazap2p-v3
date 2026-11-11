@@ -1039,7 +1039,8 @@ function renderResult({ ok, title, sub, results = [], naddr = null, retry = fals
 
     const market = document.createElement('a')
     market.className = 'btn-secondary'
-    market.href = './'
+    // W-09: enlace directo al anuncio publicado (el router lo abre), no a la portada.
+    market.href = `./#/anuncio/${naddr}`
     market.textContent = '🛒 Ver en el Mercado'
     actions.appendChild(market)
   }
