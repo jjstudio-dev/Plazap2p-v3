@@ -3,7 +3,7 @@
 // index.html, en la pestaña y categoría que el usuario eligió.
 
 import { verifyEvent } from '../../js/vendor/nostr-crypto.js'
-import { SK1, PK1, skHex, listing, calendar, now } from './fixtures.mjs'
+import { SK1, PK1, skHex, listing, calendar, now, signWith } from './fixtures.mjs'
 
 const identidad = { localStorage: { plazap2p_pubkey: PK1 }, nip07: { sk: skHex(SK1) } }
 const DESC = 'Descripción suficientemente larga para pasar la validación del formulario.'
@@ -279,6 +279,27 @@ export const tests = [
       t.assert.equal(tag(ev, 'd')[1], 'renovable')
       const exp = Number(tag(ev, 'expiration')[1])
       t.assert.ok(exp > now() + 179 * 86400 && exp < now() + 181 * 86400, 'renovar conserva los 180 días elegidos')
+      t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
+  {
+    name: 'F7-04: lo publicado llega también a los relays de escritura propios (NIP-65)',
+    async run(t) {
+      const server = await t.server()
+      const lista = signWith(SK1, { kind: 10002, created_at: now() - 100, content: '', tags: [
+        ['r', 'wss://mi-relay.test'], ['r', 'wss://solo-lectura.test', 'read'], ['r', 'wss://nos.lol'],
+      ] })
+      const page = await t.open({ scenario: { ...identidad, events: [lista] } })
+      await page.goto(`${server.origin}/publicar.html?type=venta`)
+      await page.waitFor(`!document.getElementById('publish-bar').classList.contains('hidden')`)
+      await rellenar(page, TIPOS.venta)
+      const res = await publicar(page)
+      t.assert.ok(res.ok, `${res.titulo} — ${res.sub}`)
+      await page.waitFor(`document.querySelector('#res-box .res-outbox')`, { timeout: 12000, label: 'aviso de relays propios' })
+      t.assert.match(await page.text('#res-box .res-outbox'), /También enviado a 1 de tus 1 relays/)
+      const urls = await page.evaluate(`window.__published.map(p => p.url)`)
+      t.assert.ok(urls.includes('wss://mi-relay.test'), 'llega al relay de escritura propio')
+      t.assert.ok(!urls.includes('wss://solo-lectura.test'), 'no se publica en un relay de solo lectura')
       t.assert.deepEqual(t.appErrors(page), [])
     },
   },

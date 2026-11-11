@@ -9,7 +9,8 @@
 //    history API en vez de BackButton, publicación directa en vez de sendData.
 //  - El usuario firma con SU clave (no hay Modo Perfil ni /vincular).
 
-import { RelayPool } from './relay-pool.js'
+import { RelayPool, collectUntilEose } from './relay-pool.js'
+import { writeRelaysFrom } from './outbox.js'
 import { encodeNaddr, decodeNaddr, getTagValue, getTagValues, hexToNpub } from './nostr.js'
 import * as signer from './signer.js'
 import {
@@ -978,6 +979,7 @@ async function broadcastAndReportInner(signedEvent, pending) {
   const accepted = results.filter(r => r.accepted)
 
   if (accepted.length >= 1) {
+    const outbox = sendToOutbox(signedEvent)   // F7-04: en segundo plano
     signer.markProcessed(signedEvent.id)
     signer.clearPending()
     lastSignedEvent = null
@@ -1016,8 +1018,9 @@ async function broadcastAndReportInner(signedEvent, pending) {
            : signedEvent.kind === 5    ? '🗑 Solicitud de borrado enviada'
            : '🎉 ¡Publicado en Nostr!',
       sub: `Aceptado por ${accepted.length} de ${results.length} relays.` + notTriedNote(results),
-      results, naddr,
+      results, naddr, eventId: signedEvent.id,
     })
+    reportOutbox(outbox, signedEvent.id)
   } else {
     lastSignedEvent = { signedEvent, pending }
     const msgs = results.filter(r => !r.accepted && r.message).map(r => r.message)
@@ -1032,18 +1035,82 @@ async function broadcastAndReportInner(signedEvent, pending) {
   }
 }
 
+// ── F7-04: también a los relays propios (NIP-65) ─────────────────────────────
+
+// Lista de relays de escritura de quien publica, una consulta por sesión e identidad.
+let outboxCache = { pubkey: null, promise: null }
+
+function getOutboxRelays() {
+  if (outboxCache.pubkey !== userPubkey || !outboxCache.promise) {
+    const pubkey = userPubkey
+    outboxCache = {
+      pubkey,
+      promise: (async () => {
+        await ready
+        let latest = null
+        await collectUntilEose(pool, [{ kinds: [10002], authors: [pubkey], limit: 1 }], {
+          prefix: 'outbox', timeoutMs: 4000,
+          onEvent: ev => { if (ev.pubkey === pubkey && (!latest || ev.created_at > latest.created_at)) latest = ev },
+        })
+        return latest ? writeRelaysFrom(latest, config?.relays || []) : []
+      })().catch(() => []),
+    }
+  }
+  return outboxCache.promise
+}
+
+/** Reenvía un evento ya aceptado a los relays propios. Nunca falla: devuelve
+ * { accepted, total } o null si no hay relays propios que añadir. */
+async function sendToOutbox(signedEvent) {
+  try {
+    const urls = await getOutboxRelays()
+    if (!urls.length) return null
+    const extra = new RelayPool(urls)
+    extra.connect()
+    try {
+      const start = Date.now()
+      while (extra.connectedCount < urls.length && Date.now() - start < 5000) {
+        if (extra.connectedCount > 0 && extra.expectedCount <= extra.connectedCount) break
+        await new Promise(r => setTimeout(r, 200))
+      }
+      const results = await extra.publishWithFeedback(signedEvent, 6000)
+      return { accepted: results.filter(r => r.accepted).length, total: urls.length }
+    } finally {
+      extra.close()
+    }
+  } catch {
+    return null
+  }
+}
+
+/** Añade al resultado ya pintado cuántos relays propios lo recibieron. */
+function reportOutbox(outboxPromise, eventId) {
+  outboxPromise.then(r => {
+    if (!r) return
+    const card = document.querySelector(`#res-box .res-card[data-event-id="${eventId}"]`)
+    if (!card) return
+    const p = document.createElement('div')
+    p.className = 'res-sub res-outbox'
+    p.textContent = r.accepted > 0
+      ? `También enviado a ${r.accepted} de tus ${r.total} relays, para que otras apps Nostr lo encuentren.`
+      : `No se pudo enviar a tus ${r.total} relays propios; está en los de PlazaP2P.`
+    card.querySelector('.res-sub')?.after(p)
+  })
+}
+
 function editingDTagWas(pending) {
   return !!pending?.meta?.editing
 }
 
 // ── Pantalla de resultado ─────────────────────────────────────────────────────
 
-function renderResult({ ok, title, sub, results = [], naddr = null, retry = false, nextInQueue = null }) {
+function renderResult({ ok, title, sub, results = [], naddr = null, retry = false, nextInQueue = null, eventId = null }) {
   const box = $('res-box')
   box.replaceChildren()
 
   const card = document.createElement('div')
   card.className = 'res-card ' + (ok === true ? 'ok' : ok === false ? 'err' : '')
+  if (eventId) card.dataset.eventId = eventId
 
   const icon = document.createElement('div')
   icon.className = 'res-icon'
