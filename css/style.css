@@ -3659,6 +3659,9 @@ footer {
   color: var(--t-2);
   margin-bottom: 16px;
 }
+/* W-04: propuestas publicadas desde la app, aún sin revisar. */
+.proposals-notice { grid-column: 1 / -1; }
+.proposals-block { margin-top: 8px; }
 .event-static-badge {
   font: 600 0.72rem var(--font-mono);
   color: #f7931a;

@@ -35,8 +35,8 @@
   <meta name="twitter:title" content="PlazaP2P — Economía Circular P2P en Nostr" />
   <meta name="twitter:description" content="Mercado, comunidad y recursos Bitcoin sobre Nostr. Publicaciones abiertas, sin registro y sin intermediarios." />
   <link rel="canonical" href="https://jjstudio-dev.github.io/Plazap2p-v3/" />
-  <link rel="stylesheet" href="css/fonts.css?v=45" />
-  <link rel="stylesheet" href="css/style.css?v=45" />
+  <link rel="stylesheet" href="css/fonts.css?v=46" />
+  <link rel="stylesheet" href="css/style.css?v=46" />
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg" />
@@ -1117,9 +1117,19 @@
           <span>Tab <strong>Eventos</strong></span>
           <span class="glossary-badge glossary-badge--evento">Sub-tag</span>
         </div>
+        <div class="glossary-row">
+          <code>#plazap2p-comunidad</code>
+          <span>Comunidades · propuesta <strong>sin revisar</strong></span>
+          <span class="glossary-badge glossary-badge--evento">Sub-tag</span>
+        </div>
+        <div class="glossary-row">
+          <code>#plazap2p-herramienta</code>
+          <span>Herramientas · propuesta <strong>sin revisar</strong></span>
+          <span class="glossary-badge glossary-badge--evento">Sub-tag</span>
+        </div>
       </div>
 
-      <p class="glossary-note">¿Sin sub-tag? Tu publicación aparece en <strong>General</strong> — no se pierde nada. Los recursos curados como Multimedia, Herramientas y Comunidades se proponen por GitHub para evitar duplicados y mantener el directorio limpio.</p>
+      <p class="glossary-note">¿Sin sub-tag? Tu publicación aparece en <strong>General</strong> — no se pierde nada. Las propuestas de comunidad y herramienta publicadas desde PlazaP2P se enseñan en su pestaña marcadas como «sin revisar»; el directorio curado sigue entrando por GitHub para evitar duplicados.</p>
     </div>
 
     <!-- Proponer relay -->
@@ -1317,7 +1327,7 @@
       <div class="faq-list">
         <div class="faq-item">
           <h3 class="faq-q">¿Cómo aparezco en PlazaP2P?</h3>
-          <p class="faq-a">Depende de la sección. Para el <strong>Mercado, Feed, Artículos y Eventos</strong>: publica desde tu cliente Nostr con el tag <code>#plazap2p</code> — PlazaP2P lo detecta automáticamente desde los relays, sin formularios ni aprobación. Para secciones curadas como <strong>Herramientas, Multimedia o Comunidades</strong>: envía una propuesta vía GitHub Issue o usa los formularios disponibles en la sección Publicar. El contenido es revisado antes de incluirse, pero PlazaP2P no lo verifica ni lo avala — solo lo lista como recurso comunitario.</p>
+          <p class="faq-a">Depende de la sección. Para el <strong>Mercado, Feed, Artículos y Eventos</strong>: publica desde tu cliente Nostr con el tag <code>#plazap2p</code> — PlazaP2P lo detecta automáticamente desde los relays, sin formularios ni aprobación. Las <strong>comunidades y herramientas</strong> también se pueden publicar desde PlazaP2P con los tags <code>#plazap2p-comunidad</code> y <code>#plazap2p-herramienta</code>: aparecen en su pestaña marcadas como «sin revisar». El directorio curado se propone vía GitHub Issue y se revisa antes de incluirlo. PlazaP2P no verifica ni avala ningún recurso: solo lo lista como contenido comunitario.</p>
         </div>
         <div class="faq-item">
           <h3 class="faq-q">¿Por qué no veo mi publicación aquí?</h3>
@@ -1492,15 +1502,15 @@
 <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <!-- ESM module — app.js imports nostr.js and relay-pool.js -->
-<script type="module" src="js/app.js?v=45"></script>
+<script type="module" src="js/app.js?v=46"></script>
 <script type="module">
-  import { initBtcStats }      from './js/btc-stats.js?v=45';
-  import { initPriceChart }    from './js/btc-chart.js?v=45';
-  import { initConverter }     from './js/converter.js?v=45';
-  import { initMiniConverter } from './js/mini-converter.js?v=45';
-  import { initBtcMarket }     from './js/btc-market.js?v=45';
-  import { initAppShell }      from './js/app-shell.js?v=45';
-  import { initRouter }        from './js/router.js?v=45';
+  import { initBtcStats }      from './js/btc-stats.js?v=46';
+  import { initPriceChart }    from './js/btc-chart.js?v=46';
+  import { initConverter }     from './js/converter.js?v=46';
+  import { initMiniConverter } from './js/mini-converter.js?v=46';
+  import { initBtcMarket }     from './js/btc-market.js?v=46';
+  import { initAppShell }      from './js/app-shell.js?v=46';
+  import { initRouter }        from './js/router.js?v=46';
 
   initAppShell();
   initRouter();

@@ -308,4 +308,30 @@ export const tests = [
       t.assert.ok(comentarios.some(c => c.includes('Tardó mucho')) && !comentarios.some(c => c.includes('Genial')), 'solo se muestran los comentarios que cuentan')
     },
   },
+  {
+    name: 'propuestas hostiles de comunidad y herramienta no ejecutan código',
+    async run(t) {
+      const server = await t.server()
+      const events = [
+        listing({
+          d: 'com-hostil', title: `Comunidad ${P('com-titulo')}`, summary: P('com-resumen'),
+          t: ['plazap2p', 'plazap2p-comunidad', 'telegram'],
+          extraTags: [['r', JS_URL('com-enlace')]], price: null,
+        }),
+        listing({
+          d: 'her-hostil', title: `Herramienta ${P('her-titulo')}`, summary: P('her-resumen'),
+          t: ['plazap2p', 'plazap2p-herramienta', 'wallet'],
+          extraTags: [['r', JS_URL('her-enlace')], ['platform', P('her-plat')]], price: null,
+        }),
+      ]
+      const page = await t.open({ scenario: { events } })
+      await page.goto(server.origin + '/index.html')
+      await page.click('.nav-tab[data-tab="comunidades"]')
+      await page.waitFor(`document.getElementById('channel-comunidades').textContent.includes('Comunidad')`)
+      await assertLimpio(t, page, 'propuesta de comunidad')
+      await page.click('.nav-tab[data-tab="herramientas"]')
+      await page.waitFor(`document.getElementById('channel-herramientas').textContent.includes('Herramienta')`)
+      await assertLimpio(t, page, 'propuesta de herramienta')
+    },
+  },
 ]

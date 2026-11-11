@@ -15,7 +15,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '45';
+const ASSET_VERSION  = '46';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -40,6 +40,9 @@ let liveRatingsFetching = false;
 const STATIC_TABS = new Set(['comunidades', 'herramientas', 'multimedia', 'vendedores']);
 
 let staticEvents = [];  // curated fallback events loaded from data/eventos.json
+let staticComunidades = [];
+let staticHerramientas = [];
+const GITHUB_REPO_URL = 'https://github.com/jjstudio-dev/Plazap2p-v3';
 let pendingAnuncioNaddr = null; // CODE-004: naddr de #/anuncio/<naddr> aún no cargado
 
 const channels   = {};  // { [channelId]: Map<key, parsedItem> }
@@ -353,6 +356,11 @@ function addEvent(channelId, event) {
 
     saveToCache();
     if (activeTab === channelId) renderActiveChannel();
+    // W-04: una propuesta nueva de comunidad/herramienta llega por el canal
+    // Mercado; hay que repintar la pestaña estática que la enseña.
+    else if (isDirectoryProposal(parsed) && (activeTab === 'comunidades' || activeTab === 'herramientas')) {
+      renderActiveChannel();
+    }
     updateAllBadges();
   } catch (e) { console.warn('[addEvent]', e); }
 }
@@ -394,7 +402,11 @@ function parseListing(event) {
   const priceTag    = tags.find(t => t[0] === 'price');
   const price       = priceTag?.[1] || '';
   const currency    = priceTag?.[2] || '';
-  return { kind: 30402, title, summary, location, category, payment, price, currency, publishedAt, status, naddr, npub, pubkeyHex: pubkey, created_at, expiresAt: expirationTs(event) };
+  return {
+    kind: 30402, title, summary, location, category, payment, price, currency, publishedAt, status, naddr, npub,
+    pubkeyHex: pubkey, created_at, expiresAt: expirationTs(event),
+    tTags, links: getTagValues(tags, 'r'), platforms: getTagValues(tags, 'platform'),
+  };
 }
 
 function parseFeedPost(event) {
@@ -734,6 +746,8 @@ function renderActiveChannel() {
 
 function renderActiveChannelInner() {
   if (activeTab === 'vendedores') { renderSellersDirectory(); return; }
+  if (activeTab === 'comunidades') { renderComunidades(staticComunidades, GITHUB_REPO_URL); return; }
+  if (activeTab === 'herramientas') { renderHerramientas(staticHerramientas, GITHUB_REPO_URL); return; }
   if (STATIC_TABS.has(activeTab)) return;
 
   const grid = document.getElementById(`channel-${activeTab}`);
@@ -757,6 +771,9 @@ function renderActiveChannelInner() {
 
   const sort = sortPrefs[activeTab] || 'newest';
   let items = [...ch.values()].filter(item => !isItemExpired(item));
+  // W-04: las propuestas de comunidad/herramienta se publican como kind 30402
+  // y caían en el Mercado. Se enseñan en su pestaña, no aquí.
+  if (activeTab === 'mercado') items = items.filter(item => !isDirectoryProposal(item));
   if (activeTab === 'eventos') {
     items = sortCalendarEvents(items);
   } else {
@@ -1926,7 +1943,6 @@ window.setIntercambioFiat = function(fiat) {
 
 // ── Static data (GitHub JSON) ──────────────────────────────────
 async function loadStaticData() {
-  const GITHUB_URL = 'https://github.com/jjstudio-dev/Plazap2p-v3';
   try {
     const [comunidades, herramientas, multimedia, eventosData] = await Promise.all([
       fetchWithTimeout(versioned('data/comunidades.json')).then(r => r.ok ? r.json() : []).catch(() => []),
@@ -1934,9 +1950,11 @@ async function loadStaticData() {
       fetchWithTimeout(versioned('data/multimedia.json')).then(r => r.ok ? r.json() : []).catch(() => []),
       fetchWithTimeout(versioned('data/eventos.json')).then(r => r.ok ? r.json() : []).catch(() => [])
     ]);
-    renderComunidades(comunidades.filter(c => c.aprobado), GITHUB_URL);
-    renderHerramientas(herramientas.filter(h => h.aprobado), GITHUB_URL);
-    renderMultimedia(multimedia.filter(m => m.aprobado), GITHUB_URL);
+    staticComunidades = comunidades.filter(c => c.aprobado);
+    staticHerramientas = herramientas.filter(h => h.aprobado);
+    renderComunidades(staticComunidades, GITHUB_REPO_URL);
+    renderHerramientas(staticHerramientas, GITHUB_REPO_URL);
+    renderMultimedia(multimedia.filter(m => m.aprobado), GITHUB_REPO_URL);
     staticEvents = eventosData.filter(e => e.aprobado);
     if (activeTab === 'vendedores') renderSellersDirectory();
     // Eventos también: si los relays contestaron antes que eventos.json, la
@@ -2035,20 +2053,95 @@ function staticEmpty(icon, label, githubUrl, templateParam) {
   </div>`;
 }
 
+// ── Render: propuestas del directorio (W-04) ──────────────────
+// Se publican desde publicar.html como kind 30402 con un tag propio. Antes
+// caían en Mercado/«General» y la FAQ decía que iban por GitHub.
+const PROPOSAL_COMUNIDAD = 'plazap2p-comunidad';
+const PROPOSAL_HERRAMIENTA = 'plazap2p-herramienta';
+
+function isDirectoryProposal(item) {
+  return item?.kind === 30402 &&
+    (item.tTags?.includes(PROPOSAL_COMUNIDAD) || item.tTags?.includes(PROPOSAL_HERRAMIENTA));
+}
+
+function directoryProposals(tag) {
+  const ch = channels.mercado;
+  if (!ch) return [];
+  return [...ch.values()].filter(item =>
+    item?.kind === 30402 && item.tTags?.includes(tag) && !isItemExpired(item));
+}
+
+const PROPOSAL_PLATS = {
+  telegram: 'Telegram', nostr: 'Nostr', matrix: 'Matrix', discord: 'Discord', otro: 'Otra',
+};
+
+function proposalsNoticeHtml(text) {
+  return `<div class="event-static-notice proposals-notice">
+    <span class="event-static-badge">🕓 Sin revisar</span>
+    <span>${text}</span>
+  </div>`;
+}
+
+function renderCommunityProposalCard(p) {
+  const platKey = (p.tTags || []).find(t => t !== 'plazap2p' && t !== PROPOSAL_COMUNIDAD) || 'otro';
+  const platLabel = PROPOSAL_PLATS[platKey] || platKey;
+  const initials = initialsFromName(p.title);
+  const tone = toneFromSeed(p.title || p.naddr);
+  const link = p.links?.[0];
+  return `<article class="community-card directory-card">
+    <div class="directory-accent"></div>
+    <div class="directory-card-body">
+      <div class="directory-head">
+        <div class="directory-avatar directory-avatar-${tone}" aria-hidden="true">
+          <span class="directory-avatar-fallback">${esc(initials)}</span>
+        </div>
+        <div class="directory-meta">
+          <h3 class="community-name">${esc(p.title)}</h3>
+          <div class="community-top">
+            <span class="community-platform"><span class="community-platform-icon">💬</span>${esc(platLabel)}</span>
+          </div>
+        </div>
+      </div>
+      <p class="community-desc">${esc(p.summary || '')}</p>
+      <div class="directory-footer">
+        <span class="directory-chip">Sin revisar</span>
+        ${link ? `<a href="${safeUrl(link)}" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-sm">Abrir propuesta ↗</a>` : ''}
+      </div>
+    </div>
+  </article>`;
+}
+
+function renderToolProposalCard(p) {
+  const platforms = (p.platforms || []).filter(Boolean);
+  const link = p.links?.[0];
+  return `<div class="guia-card">
+    <div class="tool-header"><span class="guia-title">${esc(p.title)}</span></div>
+    <div class="guia-meta">
+      ${platforms.map(x => `<span class="guia-tipo-badge">${esc(x)}</span>`).join('')}
+      <span class="guia-tipo-badge">Sin revisar</span>
+    </div>
+    <p class="guia-desc">${esc(p.summary || '')}</p>
+    <div class="guia-footer">
+      ${link ? `<a class="btn-link" href="${safeUrl(link)}" target="_blank" rel="noopener noreferrer">ABRIR ▸</a>` : ''}
+    </div>
+  </div>`;
+}
+
 // ── Render: Comunidades ────────────────────────────────────────
 function renderComunidades(items, githubUrl) {
   const container = document.getElementById('channel-comunidades');
   if (!container) return;
   const footer = document.getElementById('comunidades-footer');
+  const proposals = directoryProposals(PROPOSAL_COMUNIDAD);
 
-  if (items.length === 0) {
+  if (items.length === 0 && proposals.length === 0) {
     container.innerHTML = staticEmpty('🏘', 'comunidades', githubUrl, 'comunidad.yml');
     return;
   }
 
   const PLAT_ICONS = { Telegram: '✈️', Nostr: '⚡', Discord: '🎮', Matrix: '🔷', Signal: '🔒', Web: '🌐', Otra: '💬' };
 
-  container.innerHTML = items.map(c => {
+  const curatedHtml = items.map(c => {
     const icon = PLAT_ICONS[c.plataforma] || '💬';
     const logo = mediaImageUrl(c);
     const initials = initialsFromName(c.nombre);
@@ -2079,6 +2172,11 @@ function renderComunidades(items, githubUrl) {
     </article>`;
   }).join('');
 
+  container.innerHTML = curatedHtml + (proposals.length
+    ? proposalsNoticeHtml('Propuestas publicadas desde PlazaP2P. Todavía no han pasado la revisión del directorio.') +
+      proposals.map(renderCommunityProposalCard).join('')
+    : '');
+
   if (footer) footer.innerHTML = staticDisclaimer('comunidad', githubUrl, 'comunidad.yml');
 }
 
@@ -2099,8 +2197,9 @@ function renderHerramientas(items, githubUrl) {
   const container = document.getElementById('channel-herramientas');
   if (!container) return;
   const footer = document.getElementById('herramientas-footer');
+  const proposals = directoryProposals(PROPOSAL_HERRAMIENTA);
 
-  if (items.length === 0) {
+  if (items.length === 0 && proposals.length === 0) {
     container.innerHTML = staticEmpty('🔧', 'herramientas', githubUrl, 'herramienta.yml');
     return;
   }
@@ -2151,7 +2250,16 @@ function renderHerramientas(items, githubUrl) {
       </div>`;
     }).join('');
 
-  container.innerHTML = html;
+  const proposalsBlock = proposals.length ? `<div class="tools-category proposals-block">
+    <div class="tools-cat-header">
+      <span class="tools-cat-icon">🕓</span>
+      <span class="tools-cat-label">Propuestas de la comunidad (sin revisar)</span>
+    </div>
+    <p class="guia-desc">Publicadas desde PlazaP2P. Todavía no han pasado la revisión del directorio.</p>
+    <div class="tools-cat-grid">${proposals.map(renderToolProposalCard).join('')}</div>
+  </div>` : '';
+
+  container.innerHTML = html + proposalsBlock;
   if (footer) footer.innerHTML = staticDisclaimer('herramienta', githubUrl, 'herramienta.yml');
 }
 
