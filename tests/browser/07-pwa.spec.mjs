@@ -45,8 +45,7 @@ export const tests = [
       await page.goto(server.origin + '/publicar.html')
       await page.waitFor(`!document.getElementById('sec-identidad').classList.contains('hidden')`, { label: 'publicar.html sin red' })
       await page.click('#nav-perfil')
-      // (ratings.json?t= es de la página anterior: su fallo sin red es esperado y puede anotarse tarde)
-      t.assert.deepEqual(t.appErrors(page).filter(e => !/ratings\.json/.test(e)), [], 'publicar.html sin red')
+      t.assert.deepEqual(t.appErrors(page), [], 'publicar.html sin red')
 
       // Los enlaces con parámetros (los que genera la propia app) también abren.
       await page.goto(`${server.origin}/publicar.html?valorar=${hexToNpub(PK1)}`)
@@ -105,8 +104,8 @@ export const tests = [
       await page.sleep(500)
       const precargado = new Set((await cachesInfo(page))[CACHE_ACTUAL])
       // Lo que el servidor sirvió DESPUÉS de instalarse el SW y no estaba precargado
-      // es algo que faltaría sin red. (ratings.json?t= es dinámico a propósito.)
-      const pedidos = [...new Set(server.hits)].filter(h => !/ratings\.json|sw\.js/.test(h))
+      // es algo que faltaría sin red.
+      const pedidos = [...new Set(server.hits)].filter(h => !/sw\.js/.test(h))
       const fuera = pedidos.filter(h => !precargado.has(h) && !precargado.has(h.replace(/^\/$/, '/')) )
         .filter(h => !['/', '/index.html', '/publicar.html'].includes(h.split('?')[0]) || !h.includes('?'))
         .filter(h => !precargado.has(h))

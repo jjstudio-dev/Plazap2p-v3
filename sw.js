@@ -11,30 +11,30 @@
 //      archivo de STATICS y CACHE no)
 // Regla: cada entrada de STATICS es EXACTAMENTE una URL que el navegador
 // pide de verdad. Los imports internos de ES modules van SIN query.
-const CACHE    = 'plazap2p-v3-r80';
+const CACHE    = 'plazap2p-v3-r82';
 const STATICS  = [
   './',
   './index.html',
   './publicar.html',
   // Assets versionados (los pide el HTML / versioned() con ?v=)
-  './css/style.css?v=44',
-  './css/publicar.css?v=44',
-  './css/fonts.css?v=44',
-  './js/app.js?v=44',
-  './js/app-shell.js?v=44',
-  './js/router.js?v=44',
-  './js/publicar-app.js?v=44',
-  './js/btc-stats.js?v=44',
-  './js/btc-chart.js?v=44',
-  './js/btc-market.js?v=44',
-  './js/converter.js?v=44',
-  './js/mini-converter.js?v=44',
-  './data/config.json?v=44',
-  './data/comunidades.json?v=44',
-  './data/herramientas.json?v=44',
-  './data/multimedia.json?v=44',
-  './data/eventos.json?v=44',
-  './data/mantenimiento.json?v=44',
+  './css/style.css?v=45',
+  './css/publicar.css?v=45',
+  './css/fonts.css?v=45',
+  './js/app.js?v=45',
+  './js/app-shell.js?v=45',
+  './js/router.js?v=45',
+  './js/publicar-app.js?v=45',
+  './js/btc-stats.js?v=45',
+  './js/btc-chart.js?v=45',
+  './js/btc-market.js?v=45',
+  './js/converter.js?v=45',
+  './js/mini-converter.js?v=45',
+  './data/config.json?v=45',
+  './data/comunidades.json?v=45',
+  './data/herramientas.json?v=45',
+  './data/multimedia.json?v=45',
+  './data/eventos.json?v=45',
+  './data/mantenimiento.json?v=45',
   // Imports internos (@import CSS / ES modules, siempre sin query)
   './css/tokens.css',
   // app.js importa router.js (y este, app-shell.js) SIN query: son URLs
@@ -141,10 +141,10 @@ self.addEventListener('fetch', e => {
       if (cached) return cached;
       return fetch(request).then(res => {
         // Se guarda solo lo que tiene una URL estable: sin parámetros, o con
-        // la versión de assets (?v=). Un parámetro variable (ratings.json?t=
-        // <minuto>) crearía una entrada nueva cada vez y la caché crecería sin
-        // límite. La copia se toma AQUÍ, antes de devolver la respuesta: hecha
-        // más tarde, el cuerpo ya está consumido y clone() lanza.
+        // la versión de assets (?v=). Un parámetro variable crearía una
+        // entrada nueva cada vez y la caché crecería sin límite. La copia se
+        // toma AQUÍ, antes de devolver la respuesta: hecha más tarde, el
+        // cuerpo ya está consumido y clone() lanza.
         const params = [...url.searchParams.keys()];
         if (res.ok && params.every(k => k === 'v')) {
           const copy = res.clone();

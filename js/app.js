@@ -15,7 +15,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '44';
+const ASSET_VERSION  = '45';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -34,7 +34,6 @@ let intercambioFiat    = 'EUR';   // selected fiat currency filter
 let trustedMostroHexPubkeys = []; // resolved at init from config.intercambio.trustedMostroInstances
 
 // Ratings state
-let ratingsIndex = {};  // { [pubkeyHex]: { avg, n, aspects, last_active } } — índice estático (bot)
 let liveRatings  = {};  // { [pubkeyHex]: { avg, n, aspects, comments } | null } — kind 1985 live (null = consultado, sin datos)
 let liveRatingsFetching = false;
 
@@ -489,15 +488,13 @@ function parseGeneric(event) {
 }
 
 // ── Ratings helpers ────────────────────────────────────────────
-// Merge: valoraciones live (kind 1985 de los relays) ganan sobre el
-// índice estático data/ratings.json (precomputado por el bot).
+// Solo cuentan las valoraciones live (kind 1985 de los relays). El índice
+// estático que generaba un bot nunca desplegado se eliminó (W-03).
 function getSellerRating(pubkeyHex) {
   if (!pubkeyHex) return null;
   const live = liveRatings[pubkeyHex];
   if (live && live.n > 0) return live;
-  const r = ratingsIndex[pubkeyHex];
-  if (!r || r.n < 1) return null;
-  return r;
+  return null;
 }
 
 // Consulta en lote las valoraciones kind 1985 de los vendedores visibles
@@ -545,8 +542,7 @@ function renderStarDisplay(avg, n, compact = true) {
 }
 
 // REP-003: distribución 5★→1★, no solo la media — visible solo con datos en
-// vivo (rep.distribution la calcula aggregate() en reputacion.js; el índice
-// histórico estático no la tiene).
+// vivo (rep.distribution la calcula aggregate() en reputacion.js).
 function renderDistributionBars(distribution, total) {
   if (!total) return '';
   return [5, 4, 3, 2, 1].map(star => {
@@ -593,7 +589,7 @@ function renderSellersDirectory() {
 
   const sellerIdx = buildSellerIndex();
   const liveHexes = Object.keys(liveRatings).filter(h => liveRatings[h] && liveRatings[h].n > 0);
-  const allHexes = new Set([...Object.keys(sellerIdx), ...Object.keys(ratingsIndex), ...liveHexes]);
+  const allHexes = new Set([...Object.keys(sellerIdx), ...liveHexes]);
 
   const sellers = [...allHexes].map(hex => ({
     hex,
@@ -670,8 +666,7 @@ window.openReputacionModal = async function(hex) {
     ? `<p class="no-rating-text" id="rep-excluded-note">${excluded} ${plural(excluded, 'valoración', 'valoraciones')} de cuentas que ni tú ni PlazaP2P seguís no cuenta${excluded === 1 ? '' : 'n'} en la media. Cualquiera puede crear cuentas para inflar o hundir una reputación; solo cuenta tu red de confianza.</p>`
     : '';
 
-  const staticR = ratingsIndex[hex];
-  if ((!rep || !rep.showsAverage) && (!staticR || staticR.n < 1)) {
+  if (!rep || !rep.showsAverage) {
     modal.innerHTML = shell(`<div class="modal-rating-section modal-rating-none">
       <span class="no-rating-text">Sin valoraciones firmadas todavía. Las valoraciones son eventos Nostr (kind 1985) verificables por cualquiera.</span>
       ${excludedHtml}
@@ -679,9 +674,9 @@ window.openReputacionModal = async function(hex) {
     return;
   }
 
-  const avg = rep && rep.showsAverage ? rep.avg : staticR.avg;
-  const n   = rep && rep.showsAverage ? rep.count : staticR.n;
-  const aspects = (rep && rep.showsAverage ? rep.aspects : staticR.aspects) || {};
+  const avg = rep.avg;
+  const n   = rep.count;
+  const aspects = rep.aspects || {};
   const comments = (rep?.comments || []).slice(0, 10);
 
   const commentsHtml = comments.length
@@ -696,7 +691,7 @@ window.openReputacionModal = async function(hex) {
       }).join('')
     : '';
 
-  const distributionHtml = (rep && rep.showsAverage && rep.distribution)
+  const distributionHtml = rep.distribution
     ? `<div class="modal-rating-header" style="margin-top:12px">Distribución (${rep.count} ${plural(rep.count, 'valoración', 'valoraciones')})</div>` +
       renderDistributionBars(rep.distribution, rep.count)
     : '';
@@ -710,7 +705,7 @@ window.openReputacionModal = async function(hex) {
   </div>`;
 
   modal.innerHTML = shell(`<div class="modal-rating-section">
-    <div class="modal-rating-header">Reputación agregada${rep && rep.showsAverage ? ' (en vivo desde los relays)' : ' (índice histórico)'}</div>
+    <div class="modal-rating-header">Reputación agregada (en vivo desde los relays)</div>
     ${renderStarDisplay(avg, n, false)}
     ${trustHtml}
     ${excludedHtml}
@@ -1933,18 +1928,16 @@ window.setIntercambioFiat = function(fiat) {
 async function loadStaticData() {
   const GITHUB_URL = 'https://github.com/jjstudio-dev/Plazap2p-v3';
   try {
-    const [comunidades, herramientas, multimedia, eventosData, ratingsData] = await Promise.all([
+    const [comunidades, herramientas, multimedia, eventosData] = await Promise.all([
       fetchWithTimeout(versioned('data/comunidades.json')).then(r => r.ok ? r.json() : []).catch(() => []),
       fetchWithTimeout(versioned('data/herramientas.json')).then(r => r.ok ? r.json() : []).catch(() => []),
       fetchWithTimeout(versioned('data/multimedia.json')).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetchWithTimeout(versioned('data/eventos.json')).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetchWithTimeout(`data/ratings.json?t=${Math.floor(Date.now()/60000)}`).then(r => r.ok ? r.json() : { v: 1, sellers: {} }).catch(() => ({ v: 1, sellers: {} }))
+      fetchWithTimeout(versioned('data/eventos.json')).then(r => r.ok ? r.json() : []).catch(() => [])
     ]);
     renderComunidades(comunidades.filter(c => c.aprobado), GITHUB_URL);
     renderHerramientas(herramientas.filter(h => h.aprobado), GITHUB_URL);
     renderMultimedia(multimedia.filter(m => m.aprobado), GITHUB_URL);
     staticEvents = eventosData.filter(e => e.aprobado);
-    ratingsIndex = ratingsData.sellers || {};
     if (activeTab === 'vendedores') renderSellersDirectory();
     // Eventos también: si los relays contestaron antes que eventos.json, la
     // pestaña quedaba pintada sin los eventos curados hasta otro repintado.

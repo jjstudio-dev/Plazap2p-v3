@@ -148,7 +148,6 @@ export const tests = [
         { match: 'data/eventos\\.json', json: [{ id: 'e1', title: P('sev-titulo'), summary: P('sev-resumen'), location: P('sev-lugar'),
           start: '2099-01-01T10:00:00', links: [JS_URL('sev-link')], recurrente: true, aprobado: true }] },
         { match: 'data/mantenimiento\\.json', json: { ln_address: P('ln'), btc_address: P('btc'), mensaje: P('msg'), mensaje_gracias: P('gracias') } },
-        { match: 'data/ratings\\.json', json: { v: 1, sellers: { [PK1]: { avg: P('avg'), n: 3, aspects: { [P('asp')]: 5 } } } } },
       ]
       const page = await t.open({ scenario: { events: [listing()], fetch: fetchRoutes } })
       await page.goto(server.origin + '/index.html')
@@ -162,15 +161,15 @@ export const tests = [
       await page.evaluate(`window.openDonarModal()`)
       await page.evaluate(`document.querySelectorAll('.btn-copy').forEach(b => { try { b.click() } catch {} })`)
       await assertLimpio(t, page, 'donación')
-      // El anuncio del vendedor con índice estático hostil: tarjeta y modal.
+      // El anuncio del vendedor: tarjeta y modal de reputación.
       await page.evaluate(`window.closeDonarModal()`)
       await page.click('.nav-tab[data-tab="mercado"]')
       await page.click('#channel-mercado .listing-card')
-      await assertLimpio(t, page, 'modal con índice de reputación hostil')
+      await assertLimpio(t, page, 'modal de reputación')
       await page.click('.nav-tab[data-tab="vendedores"]')
       await page.evaluate(`window.openReputacionModal(${JSON.stringify(PK1)})`)
       await page.sleep(400)
-      await assertLimpio(t, page, 'reputación con índice hostil')
+      await assertLimpio(t, page, 'reputación en vivo')
     },
   },
   {

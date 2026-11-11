@@ -57,7 +57,7 @@
   ],
   "ratings": {
     "namespace": "plazap2p.reputation",
-    "min_reviews_to_display": 1,
+    "min_reviews_to_display": 3,
     "aspects": [
       { "id": "comunicacion", "label": "Comunicación", "icon": "💬" },
       { "id": "cumplimiento", "label": "Cumplimiento",  "icon": "✅" },
