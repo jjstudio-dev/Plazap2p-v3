@@ -277,6 +277,78 @@
       }
     },
     {
+      "name": "evento con zona y calendario",
+      "builder": "evento",
+      "input": {
+        "title": "Quedada en el parque",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario.",
+        "allDay": true,
+        "startDate": "2099-06-01",
+        "geohash": "ezjmg",
+        "calendarCoord": "31924:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:plazap2p-eventos"
+      },
+      "expected": {
+        "kind": 31922,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Quedada en el parque"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-evento"
+          ],
+          [
+            "start",
+            "2099-06-01"
+          ],
+          [
+            "g",
+            "ezjmg"
+          ],
+          [
+            "g",
+            "ezjm"
+          ],
+          [
+            "g",
+            "ezj"
+          ],
+          [
+            "a",
+            "31924:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:plazap2p-eventos"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ]
+        ],
+        "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📢 Publicado vía PlazaP2P",
+        "category": null
+      }
+    },
+    {
       "name": "evento de día completo",
       "builder": "evento",
       "input": {

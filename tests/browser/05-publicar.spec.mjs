@@ -3,6 +3,8 @@
 // index.html, en la pestaña y categoría que el usuario eligió.
 
 import { verifyEvent } from '../../js/vendor/nostr-crypto.js'
+import { encodeGeohash } from '../../js/geohash.js'
+import { MAINTAINER_PUBKEY } from '../../js/signed-config.js'
 import { SK1, PK1, skHex, listing, calendar, now, signWith } from './fixtures.mjs'
 
 const identidad = { localStorage: { plazap2p_pubkey: PK1 }, nip07: { sk: skHex(SK1) } }
@@ -279,6 +281,32 @@ export const tests = [
       t.assert.equal(tag(ev, 'd')[1], 'renovable')
       const exp = Number(tag(ev, 'expiration')[1])
       t.assert.ok(exp > now() + 179 * 86400 && exp < now() + 181 * 86400, 'renovar conserva los 180 días elegidos')
+      t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
+  {
+    name: 'F7-07: un evento puede llevar zona aproximada (g) y pide entrar en el calendario de PlazaP2P',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: identidad })
+      await page.goto(`${server.origin}/publicar.html?type=evento`)
+      await page.waitFor(`!document.getElementById('publish-bar').classList.contains('hidden')`)
+      await rellenar(page, TIPOS.evento)
+      // Ubicación simulada (Madrid): el navegador real pediría permiso.
+      await page.evaluate(`navigator.geolocation.getCurrentPosition = ok => ok({ coords: { latitude: 40.4168, longitude: -3.7038 } })`)
+      await page.click('#btn-e-geo')
+      const gh = encodeGeohash(40.4168, -3.7038, 5)
+      t.assert.match(await page.text('#e-geo-status'), new RegExp(`Zona añadida .*${gh}`))
+      const res = await publicar(page)
+      t.assert.ok(res.ok, `${res.titulo} — ${res.sub}`)
+      const ev = (await publicados(page)).find(e => e.kind === 31923)
+      t.assert.deepEqual(ev.tags.filter(x => x[0] === 'g').map(x => x[1]), [gh, gh.slice(0, 4), gh.slice(0, 3)])
+      t.assert.deepEqual(tag(ev, 'a'), ['a', `31924:${MAINTAINER_PUBKEY}:plazap2p-eventos`])
+
+      // Sin pulsar el botón no se publica ninguna zona.
+      await page.goto(`${server.origin}/publicar.html?type=evento`)
+      await page.waitFor(`!document.getElementById('publish-bar').classList.contains('hidden')`)
+      t.assert.equal(await page.text('#e-geo-status'), '', 'el formulario nuevo empieza sin zona')
       t.assert.deepEqual(t.appErrors(page), [])
     },
   },

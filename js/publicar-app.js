@@ -11,6 +11,8 @@
 
 import { RelayPool, collectUntilEose } from './relay-pool.js'
 import { writeRelaysFrom } from './outbox.js'
+import { encodeGeohash, EVENT_GEOHASH_PRECISION, GEOHASH_RE } from './geohash.js'
+import { MAINTAINER_PUBKEY } from './signed-config.js'
 import { encodeNaddr, decodeNaddr, getTagValue, getTagValues, hexToNpub } from './nostr.js'
 import * as signer from './signer.js'
 import {
@@ -18,7 +20,7 @@ import {
   buildTransaccion, buildValoracion, buildRetirada, buildReporte, normalizePrice, buildAvisoMuro,
   VALID_CATS_SERVICIO, VALID_PLATS_COMUNIDAD, VALID_CATS_HERRAMIENTA,
   VALID_ALCANCES, VALID_CURRENCIES, VALID_REPORT_TYPES,
-  DURATION_OPTIONS, DEFAULT_DURATION_DAYS, NO_EXPIRATION, durationDaysOf,
+  DURATION_OPTIONS, DEFAULT_DURATION_DAYS, NO_EXPIRATION, durationDaysOf, PLAZA_CALENDAR_D,
 } from './publish-builders.js'
 import { sanitizeContact } from './publish-utils.js'
 import { allDayLastDay, shiftIsoDate } from './listing-utils.js'
@@ -46,7 +48,7 @@ const ALL_SECTIONS = [
 ]
 const FORM_FIELD_IDS = [
   's-title', 's-desc', 's-price', 's-currency', 's-negociar', 's-image', 's-contact',
-  'e-title', 'e-desc', 'e-date', 'e-allday', 'e-date-end', 'e-location', 'e-image', 'e-contact',
+  'e-title', 'e-desc', 'e-date', 'e-allday', 'e-date-end', 'e-location', 'e-geohash', 'e-image', 'e-contact',
   'c-title', 'c-desc', 'c-access', 'c-image',
   'h-title', 'h-desc', 'h-url', 'h-image',
   'tx-title', 'tx-desc', 'tx-price', 'tx-currency', 'tx-negociar', 'tx-image', 'tx-contact',
@@ -237,6 +239,8 @@ async function loadConfig() {
 // ── Cableado de UI ────────────────────────────────────────────────────────────
 
 function wireUi() {
+  wireEventGeo()   // F7-07
+
   // Cards de tipo
   document.querySelectorAll('.type-card').forEach(card => {
     card.addEventListener('click', () => {
@@ -484,6 +488,7 @@ function navigateTo(type, options = {}) {
   }
   showSection(secId)
   renderExpirationHints(type)
+  if (type === 'evento') syncEventGeoUi()
   $('btn-publicar').textContent = editingDTag ? '💾 Guardar cambios' : '📢 Publicar'
 }
 
@@ -529,6 +534,39 @@ function renderExpirationHints(type) {
   const tx = $('tx-expiration-hint')
   if (s) s.textContent = type === 'servicio' ? text : ''
   if (tx) tx.textContent = TX_META[type] ? text : ''
+}
+
+// ── F7-07: zona aproximada del evento (geohash) ──────────────────────────────
+
+function syncEventGeoUi() {
+  const gh = $('e-geohash')?.value || ''
+  $('btn-e-geo-clear')?.classList.toggle('hidden', !gh)
+  const status = $('e-geo-status')
+  if (status) status.textContent = gh ? `Zona añadida (unos 5 km alrededor): ${gh}` : ''
+}
+
+function setEventGeohash(gh) {
+  const input = $('e-geohash')
+  if (input) input.value = gh || ''
+  syncEventGeoUi()
+}
+
+function wireEventGeo() {
+  $('btn-e-geo')?.addEventListener('click', () => {
+    const status = $('e-geo-status')
+    if (!navigator.geolocation) { if (status) status.textContent = 'Este navegador no da la ubicación; el evento se publica sin zona.'; return }
+    if (status) status.textContent = 'Pidiendo la ubicación…'
+    navigator.geolocation.getCurrentPosition(
+      pos => setEventGeohash(encodeGeohash(pos.coords.latitude, pos.coords.longitude, EVENT_GEOHASH_PRECISION)),
+      err => {
+        if (status) status.textContent = err?.code === 1
+          ? 'Sin permiso de ubicación: el evento se publica sin zona.'
+          : 'No se pudo obtener la ubicación; el evento se publica sin zona.'
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 },
+    )
+  })
+  $('btn-e-geo-clear')?.addEventListener('click', () => setEventGeohash(''))
 }
 
 // ── Identidad ─────────────────────────────────────────────────────────────────
@@ -791,6 +829,7 @@ function renderPreview(unsignedEvent, meta, queue = []) {
   addRow('Precio', priceTag ? `${priceTag[1]} ${priceTag[2] || ''}`.trim() : null)
   addRow('Contacto', getTagValue(unsignedEvent.tags, 'contact'))
   addRow('Imagen', getTagValue(unsignedEvent.tags, 'image') ? 'adjunta' : null)
+  addRow('Zona', getTagValue(unsignedEvent.tags, 'g') ? 'aproximada (unos 5 km)' : null)
   const expRaw = getTagValue(unsignedEvent.tags, 'expiration')
   if (expRaw && Number.isFinite(Number(expRaw))) {
     addRow('Caduca', `${expirationDateLabel(Number(expRaw))} (${durationLabel(durationDaysOf(unsignedEvent))})`)
@@ -1421,6 +1460,8 @@ function buildPayload(type) {
         endTs:     allDay ? null : toTs(endRaw),
         tzid,
         location: val('e-location') || null,
+        geohash: GEOHASH_RE.test(val('e-geohash')) ? val('e-geohash') : null,
+        calendarCoord: `31924:${MAINTAINER_PUBKEY}:${PLAZA_CALENDAR_D}`,
         imageUrl: val('e-image') || null,
         contact: val('e-contact') || null,
       }
@@ -1713,6 +1754,9 @@ function populateFormFromEvent(ev, type) {
   if (durGroup) setPill(durGroup, String(durationDaysOf(ev)))
   if (type === 'evento') {
     set('e-location', getTagValue(tags, 'location'))
+    // F7-07: la zona más precisa de las etiquetas g.
+    const geo = getTagValues(tags, 'g').filter(g => GEOHASH_RE.test(g)).sort((a, b) => b.length - a.length)[0]
+    setEventGeohash(geo || '')
     // PROT-001: start puede ser Unix (31923, o 31922 legado con bug) o
     // fecha ISO (31922 correcto). end análogo.
     const pad = n => String(n).padStart(2, '0')
@@ -1883,6 +1927,7 @@ function restoreFormSnapshot(snap) {
     if (cb) cb.checked = true
   }
   syncNegociarState()
+  syncEventGeoUi()
   selectedType = VALID_TYPES.includes(snap.selectedType) ? snap.selectedType : null
   editingDTag = snap.editingDTag || null
   editingPublishedAt = (Number.isInteger(snap.editingPublishedAt) && snap.editingPublishedAt > 0)
@@ -1900,6 +1945,7 @@ function resetFormsAfterSuccess() {
   document.querySelectorAll('.pill.active').forEach(p => p.classList.remove('active'))
   document.querySelectorAll('input[name="h-platform"]').forEach(cb => { cb.checked = false })
   syncNegociarState()
+  syncEventGeoUi()
   editingDTag = null
   editingPublishedAt = null
   editingOriginal = null

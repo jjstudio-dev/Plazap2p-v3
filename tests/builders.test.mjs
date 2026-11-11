@@ -179,3 +179,19 @@ test('F7-05: buildAvisoMuro — nota kind 1 con título, precio, enlace y refere
   assert.equal(buildAvisoMuro({ kind: 1985, dTag: 'x', naddr, title: 'x' }, PK1).ok, false, 'solo anuncios y eventos')
   assert.equal(buildAvisoMuro({ kind: 30402, dTag: 'x', naddr: 'javascript:1', title: 'x' }, PK1).ok, false)
 })
+
+test('F7-07: evento con zona (g por precisión) y petición de entrar en el calendario', async () => {
+  const { buildEvento, PLAZA_CALENDAR_D } = await import('../js/publish-builders.js')
+  const { encodeGeohash } = await import('../js/geohash.js')
+  assert.equal(encodeGeohash(57.64911, 10.40744, 11), 'u4pruydqqvj', 'ejemplo clásico de geohash')
+  assert.equal(encodeGeohash(57.64911, 10.40744), 'u4pru')
+  assert.equal(encodeGeohash(91, 0), null)
+  const coord = `31924:${PK2}:${PLAZA_CALENDAR_D}`
+  const base = { title: 'Meetup Bitcoin', desc: 'Quedada mensual para hablar de Bitcoin.', allDay: true, startDate: '2099-05-01' }
+  const r = buildEvento({ ...base, geohash: 'u4pru', calendarCoord: coord }, PK1)
+  assert.deepEqual(r.unsignedEvent.tags.filter(t => t[0] === 'g'), [['g', 'u4pru'], ['g', 'u4pr'], ['g', 'u4p']])
+  assert.deepEqual(r.unsignedEvent.tags.find(t => t[0] === 'a'), ['a', coord])
+  assert.equal(buildEvento({ ...base, geohash: 'zzzzza' }, PK1).ok, false, 'a no es un carácter de geohash')
+  const sin = buildEvento({ ...base, calendarCoord: '30402:x:y' }, PK1)
+  assert.equal(sin.unsignedEvent.tags.some(t => t[0] === 'a' || t[0] === 'g'), false, 'sin zona ni calendario válido no hay etiquetas')
+})

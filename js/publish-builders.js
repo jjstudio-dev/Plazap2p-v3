@@ -199,6 +199,11 @@ export function buildServicio(data, userPubHex, dTag = null, publishedAt = null)
 //           dateTs?, endTs?, tzid? }        ← si con hora (Unix segs)
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+const GEOHASH_TAG_RE = /^[0-9bcdefghjkmnpqrstuvwxyz]{3,9}$/
+const CALENDAR_COORD_RE = /^31924:[0-9a-f]{64}:[^:\s]{1,64}$/
+
+/** F7-07: identificador (d) del calendario NIP-52 «PlazaP2P» que firma el mantenedor. */
+export const PLAZA_CALENDAR_D = 'plazap2p-eventos'
 const SECONDS_PER_DAY = 86400
 const NIP52_MAX_DAY_TAGS = 366   // un evento de más de un año no necesita una etiqueta por día
 
@@ -264,6 +269,16 @@ export function buildEvento(data, userPubHex, dTag = null, publishedAt = null) {
   }
 
   if (data.location) tags.push(['location', String(data.location).slice(0, 200)])
+  // F7-07: zona aproximada (geohash) para buscadores de quedadas por cercanía.
+  // Una etiqueta por precisión (de la dada hasta 3 caracteres): quien busca
+  // por una celda más grande también lo encuentra.
+  if (data.geohash) {
+    const gh = String(data.geohash).toLowerCase()
+    if (!GEOHASH_TAG_RE.test(gh)) return { ok: false, error: 'zona inválida' }
+    for (let n = gh.length; n >= 3; n--) tags.push(['g', gh.slice(0, n)])
+  }
+  // F7-07 (NIP-52): pide entrar en el calendario de PlazaP2P; lo decide su dueño.
+  if (data.calendarCoord && CALENDAR_COORD_RE.test(String(data.calendarCoord))) tags.push(['a', String(data.calendarCoord)])
   applyCommonOptionalTags(tags, data)
 
   const { unsignedEvent, dTag: uid } = assembleEvent(kind, tags, String(data.desc) + FOOTER, userPubHex, dTag, publishedAt)

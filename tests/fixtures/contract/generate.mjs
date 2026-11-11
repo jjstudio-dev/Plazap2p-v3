@@ -27,6 +27,7 @@ export const CASES = [
   ['servicio mínimo', 'servicio', { title: 'Diseño web', desc: DESC }],
   ['servicio a negociar', 'servicio', { title: 'Consultoría Lightning', desc: DESC, catId: 'consultoria', contact: 'ana@correo.test' }],
   ['evento con hora', 'evento', { title: 'Meetup Bitcoin', desc: DESC, allDay: false, dateTs: 4081000000, endTs: 4081010000, tzid: 'Europe/Madrid', location: 'Valencia', contact: '@org', imageUrl: 'https://ejemplo.test/e.png' }],
+  ['evento con zona y calendario', 'evento', { title: 'Quedada en el parque', desc: DESC, allDay: true, startDate: '2099-06-01', geohash: 'ezjmg', calendarCoord: `31924:${'e'.repeat(64)}:plazap2p-eventos` }],
   ['evento de día completo', 'evento', { title: 'Feria de dos días', desc: DESC, allDay: true, startDate: '2099-05-01', endDate: '2099-05-03', location: 'Madrid' }],
   ['comunidad', 'comunidad', { title: 'Bitcoin Sevilla', desc: DESC, platId: 'telegram', accessUrl: 'https://t.me/bitcoinsevilla', imageUrl: 'https://ejemplo.test/c.png' }],
   ['comunidad mínima', 'comunidad', { title: 'Grupo', desc: DESC }],

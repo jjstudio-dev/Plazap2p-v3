@@ -26,8 +26,8 @@
   <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/fonts.css?v=61">
-  <link rel="stylesheet" href="css/publicar.css?v=61">
+  <link rel="stylesheet" href="css/fonts.css?v=62">
+  <link rel="stylesheet" href="css/publicar.css?v=62">
 </head>
 <body>
 
@@ -286,6 +286,17 @@
       <label class="field-label" for="e-location">Lugar (opcional)</label>
       <input type="text" id="e-location" maxlength="200"
         placeholder="p.ej. Bar Satoshi, Madrid" autocomplete="off">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" id="lbl-e-geo">Zona para buscadores (opcional)</label>
+      <div class="price-row" role="group" aria-labelledby="lbl-e-geo">
+        <button type="button" class="btn-secondary" id="btn-e-geo">📍 Usar mi ubicación aproximada</button>
+        <button type="button" class="btn-secondary hidden" id="btn-e-geo-clear">Quitar</button>
+      </div>
+      <input type="hidden" id="e-geohash">
+      <p class="id-hint" id="e-geo-status" aria-live="polite"></p>
+      <div class="img-hint">ℹ️ Úsalo si estás en el sitio del evento o cerca. Solo se guarda una zona de unos 5 km, no tu dirección, para que el evento salga en apps de quedadas por cercanía.</div>
     </div>
 
     <div class="field-group">
@@ -821,6 +832,6 @@
   </button>
 </nav>
 
-<script type="module" src="js/publicar-app.js?v=61"></script>
+<script type="module" src="js/publicar-app.js?v=62"></script>
 </body>
 </html>
