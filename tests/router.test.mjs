@@ -4,6 +4,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { parseHash, destRoute, resolveHash, routeForTab, parseAnuncioHash, anuncioRoute } from '../js/router.js'
+import { GROUPS, tabToDest } from '../js/app-shell.js'
 
 test('parseHash: hash vacío, solo destino, destino+sub y barra final', () => {
   assert.deepEqual(parseHash(''), { dest: null, sub: null })
@@ -77,4 +78,12 @@ test('resolveHash: un nombre heredado de Object (#/constructor) no es un destino
   for (const hash of ['#/constructor', '#/toString', '#/__proto__', '#/hasOwnProperty/x']) {
     assert.equal(resolveHash(hash), null, hash)
   }
+})
+
+test('W-10: «Cómo aparecer» pertenece solo a Info y el botón Publicar es externo', () => {
+  assert.equal(tabToDest('publicar'), 'perfil')
+  assert.equal(routeForTab('publicar'), '#/perfil/publicar')
+  assert.equal(destRoute('publicar', 'publicar'), null)
+  const owners = Object.entries(GROUPS).filter(([, g]) => g.tabs?.includes('publicar')).map(([d]) => d)
+  assert.deepEqual(owners, ['perfil'])
 })

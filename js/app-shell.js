@@ -11,7 +11,10 @@
 export const GROUPS = {
   plaza:     { tabs: ['mercado', 'intercambio', 'directorio', 'vendedores', 'conversor'], default: 'mercado' },
   explorar:  { tabs: ['feed', 'articulos', 'eventos', 'comunidades', 'herramientas', 'multimedia', 'bitcoin'], default: 'feed' },
-  publicar:  { tabs: ['publicar'], default: 'publicar' },
+  // W-10: el botón central abre el asistente real. La pestaña informativa
+  // «Cómo aparecer» (tab 'publicar') vive SOLO en Info: si estuviera en dos
+  // grupos, tabToDest() devolvería este y el chip dejaría Info a medias.
+  publicar:  { external: 'publicar.html' },
   actividad: { external: 'publicar.html' },
   perfil:    { tabs: ['acerca', 'nostr', 'relays', 'app-android', 'publicar'], default: 'acerca' },
 };
@@ -56,9 +59,6 @@ function renderChips(dest, activeTab) {
 function onShellNav(dest) {
   const g = GROUPS[dest];
   if (!g) return;
-  // W-10: el botón central Publicar abre el asistente real, no la pestaña
-  // informativa «Cómo aparecer» (esa sigue en Info).
-  if (dest === 'publicar') { window.location.href = 'publicar.html'; return; }
   if (g.external) { window.location.href = g.external; return; }
   window.switchTab(g.default);
 }

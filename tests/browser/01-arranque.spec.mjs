@@ -312,6 +312,12 @@ export const tests = [
 
       const movil = await t.open({ scenario: { events: mundo() }, viewport: { width: 375, height: 800, mobile: true } })
       await movil.goto(server.origin + '/index.html')
+      // «Cómo aparecer» es un chip de Info: al tocarlo, Info sigue activo y sus chips siguen ahí.
+      await movil.click('.mbn-btn[data-dest="perfil"]')
+      await movil.click('.mbn-chip[data-tab="publicar"]')
+      t.assert.equal(await movil.evaluate(`document.getElementById('tab-publicar').classList.contains('active')`), true, 'pestaña Cómo aparecer')
+      t.assert.equal(await movil.evaluate(`document.querySelector('.mbn-btn.active')?.dataset.dest`), 'perfil', 'Info sigue activo')
+      t.assert.equal(await movil.evaluate(`!document.getElementById('mbn-chips').hidden && !!document.querySelector('.mbn-chip.active[data-tab="publicar"]')`), true, 'chips de Info visibles')
       await movil.click('.mbn-btn--central')
       await movil.waitFor(`location.pathname.endsWith('/publicar.html')`, { timeout: 9000, label: 'publicar.html desde el botón central' })
 
