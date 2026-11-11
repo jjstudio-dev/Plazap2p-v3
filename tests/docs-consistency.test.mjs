@@ -70,6 +70,17 @@ test('la licencia es la misma en LICENSE, README y la web (W-12)', () => {
   assert.doesNotMatch(visible, /licencia CC BY 4\.0[^.]*forkear/i, 'CC BY no puede atribuirse al código')
 })
 
+test('los textos de la web no contradicen lo que hacen sus botones (W-13)', () => {
+  assert.match(index, /id="privacidad"/, 'el enlace Privacidad necesita su ancla')
+  assert.match(index, /id="aviso-legal"/, 'el enlace Aviso legal necesita su ancla')
+  assert.match(read('js/app.js'), /window\.irAInfo/, 'los enlaces del pie bajan al bloque')
+  assert.doesNotMatch(index, /proponero/)
+  assert.doesNotMatch(index, /\bvia\b/)
+  assert.doesNotMatch(index, /Fear &amp; Greed[^<]*sin intermediarios/)
+  assert.doesNotMatch(index, /reporta directamente desde tu cliente Nostr/)
+  assert.match(index, /botón <strong>Reportar<\/strong>/)
+})
+
 test('la web no presenta el filtro de 30 días como una protección de la reputación', () => {
   // La fecha de un evento Nostr la escribe quien lo firma: una clave creada hoy
   // pasa el filtro con una nota de fecha atrasada (auditoría 2026-10, W4-01).

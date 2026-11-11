@@ -15,7 +15,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '53';
+const ASSET_VERSION  = '54';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -1251,6 +1251,12 @@ function showEmpty(channelId) {
 }
 
 // ── Toast ──────────────────────────────────────────────────────
+/** W-13: los enlaces del pie abren Info y bajan hasta su bloque. */
+window.irAInfo = function(id) {
+  window.switchTab?.('acerca');
+  setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30);
+};
+
 function showToast(msg) {
   const container = document.getElementById('toast-container');
   if (!container) return;

@@ -29,7 +29,7 @@ export const FALLBACK_CONFIG = {
     { id: 'venta',    label: 'Venta',    color: '#00d4ff' },
     { id: 'compra',   label: 'Compra',   color: '#30d158' },
     { id: 'servicio', label: 'Servicio', color: '#bf5af2' },
-    { id: 'trueque',  label: 'Trueque',  color: '#ffd60a' },
+    { id: 'trueque',  label: 'Intercambio',  color: '#ffd60a' },
   ],
   publish_clients: [], nostr_clients: [], wallets: [],
 }

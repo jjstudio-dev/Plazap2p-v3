@@ -35,8 +35,8 @@
   <meta name="twitter:title" content="PlazaP2P — Economía Circular P2P en Nostr" />
   <meta name="twitter:description" content="Mercado, comunidad y recursos Bitcoin sobre Nostr. Publicaciones abiertas, sin registro y sin intermediarios." />
   <link rel="canonical" href="https://jjstudio-dev.github.io/Plazap2p-v3/" />
-  <link rel="stylesheet" href="css/fonts.css?v=53" />
-  <link rel="stylesheet" href="css/style.css?v=53" />
+  <link rel="stylesheet" href="css/fonts.css?v=54" />
+  <link rel="stylesheet" href="css/style.css?v=54" />
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg" />
@@ -237,7 +237,7 @@
   <section id="tab-mercado" class="section-panel active">
     <div class="section-header">
       <span class="section-title"><span class="icon">🛒</span> Mercado P2P en Nostr</span>
-      <span class="section-hint">anuncios públicos · venta · compra · servicios · trueque</span>
+      <span class="section-hint">anuncios públicos · venta · compra · servicios · intercambio</span>
       <input type="search" class="tab-search" placeholder="Buscar…" aria-label="Buscar en mercado" />
       <select class="sort-select" data-channel="mercado" aria-label="Ordenar por">
         <option value="newest">↓ Más reciente</option>
@@ -253,7 +253,7 @@
       <button class="filter-btn" data-filter="venta">Venta</button>
       <button class="filter-btn" data-filter="compra">Compra</button>
       <button class="filter-btn" data-filter="servicio">Servicio</button>
-      <button class="filter-btn" data-filter="trueque">Trueque</button>
+      <button class="filter-btn" data-filter="trueque">Intercambio</button>
       <button class="filter-btn" data-filter="favoritos">⭐ Favoritos</button>
     </div>
 
@@ -425,7 +425,7 @@
   <section id="tab-comunidades" class="section-panel">
     <div class="section-header">
       <span class="section-title"><span class="icon">🏘</span> Comunidades</span>
-      <span class="section-hint">directorio curado · contribuciones via GitHub</span>
+      <span class="section-hint">directorio curado · contribuciones vía GitHub</span>
     </div>
     <div id="channel-comunidades" class="listings-grid" role="list"></div>
     <div class="section-footer" id="comunidades-footer"></div>
@@ -463,7 +463,7 @@
         <h3>¿Recomiendas un canal, podcast o web?</h3>
         <p>Puedes proponer contenido multimedia para el directorio abriendo un Issue en GitHub. Describe el canal, podcast, newsletter o web y se revisará para su inclusión.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <a href="https://github.com/jjstudio-dev/Plazap2p-v3/issues/new?template=multimedia.yml&title=[Multimedia]+Propuesta" target="_blank" rel="noopener noreferrer" class="btn-outline-small">📬 Proponer via GitHub</a>
+          <a href="https://github.com/jjstudio-dev/Plazap2p-v3/issues/new?template=multimedia.yml&title=[Multimedia]+Propuesta" target="_blank" rel="noopener noreferrer" class="btn-outline-small">📬 Proponer vía GitHub</a>
         </div>
       </div>
     </div>
@@ -474,7 +474,7 @@
     <div class="section-header">
       <span class="section-title"><span class="icon">₿</span> Bitcoin</span>
     </div>
-    <p class="section-desc">Precio en tiempo real, gráfica de 30 días y datos de mercado: capitalización, volumen, sentimiento de la comunidad e índice Fear &amp; Greed — directo desde la red, sin intermediarios.</p>
+    <p class="section-desc">Precio en tiempo real, gráfica de 30 días y datos de mercado: capitalización, volumen, sentimiento de la comunidad e índice Fear &amp; Greed — con datos de CoinGecko y Kraken.</p>
 
     <!-- Price chart -->
     <div class="chart-wrap">
@@ -953,7 +953,7 @@
         <a class="publish-type-card" href="publicar.html?type=intercambio" style="text-decoration:none">
           <span class="publish-type-icon">🔄</span>
           <span class="publish-type-name">Intercambio</span>
-          <span class="publish-type-desc">Trueque de bienes o servicios</span>
+          <span class="publish-type-desc">Intercambio de bienes o servicios</span>
         </a>
         <a class="publish-type-card" href="publicar.html?type=servicio" style="text-decoration:none">
           <span class="publish-type-icon">🔧</span>
@@ -1051,7 +1051,7 @@
             </div>
             <div class="tag-row tag-row--sub">
               <code class="tag-code tag-code--sub">#plazap2p-trueque</code>
-              <span class="tag-desc">— va directo al filtro <strong>Trueque</strong></span>
+              <span class="tag-desc">— va directo al filtro <strong>Intercambio</strong></span>
             </div>
             <div class="tag-row tag-row--sub">
               <code class="tag-code tag-code--sub">#plazap2p-evento</code>
@@ -1111,7 +1111,7 @@
         </div>
         <div class="glossary-row">
           <code>#plazap2p-trueque</code>
-          <span>Mercado · filtro <strong>Trueque</strong></span>
+          <span>Mercado · filtro <strong>Intercambio</strong></span>
           <span class="glossary-badge glossary-badge--trueque">Sub-tag</span>
         </div>
         <div class="glossary-row">
@@ -1161,7 +1161,7 @@
           <textarea id="rp-notes" rows="3" placeholder="Política de acceso, tipo de relay (público / privado / pago), características especiales..."></textarea>
         </div>
         <button type="submit" class="btn-primary">
-          📬 Enviar propuesta via GitHub Issue
+          📬 Enviar propuesta vía GitHub Issue
         </button>
       </form>
       <p class="relay-propose-note">
@@ -1250,7 +1250,7 @@
       </ol>
 
       <h3>Red en expansión</h3>
-      <p>La lista de relays se actualiza periódicamente. Si tienes un relay bitcoin-friendly hispanohablante, puedes proponero en el repositorio GitHub del proyecto.</p>
+      <p>La lista de relays se actualiza periódicamente. Si tienes un relay bitcoin-friendly hispanohablante, puedes proponerlo en el repositorio GitHub del proyecto.</p>
     </div>
 
     <div class="relay-terms">
@@ -1357,7 +1357,7 @@
         </div>
         <div class="faq-item">
           <h3 class="faq-q">¿Quién es responsable del contenido?</h3>
-          <p class="faq-a">Cada publicación pertenece a su autor y fue difundida voluntariamente a través de relays públicos de Nostr. PlazaP2P no modera ni valida ningún contenido reflejado.</p>
+          <p class="faq-a">Cada publicación pertenece a su autor y fue difundida voluntariamente a través de relays públicos de Nostr. PlazaP2P no modera ni valida ningún contenido reflejado. Puedes ocultar contenido en <strong>este navegador</strong> y publicar un reporte firmado (kind 1984) que otros clientes pueden leer, pero PlazaP2P no puede garantizar que se retire de la red.</p>
         </div>
         <div class="faq-item">
           <h3 class="faq-q">¿Cómo elimino mi contenido de aquí?</h3>
@@ -1369,7 +1369,7 @@
         </div>
         <div class="faq-item faq-item--alert">
           <h3 class="faq-q">⚠️ ¿Cómo reporto información errónea o un posible scam?</h3>
-          <p class="faq-a">Si detectas un enlace roto, información desactualizada, un perfil sospechoso o un posible estafador en el contenido listado, ayuda a la comunidad reportándolo. Para contenido curado (Herramientas, Multimedia, Comunidades): <a href="https://github.com/jjstudio-dev/Plazap2p-v3/issues/new?title=[REPORTE]+Informacion+erronea+o+scam&body=**Seccion:**%0A**Elemento+afectado:**%0A**Descripcion+del+problema:**%0A**Evidencia+(si+la+hay):**" target="_blank" rel="noopener noreferrer">abre un Issue en GitHub</a>. Para contenido en tiempo real del Mercado / Feed / Artículos / Eventos: actúa desde tu cliente Nostr (bloquea, reporta, no interactúes con cuentas sospechosas). Cuantos más ojos revisen el directorio, más limpia estará la comunidad.</p>
+          <p class="faq-a">Si detectas un enlace roto, información desactualizada, un perfil sospechoso o un posible estafador en el contenido listado, ayuda a la comunidad reportándolo. Para contenido curado (Herramientas, Multimedia, Comunidades): <a href="https://github.com/jjstudio-dev/Plazap2p-v3/issues/new?title=[REPORTE]+Informacion+erronea+o+scam&body=**Seccion:**%0A**Elemento+afectado:**%0A**Descripcion+del+problema:**%0A**Evidencia+(si+la+hay):**" target="_blank" rel="noopener noreferrer">abre un Issue en GitHub</a>. Para contenido en tiempo real del Mercado / Feed / Artículos / Eventos: usa el botón <strong>Reportar</strong> del anuncio (publica un reporte firmado que otros clientes pueden leer) o actúa desde tu cliente Nostr. <strong>Ocultar</strong> solo afecta a este navegador. Cuantos más ojos revisen el directorio, más limpia estará la comunidad.</p>
         </div>
       </div>
     </div>
@@ -1383,7 +1383,7 @@
     </div>
 
     <!-- Privacidad -->
-    <div class="about-block">
+    <div class="about-block" id="privacidad">
       <h2 class="subsection-title">Privacidad</h2>
       <p>PlazaP2P no requiere registro, cuenta de usuario, email ni contraseña. La web no necesita identificarte para navegar.</p>
       <p>PlazaP2P muestra contenido público de Nostr. Todo evento reflejado procede de información publicada voluntariamente por sus autores en relays públicos o accesibles. No debes publicar datos sensibles en Nostr si no quieres que puedan ser vistos, copiados, indexados o reflejados por terceros.</p>
@@ -1398,7 +1398,7 @@
     </div>
 
     <!-- Aviso legal -->
-    <div class="about-block about-block--legal">
+    <div class="about-block about-block--legal" id="aviso-legal">
       <h2 class="subsection-title">Aviso de responsabilidad</h2>
       <p>PlazaP2P actúa únicamente como una interfaz de visualización de contenido público disponible en Nostr. No somos responsables de lo que terceros publiquen en Nostr, ni de las conversaciones, acuerdos, pagos, entregas, servicios o intercambios que puedan surgir entre usuarios fuera de esta web.</p>
       <p>Cada persona es responsable de verificar la identidad, reputación, condiciones y legitimidad de cualquier contraparte antes de iniciar una interacción, enviar fondos o compartir información personal. PlazaP2P no interviene en disputas, no resuelve conflictos y no ofrece garantías sobre ninguna publicación reflejada.</p>
@@ -1408,8 +1408,8 @@
         <div>
           <strong>¿Detectas un scam o información errónea?</strong> Ayuda a la comunidad reportándolo.
           Para contenido curado (Herramientas, Multimedia, Comunidades):
-          <a href="https://github.com/jjstudio-dev/Plazap2p-v3/issues/new?title=[REPORTE]+Informacion+erronea+o+scam&body=**Seccion:**%0A**Elemento+afectado:**%0A**Descripcion:**%0A**Evidencia:**" target="_blank" rel="noopener noreferrer">reportar via GitHub Issue ↗</a>.
-          Para contenido del Mercado / Feed / Artículos / Eventos: reporta directamente desde tu cliente Nostr.
+          <a href="https://github.com/jjstudio-dev/Plazap2p-v3/issues/new?title=[REPORTE]+Informacion+erronea+o+scam&body=**Seccion:**%0A**Elemento+afectado:**%0A**Descripcion:**%0A**Evidencia:**" target="_blank" rel="noopener noreferrer">reportar vía GitHub Issue ↗</a>.
+          Para contenido del Mercado / Feed / Artículos / Eventos: usa el botón <strong>Reportar</strong> del anuncio o actúa desde tu cliente Nostr. <strong>Ocultar</strong> solo afecta a este navegador.
         </div>
       </div>
       <p class="about-legal-note">PlazaP2P es una herramienta informativa que refleja contenido público disponible en la red Nostr. Las publicaciones pertenecen a sus autores y son difundidas mediante relays independientes. PlazaP2P no es parte de ninguna operación, conversación, compraventa, servicio, pago o acuerdo entre usuarios.</p>
@@ -1465,8 +1465,8 @@
       <a href="https://github.com/jjstudio-dev/Plazap2p-v3" target="_blank" rel="noopener noreferrer">GitHub</a>
       <a href="https://njump.me" target="_blank" rel="noopener noreferrer">njump.me</a>
       <a href="https://nostr.com" target="_blank" rel="noopener noreferrer">nostr.com</a>
-      <a href="#" onclick="window.switchTab?.('acerca');return false;">Aviso legal</a>
-      <a href="#" onclick="window.switchTab?.('acerca');return false;">Privacidad</a>
+      <a href="#aviso-legal" onclick="window.irAInfo?.('aviso-legal');return false;">Aviso legal</a>
+      <a href="#privacidad" onclick="window.irAInfo?.('privacidad');return false;">Privacidad</a>
       <a href="#" id="footer-donar-link" onclick="window.openDonarModal?.();return false;" style="display:none">♥ Apoyar</a>
     </div>
     <div class="footer-meta">
@@ -1506,15 +1506,15 @@
 <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <!-- ESM module — app.js imports nostr.js and relay-pool.js -->
-<script type="module" src="js/app.js?v=53"></script>
+<script type="module" src="js/app.js?v=54"></script>
 <script type="module">
-  import { initBtcStats }      from './js/btc-stats.js?v=53';
-  import { initPriceChart }    from './js/btc-chart.js?v=53';
-  import { initConverter }     from './js/converter.js?v=53';
-  import { initMiniConverter } from './js/mini-converter.js?v=53';
-  import { initBtcMarket }     from './js/btc-market.js?v=53';
-  import { initAppShell }      from './js/app-shell.js?v=53';
-  import { initRouter }        from './js/router.js?v=53';
+  import { initBtcStats }      from './js/btc-stats.js?v=54';
+  import { initPriceChart }    from './js/btc-chart.js?v=54';
+  import { initConverter }     from './js/converter.js?v=54';
+  import { initMiniConverter } from './js/mini-converter.js?v=54';
+  import { initBtcMarket }     from './js/btc-market.js?v=54';
+  import { initAppShell }      from './js/app-shell.js?v=54';
+  import { initRouter }        from './js/router.js?v=54';
 
   initAppShell();
   initRouter();
