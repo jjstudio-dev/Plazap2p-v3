@@ -1183,6 +1183,68 @@
       }
     },
     {
+      "name": "aviso en el muro de una venta",
+      "builder": "avisoMuro",
+      "input": {
+        "kind": 30402,
+        "dTag": "plazap2p-app-1-abcd",
+        "naddr": "naddr1qqtest",
+        "title": "Vendo bicicleta",
+        "price": "120.50",
+        "currency": "EUR"
+      },
+      "expected": {
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "a",
+            "30402:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:plazap2p-app-1-abcd"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ]
+        ],
+        "content": "📢 Vendo bicicleta — 120.50 EUR\n\nhttps://jjstudio-dev.github.io/Plazap2p-v3/#/anuncio/naddr1qqtest\n\n#plazap2p",
+        "category": null
+      }
+    },
+    {
+      "name": "aviso en el muro de un evento",
+      "builder": "avisoMuro",
+      "input": {
+        "kind": 31923,
+        "dTag": "plazap2p-app-2-ef01",
+        "naddr": "naddr1qqevento",
+        "title": "Meetup Bitcoin"
+      },
+      "expected": {
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "a",
+            "31923:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:plazap2p-app-2-ef01"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ]
+        ],
+        "content": "📅 Meetup Bitcoin\n\nhttps://jjstudio-dev.github.io/Plazap2p-v3/#/anuncio/naddr1qqevento\n\n#plazap2p",
+        "category": null
+      }
+    },
+    {
       "name": "retirada",
       "builder": "retirada",
       "input": {

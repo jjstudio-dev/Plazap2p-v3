@@ -13,7 +13,7 @@
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import {
-  buildServicio, buildEvento, buildComunidad, buildHerramienta, buildTransaccion, buildValoracion, buildRetirada,
+  buildServicio, buildEvento, buildComunidad, buildHerramienta, buildTransaccion, buildValoracion, buildRetirada, buildAvisoMuro,
 } from '../../../js/publish-builders.js'
 import { detectCategory } from '../../../js/listing-utils.js'
 
@@ -43,12 +43,14 @@ export const CASES = [
   ['valoración con referencia rara (se ignora)', 'valoracion', { rateeHex: RATEE, rating: 2, refTag: 'no-es-una-referencia' }],
   ['venta visible un año', 'transaccion', { tipoTag: 'plazap2p-venta', title: 'Vendo sofá', desc: DESC, price: '80', currency: 'EUR', durationDays: 365 }],
   ['servicio sin caducidad', 'servicio', { title: 'Reparación de nodos', desc: DESC, durationDays: 0 }],
+  ['aviso en el muro de una venta', 'avisoMuro', { kind: 30402, dTag: 'plazap2p-app-1-abcd', naddr: 'naddr1qqtest', title: 'Vendo bicicleta', price: '120.50', currency: 'EUR' }],
+  ['aviso en el muro de un evento', 'avisoMuro', { kind: 31923, dTag: 'plazap2p-app-2-ef01', naddr: 'naddr1qqevento', title: 'Meetup Bitcoin' }],
   ['retirada', 'retirada', { kind: 30402, dTag: 'plazap2p-app-1-abcd', eventId: 'c'.repeat(64) }],
 ]
 
 const BUILDERS = {
   servicio: buildServicio, evento: buildEvento, comunidad: buildComunidad, herramienta: buildHerramienta,
-  transaccion: buildTransaccion, valoracion: buildValoracion, retirada: buildRetirada,
+  transaccion: buildTransaccion, valoracion: buildValoracion, retirada: buildRetirada, avisoMuro: buildAvisoMuro,
 }
 
 /** Valores que dependen del momento o del azar: se sustituyen por un marcador.
