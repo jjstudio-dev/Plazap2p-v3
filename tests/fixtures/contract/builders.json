@@ -390,6 +390,10 @@
             "https://ejemplo.test/c.png"
           ],
           [
+            "visibility",
+            "hidden"
+          ],
+          [
             "client",
             "PlazaP2P App",
             "https://jjstudio-dev.github.io/Plazap2p-v3/"
@@ -440,6 +444,10 @@
           [
             "t",
             "otro"
+          ],
+          [
+            "visibility",
+            "hidden"
           ],
           [
             "client",
@@ -516,6 +524,10 @@
           [
             "platform",
             "ios"
+          ],
+          [
+            "visibility",
+            "hidden"
           ],
           [
             "client",

@@ -28,6 +28,13 @@ export const VALID_CURRENCIES       = ['EUR', 'USD', 'BTC', 'SATS']
 
 const FOOTER = '\n\n---\n📢 Publicado vía PlazaP2P'
 
+// F7-03: comunidades y herramientas viajan como kind 30402 (anuncio NIP-99)
+// para poder editarlas y retirarlas como cualquier anuncio, pero no son
+// productos. `visibility: hidden` (estándar Gamma Markets) pide a las tiendas
+// Nostr (Shopstr, Plebeian…) que no las listen; PlazaP2P no lee esa etiqueta
+// y las sigue mostrando en sus pestañas.
+const DIRECTORY_VISIBILITY_TAG = ['visibility', 'hidden']
+
 // ── Helpers internos (misma semántica que bot/src/publish.js) ────────────────
 
 function validateBase(data) {
@@ -295,6 +302,7 @@ export function buildComunidad(data, userPubHex, dTag = null, publishedAt = null
     if (safeUrl) tags.push(['r', safeUrl])
   }
   applyCommonOptionalTags(tags, { imageUrl: data.imageUrl })
+  tags.push(DIRECTORY_VISIBILITY_TAG)
 
   const { unsignedEvent, dTag: uid } = assembleEvent(30402, tags, content, userPubHex, dTag, publishedAt)
   return { ok: true, unsignedEvent, dTag: uid }
@@ -335,6 +343,7 @@ export function buildHerramienta(data, userPubHex, dTag = null, publishedAt = nu
     const pLower = String(p).toLowerCase()
     if (VALID_PLATFORMS.includes(pLower)) tags.push(['platform', pLower])
   }
+  tags.push(DIRECTORY_VISIBILITY_TAG)
 
   const { unsignedEvent, dTag: uid } = assembleEvent(30402, tags, content, userPubHex, dTag, publishedAt)
   return { ok: true, unsignedEvent, dTag: uid }

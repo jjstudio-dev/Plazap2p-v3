@@ -156,3 +156,13 @@ test('F7-02: una venta lleva type simple/physical; compra e intercambio no', () 
     assert.equal(r.unsignedEvent.tags.find(t => t[0] === 'type'), undefined, tipoTag)
   }
 })
+
+test('F7-03: comunidades y herramientas piden a las tiendas no listarlas; los anuncios no', async () => {
+  const { buildComunidad, buildHerramienta } = await import('../js/publish-builders.js')
+  const desc = 'Descripción suficientemente larga para pasar la validación.'
+  const vis = r => r.unsignedEvent.tags.find(t => t[0] === 'visibility')
+  assert.deepEqual(vis(buildComunidad({ title: 'Bitcoin Sevilla', desc }, PK1)), ['visibility', 'hidden'])
+  assert.deepEqual(vis(buildHerramienta({ title: 'Mi wallet', desc }, PK1)), ['visibility', 'hidden'])
+  assert.equal(vis(buildTransaccion({ tipoTag: 'plazap2p-venta', title: 'Mesa', desc }, PK1)), undefined)
+  assert.equal(vis(buildServicio({ title: 'Diseño gráfico', desc }, PK1)), undefined)
+})
