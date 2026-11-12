@@ -35,8 +35,8 @@
   <meta name="twitter:title" content="PlazaP2P — Economía Circular P2P en Nostr" />
   <meta name="twitter:description" content="Mercado, comunidad y recursos Bitcoin sobre Nostr. Publicaciones abiertas, sin registro y sin intermediarios." />
   <link rel="canonical" href="https://jjstudio-dev.github.io/Plazap2p-v3/" />
-  <link rel="stylesheet" href="css/fonts.css?v=73" />
-  <link rel="stylesheet" href="css/style.css?v=73" />
+  <link rel="stylesheet" href="css/fonts.css?v=74" />
+  <link rel="stylesheet" href="css/style.css?v=74" />
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg" />
@@ -431,7 +431,7 @@
     <div id="map-layer-chips" class="map-layer-chips" role="group" aria-label="Capas del mapa"></div>
     <div id="map-container" class="map-container" role="region" aria-label="Mapa de comunidades, eventos y comercios"></div>
     <p id="map-status" class="map-status" aria-live="polite">Cargando el mapa…</p>
-    <p class="map-note">Los anuncios de particulares y los eventos sin dirección se ven como una zona de unos kilómetros, no como un punto. Solo los puntos de venta y los eventos con dirección exacta tienen «Cómo llegar». Comunidades: <a href="https://2140meetups.com/comunidades/" target="_blank" rel="noopener noreferrer">2140meetups.com</a>. Comercios: <a href="https://btcmap.org" target="_blank" rel="noopener noreferrer">BTC Map</a>.</p>
+    <p class="map-note">Los anuncios de particulares y los eventos sin dirección se ven como una zona de unos kilómetros, no como un punto. Solo los puntos de venta y los eventos con dirección exacta tienen «Cómo llegar». Comunidades: <a href="https://2140meetups.com/comunidades/" target="_blank" rel="noopener noreferrer">2140meetups.com</a> y <a href="https://btcmap.org/communities" target="_blank" rel="noopener noreferrer">BTC Map</a>. Comercios: <a href="https://btcmap.org" target="_blank" rel="noopener noreferrer">BTC Map</a>.</p>
   </section>
 
   <!-- Comunidades tab (JSON estático + GitHub Issues) -->
@@ -1403,7 +1403,7 @@
       <p>Nostr es una red abierta: aunque un cliente deje de mostrar un evento, otros relays, clientes o servicios podrían conservarlo o reflejarlo.</p>
       <p>Ubicación: solo se pide si pulsas «Usar mi ubicación aproximada» al crear un evento. Del resultado se publica una zona de unos 5 km, nunca tus coordenadas ni tu dirección, y no se envía a ningún otro servicio.</p>
       <p>Mercados compatibles: el Mercado también enseña anuncios de <a href="https://mercasats.kilombino.com" target="_blank" rel="noopener noreferrer">Mercasats</a>, marcados «vía Mercasats». Los anuncios que publicas (y sus retiradas) se envían además a los relays públicos de ese mercado (relay.kilombino.com y relay.minibolt.info).</p>
-      <p>Mapa: el fondo se descarga de OpenStreetMap al abrir la pestaña Mapa. La capa «Comercios BTC Map» viene apagada; si la enciendes, se pide a BTC Map la lista de comercios alrededor del centro del mapa (no tu posición). «Centrar en mi ubicación» solo mueve el mapa en tu navegador. Las comunidades locales vienen del directorio público de 2140meetups.com.</p>
+      <p>Mapa: el fondo se descarga de OpenStreetMap al abrir la pestaña Mapa. La capa «Comercios BTC Map» viene apagada; si la enciendes, se pide a BTC Map la lista de comercios alrededor del centro del mapa (no tu posición). «Centrar en mi ubicación» solo mueve el mapa en tu navegador. Las comunidades locales vienen de los directorios públicos de 2140meetups.com y BTC Map.</p>
     </div>
 
     <!-- Relays y disponibilidad -->
@@ -1522,15 +1522,15 @@
 <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <!-- ESM module — app.js imports nostr.js and relay-pool.js -->
-<script type="module" src="js/app.js?v=73"></script>
+<script type="module" src="js/app.js?v=74"></script>
 <script type="module">
-  import { initBtcStats }      from './js/btc-stats.js?v=73';
-  import { initPriceChart }    from './js/btc-chart.js?v=73';
-  import { initConverter }     from './js/converter.js?v=73';
-  import { initMiniConverter } from './js/mini-converter.js?v=73';
-  import { initBtcMarket }     from './js/btc-market.js?v=73';
-  import { initAppShell }      from './js/app-shell.js?v=73';
-  import { initRouter }        from './js/router.js?v=73';
+  import { initBtcStats }      from './js/btc-stats.js?v=74';
+  import { initPriceChart }    from './js/btc-chart.js?v=74';
+  import { initConverter }     from './js/converter.js?v=74';
+  import { initMiniConverter } from './js/mini-converter.js?v=74';
+  import { initBtcMarket }     from './js/btc-market.js?v=74';
+  import { initAppShell }      from './js/app-shell.js?v=74';
+  import { initRouter }        from './js/router.js?v=74';
 
   initAppShell();
   initRouter();

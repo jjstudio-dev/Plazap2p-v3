@@ -1,10 +1,14 @@
-// comunidades-2140.js — comunidades Bitcoin de España del directorio
-// 2140meetups.com (copiadas en data/comunidades-2140.json por
-// tools/build-comunidades-2140.mjs). Lo usa el script al generar el archivo y
-// la web al leerlo: los dos pasan por la misma limpieza.
+// comunidades-2140.js — comunidades Bitcoin de España de 2140meetups.com y de
+// BTC Map (juntadas sin repetir en data/comunidades-2140.json por
+// tools/build-comunidades-2140.mjs; el nombre del archivo es histórico). Lo usa
+// el script al generar el archivo y la web al leerlo: los dos pasan por la
+// misma limpieza.
 
 const NPUB_RE = /^npub1[02-9ac-hj-np-z]{58}$/
-const PHOTO_RE = /^https:\/\/2140meetups\.com\/wp-content\/uploads\/[^?#]+\.(png|jpe?g|webp)$/i
+const PHOTO_RE = /^https:\/\/(2140meetups\.com\/wp-content\/uploads|static\.btcmap\.org\/images\/communities)\/[^?#]+\.(png|jpe?g|webp)$/i
+const FICHA_RE = /^https:\/\/2140meetups\.com\/comunidad\/\d+\/?$/
+const BTCMAP_RE = /^https:\/\/btcmap\.org\/community\/[a-z0-9_-]{1,80}$/
+const SOURCES = ['2140meetups', 'btcmap']
 const LN_ADDRESS_RE = /^[a-z0-9._-]{1,64}@[a-z0-9.-]{3,253}\.[a-z]{2,}$/i
 
 function text(v, max) {
@@ -56,7 +60,7 @@ export function cleanCommunity(c) {
   const telegram = httpsUrl(c.telegram)
   const web = httpsUrl(c.web ?? c.enlace)
   return {
-    id: String(c.id ?? '').replace(/[^0-9a-z-]/gi, '').slice(0, 20) || null,
+    id: String(c.id ?? '').replace(/[^0-9a-z_-]/gi, '').slice(0, 80) || null,
     nombre,
     ciudad: text(c.ciudad, 60) || null,
     direccion: dedupeParts(text(c.direccion, 200)).slice(0, 120) || null,
@@ -66,10 +70,14 @@ export function cleanCommunity(c) {
     web: web && web !== telegram ? web : null,
     lightning: LN_ADDRESS_RE.test(ln) ? ln.toLowerCase() : null,
     npub: NPUB_RE.test(npub) ? npub : null,
-    ficha: (() => { const f = httpsUrl(c.ficha ?? c.link); return f && f.startsWith('https://2140meetups.com/') ? f : null })(),
-    // Foto de la comunidad, solo del propio 2140meetups y con extensión de imagen.
+    ficha: (() => { const f = httpsUrl(c.ficha ?? c.link); return f && FICHA_RE.test(f) ? f : null })(),
+    btcmap: (() => { const f = httpsUrl(c.btcmap); return f && BTCMAP_RE.test(f) ? f : null })(),
+    // Foto de la comunidad: solo de 2140meetups o BTC Map y con extensión de imagen (nada de SVG).
     foto: (() => { const f = httpsUrl(c.foto); return f && PHOTO_RE.test(f) ? f : null })(),
     destacada: c.destacada === true,
+    // 2140meetups da el sitio donde quedan (se puede ir); BTC Map, la zona de la comunidad.
+    exacta: c.exacta !== false,
+    fuentes: (Array.isArray(c.fuentes) ? c.fuentes : ['2140meetups']).filter(f => SOURCES.includes(f)),
   }
 }
 
@@ -77,4 +85,32 @@ export function cleanCommunity(c) {
 export function communitiesFrom(doc) {
   const list = Array.isArray(doc?.comunidades) ? doc.comunidades : []
   return list.map(cleanCommunity).filter(Boolean)
+}
+
+// Palabras que llevan casi todas: no dicen de qué sitio es la comunidad.
+const GENERIC_WORDS = new Set(['bitcoin', 'bitcoiners', 'btc', '2140', '21', 'only', 'plebs', 'meetup', 'meetups',
+  'club', 'social', 'comunidad', 'community', 'hub', 'maxi', 'the', 'de', 'del', 'la', 'el', 'y', 'p2p', 'bbh'])
+
+function placeWords(v) {
+  return String(v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .split(/[^a-z0-9]+/).filter(w => w && !GENERIC_WORDS.has(w))
+}
+
+/** ¿Mismo nombre? «Pontevedra 2140 / Vigo Bitcoin P2P» = «Pontevedra _2140_». */
+export function sameCommunityName(a, b) {
+  const norm = v => String(v || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '')
+  const x = norm(a), y = norm(b)
+  return !!x && !!y && (x === y || (y.length >= 6 && x.includes(y)) || (x.length >= 6 && y.includes(x)))
+}
+
+/**
+ * ¿Mismo sitio en el nombre, quitando las palabras genéricas? «2140 Tenerife» y
+ * «Tenerife 2140», «Bitcoin Cádiz» y «BTC CADIZ». Solo sirve para juntar si en
+ * el otro directorio hay UNA comunidad así: en Barcelona hay dos distintas.
+ */
+export function samePlaceWords(a, b) {
+  const wa = placeWords(a), wb = placeWords(b)
+  if (!wa.length || !wb.length) return false
+  const [small, big] = wa.length <= wb.length ? [wa, new Set(wb)] : [wb, new Set(wa)]
+  return small.every(w => big.has(w))
 }

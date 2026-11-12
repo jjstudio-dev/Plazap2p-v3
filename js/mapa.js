@@ -67,7 +67,7 @@ function safeLink(url, label) {
 function popupFor(p) {
   const box = el('div', { class: 'map-popup' })
   // Foto de la comunidad (solo 2140meetups.com, validada al cargar los datos).
-  if (p.image && /^https:\/\/2140meetups\.com\//.test(p.image)) {
+  if (p.image && /^https:\/\/(2140meetups\.com|static\.btcmap\.org)\//.test(p.image)) {
     box.appendChild(el('img', { src: p.image, alt: '', class: 'map-popup-img', loading: 'lazy', referrerpolicy: 'no-referrer' }))
   }
   box.appendChild(el('strong', {}, p.title || ''))

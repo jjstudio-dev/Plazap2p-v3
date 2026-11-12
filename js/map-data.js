@@ -46,12 +46,15 @@ function pointFromGeohash(gh) {
 export function communityPoints(communities) {
   return (communities || []).map(c => ({
     // Su punto es el lugar público donde quedan (una plaza, un local): se puede ir.
-    layer: 'comunidades', id: `c-${c.id || c.nombre}`, lat: c.lat, lon: c.lon, exact: true,
+    // De 2140meetups es el sitio donde quedan; de BTC Map solo la zona de la comunidad.
+    layer: 'comunidades', id: `c-${c.id || c.nombre}`, lat: c.lat, lon: c.lon, exact: c.exacta !== false,
+    latErr: c.exacta === false ? 0.05 : 0,
     title: c.nombre, subtitle: [c.ciudad, c.direccion].filter(Boolean).join(' · '), links: [
       c.telegram && { label: 'Telegram', url: c.telegram },
       c.web && { label: 'Web', url: c.web },
       c.npub && { label: 'Perfil Nostr', url: `https://njump.me/${c.npub}` },
       c.ficha && { label: 'Ficha en 2140meetups', url: c.ficha },
+      c.btcmap && { label: 'Ficha en BTC Map', url: c.btcmap },
     ].filter(Boolean), npub: c.npub || null, image: c.foto || null,
   }))
 }

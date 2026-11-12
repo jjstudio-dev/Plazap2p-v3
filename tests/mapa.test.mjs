@@ -2,7 +2,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { decodeGeohash, encodeGeohash, mostPreciseGeohash, EXACT_GEOHASH_PRECISION } from '../js/geohash.js'
-import { cleanCommunity, communitiesFrom } from '../js/comunidades-2140.js'
+import { cleanCommunity, communitiesFrom, sameCommunityName, samePlaceWords } from '../js/comunidades-2140.js'
 import { communityPoints, listingPoints, eventPoints, btcmapPoints, directionsLinks, btcmapSearchUrl, LAYERS } from '../js/map-data.js'
 
 test('geohash: decodificar devuelve el centro de la celda y su tamaño', () => {
@@ -28,7 +28,7 @@ test('comunidades de 2140meetups: solo lo que se usa y validado', () => {
     id: '7852', nombre: 'Alkarria & BTC', ciudad: 'Guadalajara', direccion: 'Pl. Mayor', lat: 40.633743, lon: -3.166898,
     telegram: 'https://t.me/alkarriabtc', web: null, lightning: 'alkarriabtc@jabato.space',
     npub: 'npub1uay28kq0hq8xr98k2uqk0vjrzqz8fdjh38esz4acdtk045lmgzpqn9naxf', ficha: 'https://2140meetups.com/comunidad/7852/',
-    foto: null, destacada: false,
+    btcmap: null, foto: null, destacada: false, exacta: true, fuentes: ['2140meetups'],
   })
   assert.ok(!('email' in c), 'el email no se guarda')
   const raro = cleanCommunity({ title: 'X', lat: '40', lon: '-3', telegram: 'http://t.me/x', enlace: 'javascript:alert(1)', nostr: 'npub1corto', link: 'https://otro.example/c/1' })
@@ -115,4 +115,25 @@ test('comunidades: foto solo de 2140meetups y marca de destacada', () => {
   assert.equal(cleanCommunity({ ...base, foto: 'javascript:alert(1)' }).foto, null)
   assert.equal(cleanCommunity({ ...base, destacada: true }).destacada, true)
   assert.equal(cleanCommunity({ ...base, destacada: 'sí' }).destacada, false)
+})
+
+test('BTC Map: foto de static.btcmap.org, su ficha y zona aproximada en el mapa', () => {
+  const c = cleanCommunity({ id: 'btcmap-bitcoin-txoko', nombre: 'Bitcoin Txoko', lat: 43.3, lon: -2.0, exacta: false, fuentes: ['btcmap', 'inventada'],
+    btcmap: 'https://btcmap.org/community/bitcoin-txoko', foto: 'https://static.btcmap.org/images/communities/bitcoin-txoko.jpg' })
+  assert.equal(c.foto, 'https://static.btcmap.org/images/communities/bitcoin-txoko.jpg')
+  assert.equal(c.btcmap, 'https://btcmap.org/community/bitcoin-txoko')
+  assert.deepEqual(c.fuentes, ['btcmap'])
+  assert.equal(cleanCommunity({ nombre: 'X', lat: 40, lon: -3, btcmap: 'https://btcmap.org.evil.example/community/x' }).btcmap, null)
+  const [p] = communityPoints([c])
+  assert.equal(p.exact, false, 'una zona de BTC Map no es un sitio al que ir')
+  assert.ok(p.links.some(l => l.label === 'Ficha en BTC Map'))
+})
+
+test('misma comunidad: nombre igual o, si es la única, el mismo sitio', () => {
+  assert.ok(sameCommunityName('Pontevedra 2140 / Vigo Bitcoin P2P', 'Pontevedra _2140_'))
+  assert.ok(!sameCommunityName('2140 Tenerife', 'Tenerife 2140'))
+  assert.ok(samePlaceWords('2140 Tenerife', 'Tenerife 2140'))
+  assert.ok(samePlaceWords('Bitcoin Cádiz', 'BTC CADIZ'))
+  assert.ok(!samePlaceWords('Bitcoin Canarias', 'Bitcanario'))
+  assert.ok(!samePlaceWords('Bitcoin', 'BTC 2140'), 'sin sitio en el nombre no se junta')
 })

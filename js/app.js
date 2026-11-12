@@ -7,7 +7,7 @@ import { parseAnuncioHash, anuncioRoute, routeForTab } from './router.js';
 import { isBlocked, blockPubkey, unblockPubkey, listBlocked, exportBlocked, importBlocked } from './moderation.js';
 import { trustLevel, compareSellersByRating } from './trust-signals.js';
 import { fetchZapReceipts } from './zaps.js';
-import { communitiesFrom } from './comunidades-2140.js';
+import { communitiesFrom, sameCommunityName } from './comunidades-2140.js';
 import { communityPoints, listingPoints, eventPoints, COMMERCE_TAG } from './map-data.js';
 import { mostPreciseGeohash } from './geohash.js';
 import { externalMarketsFrom, marketTags, marketOf, externalCategory, normalizeCurrency, marketListingUrl, isMarketSigned } from './external-markets.js';
@@ -19,7 +19,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '73';
+const ASSET_VERSION  = '74';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -2372,13 +2372,6 @@ function scheduleMapRefresh() {
 
 window.showOnMap = function() { window.switchTab('mapa'); };
 
-/** «Pontevedra 2140 / Vigo Bitcoin P2P» y «Pontevedra _2140_» son la misma comunidad. */
-function sameCommunityName(a, b) {
-  const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
-  const x = norm(a), y = norm(b);
-  return !!x && !!y && (x === y || (y.length >= 6 && x.includes(y)) || (x.length >= 6 && y.includes(x)));
-}
-
 /** Comunidades locales de España (2140meetups.com): nombre, ciudad y enlaces. */
 function renderLocalCommunitiesHtml(list) {
   if (!list.length) return '';
@@ -2386,7 +2379,8 @@ function renderLocalCommunitiesHtml(list) {
     const links = [
       c.telegram && `<a href="${safeUrl(c.telegram)}" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-sm">Telegram ↗</a>`,
       c.web && `<a href="${safeUrl(c.web)}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm">Web ↗</a>`,
-      c.ficha && `<a href="${safeUrl(c.ficha)}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm">Ficha ↗</a>`,
+      c.ficha && `<a href="${safeUrl(c.ficha)}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm">2140meetups ↗</a>`,
+      c.btcmap && `<a href="${safeUrl(c.btcmap)}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm">BTC Map ↗</a>`,
     ].filter(Boolean).join(' ');
     // La foto viene de 2140meetups.com (validada en comunidades-2140.js); si falla, las iniciales.
     const initials = esc(initialsFromName(c.nombre));
@@ -2412,7 +2406,8 @@ function renderLocalCommunitiesHtml(list) {
   }).join('');
   return `<div class="proposals-notice local-communities-notice">
       <strong>Comunidades locales en España</strong> (${list.length}) · fuente:
-      <a href="https://2140meetups.com/comunidades/" target="_blank" rel="noopener noreferrer">2140meetups.com</a> ·
+      <a href="https://2140meetups.com/comunidades/" target="_blank" rel="noopener noreferrer">2140meetups.com</a> y
+      <a href="https://btcmap.org/communities" target="_blank" rel="noopener noreferrer">BTC Map</a> ·
       <button type="button" class="btn-ghost btn-sm" onclick="showOnMap()">🗺 Ver en el mapa</button>
     </div>` + cards;
 }

@@ -66,7 +66,7 @@ export const tests = [
       t.assert.match(await page.text('#channel-comunidades .community-card'), /Valencia Bitcoin Plebs/, 'Valencia la primera')
       const names = await page.evaluate(`[...document.querySelectorAll('#channel-comunidades .community-name')].map(n => n.textContent.replace('destacada', '').trim())`)
       t.assert.equal(names.filter(n => n === 'Valencia Bitcoin Plebs').length, 1, 'sin repetir las del directorio curado')
-      t.assert.ok(await page.evaluate(`[...document.querySelectorAll('#channel-comunidades .local-community-card img')].every(i => i.src.startsWith('https://2140meetups.com/'))`), 'fotos solo de 2140meetups')
+      t.assert.ok(await page.evaluate(`[...document.querySelectorAll('#channel-comunidades .local-community-card img')].every(i => i.src.startsWith('https://2140meetups.com/') || i.src.startsWith('https://static.btcmap.org/'))`), 'fotos solo de 2140meetups o BTC Map')
       t.assert.deepEqual(t.appErrors(page), [])
     },
   },
