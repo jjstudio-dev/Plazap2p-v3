@@ -332,6 +332,25 @@ export const tests = [
     },
   },
   {
+    name: 'Mercasats: el anuncio se envía también a sus relays públicos',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: identidad })
+      await page.goto(`${server.origin}/publicar.html?type=venta`)
+      await page.waitFor(`!document.getElementById('publish-bar').classList.contains('hidden')`)
+      await rellenar(page, TIPOS.venta)
+      const res = await publicar(page)
+      t.assert.ok(res.ok, `${res.titulo} — ${res.sub}`)
+      await page.waitFor(`document.querySelector('#res-box .res-markets')`, { timeout: 12000, label: 'aviso de Mercasats' })
+      t.assert.match(await page.text('#res-box .res-markets'), /También enviado a los relays de Mercasats \(2 de 2\)/)
+      const urls = await page.evaluate(`window.__published.filter(p => p.event.kind === 30402).map(p => p.url)`)
+      t.assert.ok(urls.includes('wss://relay.kilombino.com'), urls.join(' '))
+      t.assert.ok(urls.includes('wss://relay.minibolt.info'), urls.join(' '))
+      t.assert.ok(!urls.includes('wss://trobades.kilombino.com'), 'el relay privado no')
+      t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
+  {
     name: 'F7-05: aviso opcional en el muro — desmarcado por defecto; marcado añade una nota que enlaza al anuncio',
     async run(t) {
       const server = await t.server()

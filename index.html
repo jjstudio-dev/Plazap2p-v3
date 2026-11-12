@@ -35,8 +35,8 @@
   <meta name="twitter:title" content="PlazaP2P — Economía Circular P2P en Nostr" />
   <meta name="twitter:description" content="Mercado, comunidad y recursos Bitcoin sobre Nostr. Publicaciones abiertas, sin registro y sin intermediarios." />
   <link rel="canonical" href="https://jjstudio-dev.github.io/Plazap2p-v3/" />
-  <link rel="stylesheet" href="css/fonts.css?v=63" />
-  <link rel="stylesheet" href="css/style.css?v=63" />
+  <link rel="stylesheet" href="css/fonts.css?v=64" />
+  <link rel="stylesheet" href="css/style.css?v=64" />
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg" />
@@ -1389,6 +1389,7 @@
       <p>PlazaP2P muestra contenido público de Nostr. Todo evento reflejado procede de información publicada voluntariamente por sus autores en relays públicos o accesibles. No debes publicar datos sensibles en Nostr si no quieres que puedan ser vistos, copiados, indexados o reflejados por terceros.</p>
       <p>Nostr es una red abierta: aunque un cliente deje de mostrar un evento, otros relays, clientes o servicios podrían conservarlo o reflejarlo.</p>
       <p>Ubicación: solo se pide si pulsas «Usar mi ubicación aproximada» al crear un evento. Del resultado se publica una zona de unos 5 km, nunca tus coordenadas ni tu dirección, y no se envía a ningún otro servicio.</p>
+      <p>Mercados compatibles: el Mercado también enseña anuncios de <a href="https://mercasats.kilombino.com" target="_blank" rel="noopener noreferrer">Mercasats</a>, marcados «vía Mercasats». Los anuncios que publicas (y sus retiradas) se envían además a los relays públicos de ese mercado (relay.kilombino.com y relay.minibolt.info).</p>
     </div>
 
     <!-- Relays y disponibilidad -->
@@ -1507,15 +1508,15 @@
 <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <!-- ESM module — app.js imports nostr.js and relay-pool.js -->
-<script type="module" src="js/app.js?v=63"></script>
+<script type="module" src="js/app.js?v=64"></script>
 <script type="module">
-  import { initBtcStats }      from './js/btc-stats.js?v=63';
-  import { initPriceChart }    from './js/btc-chart.js?v=63';
-  import { initConverter }     from './js/converter.js?v=63';
-  import { initMiniConverter } from './js/mini-converter.js?v=63';
-  import { initBtcMarket }     from './js/btc-market.js?v=63';
-  import { initAppShell }      from './js/app-shell.js?v=63';
-  import { initRouter }        from './js/router.js?v=63';
+  import { initBtcStats }      from './js/btc-stats.js?v=64';
+  import { initPriceChart }    from './js/btc-chart.js?v=64';
+  import { initConverter }     from './js/converter.js?v=64';
+  import { initMiniConverter } from './js/mini-converter.js?v=64';
+  import { initBtcMarket }     from './js/btc-market.js?v=64';
+  import { initAppShell }      from './js/app-shell.js?v=64';
+  import { initRouter }        from './js/router.js?v=64';
 
   initAppShell();
   initRouter();

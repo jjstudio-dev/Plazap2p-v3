@@ -34,5 +34,9 @@
       { "id": "rapidez",      "label": "Rapidez",        "icon": "⚡" },
       { "id": "confianza",    "label": "Confianza",       "icon": "🔐" }
     ]
-  }
+  },
+  "external_markets": [
+    { "id": "mercasats", "tag": "mercasats", "label": "Mercasats", "url": "https://mercasats.kilombino.com",
+      "relays": ["wss://relay.kilombino.com", "wss://relay.minibolt.info"] }
+  ]
 }

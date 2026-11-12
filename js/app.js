@@ -7,6 +7,7 @@ import { parseAnuncioHash, anuncioRoute, routeForTab } from './router.js';
 import { isBlocked, blockPubkey, unblockPubkey, listBlocked, exportBlocked, importBlocked } from './moderation.js';
 import { trustLevel, compareSellersByRating } from './trust-signals.js';
 import { fetchZapReceipts } from './zaps.js';
+import { externalMarketsFrom, marketTags, marketOf, externalCategory, normalizeCurrency, marketListingUrl, proxiedSeller } from './external-markets.js';
 import { isFavorite, toggleFavorite } from './favorites.js';
 import { channelTagFilters, isExpired, expirationTs, isItemExpired, parseCalendarDate, calDate, detectCategory, detectPayment, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts, safeHref, allDayLastDay } from './listing-utils.js';
 
@@ -15,7 +16,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '63';
+const ASSET_VERSION  = '64';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -227,8 +228,17 @@ function purgeBlocked() {
 }
 
 // ── Subscriptions ──────────────────────────────────────────────
+/**
+ * Etiquetas `t` que se piden para un canal sin filtro propio. El Mercado
+ * pide además las de los mercados externos compatibles (Mercasats…), solo
+ * él: sus notas o artículos no son anuncios.
+ */
+function generalTagsFor(chId) {
+  const tags = config.community_tags || ['plazap2p'];
+  return chId === 'mercado' ? [...tags, ...marketTags(externalMarketsFrom(config))] : tags;
+}
+
 function subscribeAll() {
-  const tags       = config.community_tags || ['plazap2p'];
   const refreshMs  = config.refresh_interval_ms || 300000;
 
   // `complete`: contestó la mayoría de los relays configurados, así que lo
@@ -255,7 +265,7 @@ function subscribeAll() {
         ? { kinds, '#t': specificTags, since: sinceTs }
         : noTagFilter
           ? { kinds, since: sinceTs }
-          : { kinds, '#t': tags, since: sinceTs };
+          : { kinds, '#t': generalTagsFor(chId), since: sinceTs };
       pool.subscribe(chId, [refreshFilter], {
         onEvent: (ev) => addEvent(chId, ev),
         onEose:  () => {}
@@ -270,7 +280,7 @@ function subscribeAll() {
       ? [{ kinds: ch.kinds, limit: 100 }]
       : specificTags
         ? [{ kinds: ch.kinds, '#t': specificTags, limit: 200 }]
-        : [{ kinds: ch.kinds, '#t': tags, limit: 100 }];
+        : [{ kinds: ch.kinds, '#t': generalTagsFor(ch.id), limit: 100 }];
 
     // Fallback: settle after 6s even if some relays never send EOSE
     setTimeout(() => settleChannel(ch.id, ch.kinds, noTagFilter, specificTags), 6000);
@@ -314,7 +324,7 @@ function addEvent(channelId, event) {
     if (chCfg) {
       if (Array.isArray(chCfg.kinds) && !chCfg.kinds.includes(event.kind)) return;
       if (chCfg.noTagFilter !== true) {
-        const required = channelTagFilters(chCfg) || (config.community_tags || ['plazap2p']);
+        const required = channelTagFilters(chCfg) || generalTagsFor(channelId);
         if (!event.tags?.some(t => t[0] === 't' && required.includes(t[1]))) return;
       }
     }
@@ -410,7 +420,9 @@ function parseListing(event) {
   const summary     = sanitize(getTagValue(tags, 'summary') || '');
   const location    = cityOnly(getTagValue(tags, 'location'));
   const tTags       = getTagValues(tags, 't').map(t => t.toLowerCase());
-  const category    = detectCategory(tTags);
+  // Anuncio de un mercado externo (Mercasats…): no lleva las etiquetas de tipo de PlazaP2P.
+  const market      = marketOf(tTags, externalMarketsFrom(config));
+  const category    = market ? externalCategory(tTags) : detectCategory(tTags);
   const payment     = detectPayment(tTags);
   const dTag        = getTagValue(tags, 'd') || event.id;
   const publishedAt = publishedAtOf(tags, created_at);
@@ -419,11 +431,18 @@ function parseListing(event) {
   const npub        = hexToNpub(pubkey);
   const priceTag    = tags.find(t => t[0] === 'price');
   const price       = priceTag?.[1] || '';
-  const currency    = priceTag?.[2] || '';
+  const currency    = market ? normalizeCurrency(priceTag?.[2]) : (priceTag?.[2] || '');
+  const marketInfo  = market ? {
+    id: market.id, label: market.label,
+    url: marketListingUrl(event, market),
+    // Firmado por la cuenta del mercado en nombre de otro vendedor (anuncios de Telegram).
+    proxied: !!proxiedSeller(event),
+  } : null;
   return {
     kind: 30402, title, summary, location, category, payment, price, currency, publishedAt, status, naddr, npub,
     pubkeyHex: pubkey, created_at, expiresAt: expirationTs(event),
     tTags, links: getTagValues(tags, 'r'), platforms: getTagValues(tags, 'platform'),
+    market: marketInfo,
   };
 }
 
@@ -987,6 +1006,7 @@ function renderListingCard(l) {
     <div class="card-top-row">
       <div class="card-badge" style="color:${color};border-color:${color}40">${esc(l.category.toUpperCase())}</div>
       ${isNew ? '<span class="card-new-badge">nuevo</span>' : ''}
+      ${l.market ? `<span class="card-market-badge" title="Anuncio publicado en ${esc(l.market.label)}">vía ${esc(l.market.label)}</span>` : ''}
       <button class="card-fav-btn${favActive ? ' active' : ''}" onclick="event.stopPropagation(); toggleFav('${l.naddr}', this)" title="${favActive ? 'Quitar de favoritos' : 'Guardar en favoritos'}" aria-pressed="${favActive}">${favActive ? '⭐' : '☆'}</button>
     </div>
     <h3 class="card-title">${esc(l.title)}</h3>
@@ -1348,7 +1368,7 @@ window.openModal = function(naddr, options = {}) {
   // tag 'a' opcional, ignorándolo si llega roto.
   const valorarUrl = `publicar.html?valorar=${l.npub}&ref=${encodeURIComponent(l.naddr)}`;
 
-  const ratingBlockFor = rating => rating
+  let ratingBlockFor = rating => rating
     ? `<div class="modal-rating-section">
         <div class="modal-rating-header">Reputación del vendedor</div>
         ${renderStarDisplay(rating.avg, rating.n, false)}
@@ -1359,7 +1379,19 @@ window.openModal = function(naddr, options = {}) {
         <span class="no-rating-text">Sin valoraciones aún</span>
         <a href="${esc(valorarUrl)}" class="btn-ghost btn-sm modal-rate-btn">⭐ Ser el primero en valorar</a>
       </div>`;
+  // Firmado por la cuenta de un mercado externo en nombre de otro vendedor: una
+  // valoración iría a esa cuenta, no a quien vende.
+  const proxiedBlock = `<div class="modal-rating-section modal-rating-none">
+      <span class="no-rating-text">Publicado por la cuenta de ${esc(l.market?.label || '')} en nombre de otro vendedor: su reputación está en ${esc(l.market?.label || '')}.</span>
+    </div>`;
+  if (l.market?.proxied) ratingBlockFor = () => proxiedBlock;
   const ratingBlock = ratingBlockFor(rating);
+  const marketUrl = l.market?.url ? safeHref(l.market.url, window.location.href) : '';
+  const marketNotice = l.market ? `<div class="modal-notice modal-market-notice">
+        <span>🏪</span>
+        <span>Anuncio de <strong>${esc(l.market.label)}</strong>. Ese mercado marca los vendidos en su web, no en Nostr: confirma con el vendedor que sigue disponible.
+        ${marketUrl ? `<a href="${esc(marketUrl)}" target="_blank" rel="noopener noreferrer">Ver en ${esc(l.market.label)} ↗</a>` : ''}</span>
+      </div>` : '';
 
   const modalFavActive = isFavorite(l.naddr);
   modal.innerHTML = `
@@ -1378,6 +1410,7 @@ window.openModal = function(naddr, options = {}) {
       ${l.price ? `<div class="modal-meta"><span><strong>Precio:</strong> ${esc(l.price)} ${esc(l.currency || '')}</span>
         <button class="card-share-btn" onclick="closeModal();switchTab('conversor')" title="Convertir a sats/otras monedas">🧮 Convertir</button></div>` : ''}
       <div id="modal-rating-slot">${ratingBlock}</div>
+      ${marketNotice}
       <div class="modal-notice">
         <span>🔒</span>
         <span>La información completa y el contacto están en la red Nostr. La interacción ocurre fuera de esta interfaz.</span>

@@ -1204,6 +1204,18 @@ footer {
   padding: 2px 6px;
   animation: newBadgePulse 2.5s ease-in-out infinite;
 }
+/* Anuncio de un mercado externo compatible (Mercasats…) */
+.card-market-badge {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--btc);
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+.modal-market-notice a { color: var(--btc); }
 @keyframes newBadgePulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.6; }

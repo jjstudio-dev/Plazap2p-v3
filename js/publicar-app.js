@@ -11,6 +11,7 @@
 
 import { RelayPool, collectUntilEose } from './relay-pool.js'
 import { writeRelaysFrom } from './outbox.js'
+import { externalMarketsFrom, isMarketEvent, marketRelays } from './external-markets.js'
 import { encodeGeohash, EVENT_GEOHASH_PRECISION, GEOHASH_RE } from './geohash.js'
 import { MAINTAINER_PUBKEY } from './signed-config.js'
 import { encodeNaddr, decodeNaddr, getTagValue, getTagValues, hexToNpub } from './nostr.js'
@@ -1055,6 +1056,7 @@ async function broadcastAndReportInner(signedEvent, pending) {
 
   if (accepted.length >= 1) {
     const outbox = sendToOutbox(signedEvent)   // F7-04: en segundo plano
+    const markets = sendToMarkets(signedEvent) // Mercasats y derivados: también en segundo plano
     signer.markProcessed(signedEvent.id)
     signer.clearPending()
     lastSignedEvent = null
@@ -1104,6 +1106,7 @@ async function broadcastAndReportInner(signedEvent, pending) {
       results, naddr, eventId: signedEvent.id,
     })
     reportOutbox(outbox, signedEvent.id)
+    reportMarkets(markets, signedEvent.id)
   } else {
     lastSignedEvent = { signedEvent, pending }
     const msgs = results.filter(r => !r.accepted && r.message).map(r => r.message)
@@ -1146,7 +1149,15 @@ function getOutboxRelays() {
  * { accepted, total } o null si no hay relays propios que añadir. */
 async function sendToOutbox(signedEvent) {
   try {
-    const urls = await getOutboxRelays()
+    return await sendToRelays(await getOutboxRelays(), signedEvent)
+  } catch {
+    return null
+  }
+}
+
+/** Publica en una lista de relays aparte. { accepted, total } o null si la lista está vacía. */
+async function sendToRelays(urls, signedEvent) {
+  try {
     if (!urls.length) return null
     const extra = new RelayPool(urls)
     extra.connect()
@@ -1164,6 +1175,40 @@ async function sendToOutbox(signedEvent) {
   } catch {
     return null
   }
+}
+
+// ── Mercados externos (Mercasats y derivados) ────────────────────────────────
+
+/**
+ * Los anuncios (kind 30402) y sus peticiones de borrado van también a los
+ * relays públicos de los mercados externos compatibles. Nunca falla:
+ * { accepted, total, labels } o null si no toca.
+ */
+async function sendToMarkets(signedEvent) {
+  if (!isMarketEvent(signedEvent)) return null
+  const markets = externalMarketsFrom(config)
+  const urls = marketRelays(markets, config?.relays || [])
+  const r = await sendToRelays(urls, signedEvent)
+  if (!r) return null
+  const labels = markets.filter(m => m.relays.some(u => urls.includes(u))).map(m => m.label)
+  return { ...r, labels }
+}
+
+/** Añade al resultado ya pintado si los relays de los mercados externos lo aceptaron. */
+function reportMarkets(marketsPromise, eventId) {
+  marketsPromise.then(r => {
+    if (!r) return
+    const card = document.querySelector(`#res-box .res-card[data-event-id="${eventId}"]`)
+    if (!card) return
+    const p = document.createElement('div')
+    p.className = 'res-sub res-markets'
+    const names = r.labels.join(', ') || 'otros mercados'
+    p.textContent = r.accepted > 0
+      ? `También enviado a los relays de ${names} (${r.accepted} de ${r.total}).`
+      : `Los relays de ${names} no lo aceptaron; está en los de PlazaP2P.`
+    const last = card.querySelector('.res-outbox') || card.querySelector('.res-sub')
+    last?.after(p)
+  })
 }
 
 /** Añade al resultado ya pintado cuántos relays propios lo recibieron. */
