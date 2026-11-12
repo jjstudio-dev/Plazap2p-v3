@@ -4484,3 +4484,13 @@ footer {
 .map-locate-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .local-communities-notice { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .local-community-card .directory-footer { flex-wrap: wrap; gap: 6px; }
+.map-layer-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+.map-layer-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--border, #444); background: transparent; color: var(--t-2, #aaa);
+  font: inherit; font-size: 0.85rem; cursor: pointer; min-height: 36px;
+}
+.map-layer-chip::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--chip-color); opacity: 0.5; }
+.map-layer-chip.active { color: var(--t-1, #fff); border-color: var(--chip-color); background: color-mix(in srgb, var(--chip-color) 18%, transparent); }
+.map-layer-chip.active::before { opacity: 1; }
+.map-layer-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

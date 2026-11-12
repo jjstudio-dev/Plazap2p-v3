@@ -27,7 +27,7 @@ export const tests = [
       t.assert.match(status, /🏘 \d{2}/, 'las comunidades de España')
       t.assert.match(status, /🛒 1/, 'el particular como zona')
 
-      const layers = await page.evaluate(`[...document.querySelectorAll('.leaflet-control-layers-overlays label')].map(l => l.textContent.trim() + (l.querySelector('input').checked ? ' ✓' : ''))`)
+      const layers = await page.evaluate(`[...document.querySelectorAll('#map-layer-chips .map-layer-chip')].map(b => b.textContent.trim() + (b.getAttribute('aria-pressed') === 'true' ? ' ✓' : ''))`)
       t.assert.deepEqual(layers, ['🏘 Comunidades ✓', '📅 Eventos ✓', '🏪 Puntos de venta ✓', '🛒 Anuncios (zona aproximada) ✓', '₿ Comercios BTC Map'])
 
       // Punto de venta: punto con «Cómo llegar».
@@ -46,8 +46,8 @@ export const tests = [
       t.assert.doesNotMatch(popup2, /Cómo llegar/)
 
       // Apagar una capa se recuerda.
-      await page.evaluate(`[...document.querySelectorAll('.leaflet-control-layers-overlays label')].find(l => l.textContent.includes('Comunidades')).querySelector('input').click()`)
-      await page.waitFor(`/🏘 0/.test(document.getElementById('map-status').textContent) || JSON.parse(localStorage.getItem('plazap2p_mapa_capas') || '{}').comunidades === false`)
+      await page.evaluate(`document.querySelector('#map-layer-chips .map-layer-chip[data-layer="comunidades"]').click()`)
+      await page.waitFor(`/🏘 –/.test(document.getElementById('map-status').textContent)`, { label: 'capa apagada en el contador' })
       t.assert.equal(await page.evaluate(`JSON.parse(localStorage.getItem('plazap2p_mapa_capas')).comunidades`), false)
       t.assert.deepEqual(t.appErrors(page), [])
     },

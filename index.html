@@ -35,8 +35,8 @@
   <meta name="twitter:title" content="PlazaP2P — Economía Circular P2P en Nostr" />
   <meta name="twitter:description" content="Mercado, comunidad y recursos Bitcoin sobre Nostr. Publicaciones abiertas, sin registro y sin intermediarios." />
   <link rel="canonical" href="https://jjstudio-dev.github.io/Plazap2p-v3/" />
-  <link rel="stylesheet" href="css/fonts.css?v=70" />
-  <link rel="stylesheet" href="css/style.css?v=70" />
+  <link rel="stylesheet" href="css/fonts.css?v=71" />
+  <link rel="stylesheet" href="css/style.css?v=71" />
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg" />
@@ -426,8 +426,9 @@
   <section id="tab-mapa" class="section-panel">
     <div class="section-header">
       <span class="section-title"><span class="icon">🗺</span> Mapa</span>
-      <span class="section-hint">comunidades · eventos · puntos de venta · BTC Map — enciende o apaga cada capa</span>
+      <span class="section-hint">toca un punto para ver cómo llegar</span>
     </div>
+    <div id="map-layer-chips" class="map-layer-chips" role="group" aria-label="Capas del mapa"></div>
     <div id="map-container" class="map-container" role="region" aria-label="Mapa de comunidades, eventos y comercios"></div>
     <p id="map-status" class="map-status" aria-live="polite">Cargando el mapa…</p>
     <p class="map-note">Los anuncios de particulares y los eventos sin dirección se ven como una zona de unos kilómetros, no como un punto. Solo los puntos de venta y los eventos con dirección exacta tienen «Cómo llegar». Comunidades: <a href="https://2140meetups.com/comunidades/" target="_blank" rel="noopener noreferrer">2140meetups.com</a>. Comercios: <a href="https://btcmap.org" target="_blank" rel="noopener noreferrer">BTC Map</a>.</p>
@@ -1521,15 +1522,15 @@
 <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <!-- ESM module — app.js imports nostr.js and relay-pool.js -->
-<script type="module" src="js/app.js?v=70"></script>
+<script type="module" src="js/app.js?v=71"></script>
 <script type="module">
-  import { initBtcStats }      from './js/btc-stats.js?v=70';
-  import { initPriceChart }    from './js/btc-chart.js?v=70';
-  import { initConverter }     from './js/converter.js?v=70';
-  import { initMiniConverter } from './js/mini-converter.js?v=70';
-  import { initBtcMarket }     from './js/btc-market.js?v=70';
-  import { initAppShell }      from './js/app-shell.js?v=70';
-  import { initRouter }        from './js/router.js?v=70';
+  import { initBtcStats }      from './js/btc-stats.js?v=71';
+  import { initPriceChart }    from './js/btc-chart.js?v=71';
+  import { initConverter }     from './js/converter.js?v=71';
+  import { initMiniConverter } from './js/mini-converter.js?v=71';
+  import { initBtcMarket }     from './js/btc-market.js?v=71';
+  import { initAppShell }      from './js/app-shell.js?v=71';
+  import { initRouter }        from './js/router.js?v=71';
 
   initAppShell();
   initRouter();

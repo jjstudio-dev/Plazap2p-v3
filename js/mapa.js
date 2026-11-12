@@ -123,10 +123,38 @@ export function refreshMap() {
   updateStatus()
 }
 
+/**
+ * Botones de capa siempre visibles encima del mapa (antes, el control de
+ * Leaflet, plegado en el móvil y fácil de no ver). Cada uno enciende o apaga su grupo.
+ */
+function renderLayerChips() {
+  const box = document.getElementById('map-layer-chips')
+  if (!box) return
+  box.replaceChildren()
+  for (const l of LAYERS) {
+    const btn = el('button', { type: 'button', class: 'map-layer-chip', 'data-layer': l.id }, l.label)
+    btn.style.setProperty('--chip-color', LAYER_COLORS[l.id])
+    const sync = () => {
+      const on = map.hasLayer(groups[l.id])
+      btn.classList.toggle('active', on)
+      btn.setAttribute('aria-pressed', String(on))
+    }
+    btn.addEventListener('click', () => {
+      if (map.hasLayer(groups[l.id])) map.removeLayer(groups[l.id]); else groups[l.id].addTo(map)
+      sync()
+      savePrefs()
+      scheduleBtcmap()
+      updateStatus()
+    })
+    sync()
+    box.appendChild(btn)
+  }
+}
+
 function updateStatus() {
   const status = document.getElementById('map-status')
   if (!status || !map) return
-  const counts = LAYERS.map(l => `${l.label.split(' ')[0]} ${groups[l.id].getLayers().length}`).join(' · ')
+  const counts = LAYERS.map(l => `${l.label.split(' ')[0]} ${map.hasLayer(groups[l.id]) ? groups[l.id].getLayers().length : '–'}`).join(' · ')
   const hint = map.hasLayer(groups.btcmap) && map.getZoom() < BTCMAP_MIN_ZOOM
     ? ' — acércate para ver los comercios de BTC Map' : ''
   status.textContent = counts + hint
@@ -199,16 +227,13 @@ export async function showMap(container, pointsProvider) {
   map.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener noreferrer">Leaflet</a>')
 
   const prefs = loadPrefs()
-  const overlays = {}
   for (const l of LAYERS) {
     groups[l.id] = L.layerGroup()
-    overlays[l.label] = groups[l.id]
     if (prefs[l.id] ?? l.defaultOn) groups[l.id].addTo(map)
   }
   // En pantallas estrechas el panel de capas empieza plegado para no tapar el mapa.
-  L.control.layers(null, overlays, { collapsed: window.innerWidth < 700 }).addTo(map)
+  renderLayerChips()
   addLocateButton()
-  map.on('overlayadd overlayremove', () => { savePrefs(); scheduleBtcmap() })
   map.on('moveend', scheduleBtcmap)
   refreshMap()
   scheduleBtcmap()
