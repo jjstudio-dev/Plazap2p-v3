@@ -100,3 +100,8 @@ test('las capas tienen BTC Map apagada por defecto (llama a un servicio externo)
   assert.deepEqual(LAYERS.map(l => l.id), ['comunidades', 'eventos', 'comercios', 'anuncios', 'btcmap'])
   assert.equal(LAYERS.find(l => l.id === 'btcmap').defaultOn, false)
 })
+
+test('comunidades: la dirección repetida de 2140meetups se limpia', () => {
+  const c = cleanCommunity({ title: 'X', lat: '37.3', lon: '-5.9', direccion: 'Sevilla, Sevilla, España, Sevilla, España' })
+  assert.equal(c.direccion, 'Sevilla, España')
+})

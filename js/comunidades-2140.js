@@ -24,6 +24,17 @@ export function httpsUrl(raw) {
   } catch { return null }
 }
 
+/** «Sevilla, Sevilla, España, Sevilla, España» → «Sevilla, España». */
+function dedupeParts(s) {
+  const seen = new Set()
+  return s.split(',').map(p => p.trim()).filter(p => {
+    const k = p.toLowerCase()
+    if (!p || seen.has(k)) return false
+    seen.add(k)
+    return true
+  }).join(', ')
+}
+
 function coord(v, limit) {
   const n = Number(v)
   return Number.isFinite(n) && Math.abs(n) <= limit && n !== 0 ? Math.round(n * 1e6) / 1e6 : null
@@ -47,7 +58,7 @@ export function cleanCommunity(c) {
     id: String(c.id ?? '').replace(/[^0-9a-z-]/gi, '').slice(0, 20) || null,
     nombre,
     ciudad: text(c.ciudad, 60) || null,
-    direccion: text(c.direccion, 120) || null,
+    direccion: dedupeParts(text(c.direccion, 200)).slice(0, 120) || null,
     lat,
     lon,
     telegram: telegram && /^https:\/\/(t\.me|telegram\.me)\//.test(telegram) ? telegram : null,
