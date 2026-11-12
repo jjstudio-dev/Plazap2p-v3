@@ -45,7 +45,7 @@ export const tests = [
       await page.goto(server.origin + '/index.html')
       await page.waitFor(`document.querySelectorAll('#channel-mercado .listing-card:not(.skeleton)').length === 2`)
       const tabs = await page.evaluate(`[...document.querySelectorAll('.nav-tab')].map(b => b.dataset.tab)`)
-      t.assert.equal(tabs.length, 17)
+      t.assert.equal(tabs.length, 18)
       for (const tab of tabs) {
         await page.click(`.nav-tab[data-tab="${tab}"]`)
         const active = await page.evaluate(`[...document.querySelectorAll('.section-panel.active')].map(p => p.id)`)

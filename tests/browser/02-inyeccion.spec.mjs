@@ -148,10 +148,14 @@ export const tests = [
         { match: 'data/eventos\\.json', json: [{ id: 'e1', title: P('sev-titulo'), summary: P('sev-resumen'), location: P('sev-lugar'),
           start: '2099-01-01T10:00:00', links: [JS_URL('sev-link')], recurrente: true, aprobado: true }] },
         { match: 'data/mantenimiento\\.json', json: { ln_address: P('ln'), btc_address: P('btc'), mensaje: P('msg'), mensaje_gracias: P('gracias') } },
+        // Comunidades de 2140meetups (tarjetas y mapa): texto y enlaces hostiles.
+        { match: 'data/comunidades-2140\\.json', json: { comunidades: [{ id: P('loc-id'), nombre: P('loc-nombre'), ciudad: P('loc-ciudad'),
+          direccion: P('loc-dir'), lat: 40.4, lon: -3.7, telegram: JS_URL('loc-tg'), web: JS_URL('loc-web'), ficha: JS_URL('loc-ficha'),
+          npub: P('loc-npub'), lightning: P('loc-ln') }] } },
       ]
       const page = await t.open({ scenario: { events: [listing()], fetch: fetchRoutes } })
       await page.goto(server.origin + '/index.html')
-      await page.waitFor(`document.querySelectorAll('#channel-comunidades .community-card').length === 2`)
+      await page.waitFor(`document.querySelectorAll('#channel-comunidades .community-card').length === 3`)
       const tabs = await page.evaluate(`[...document.querySelectorAll('.nav-tab')].map(b => b.dataset.tab)`)
       for (const tab of tabs) {
         await page.click(`.nav-tab[data-tab="${tab}"]`)

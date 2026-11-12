@@ -17,6 +17,7 @@ export const EXPORTABLE = [
   'plazap2p_nwc_meta',  // wallet-session.js — metadatos de wallet SIN secret (stripSecret ya aplicado)
   'plazap2p_favorites',  // favorites.js — anuncios/npubs marcados como favoritos
   'plazap2p_blocked_pubkeys', // moderation.js — lista local de pubkeys bloqueados
+  'plazap2p_mapa_capas', // mapa.js — capas del mapa encendidas o apagadas
 ]
 
 export const SENSITIVE = [

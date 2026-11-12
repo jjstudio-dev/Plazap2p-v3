@@ -10,7 +10,7 @@
 
 export const GROUPS = {
   plaza:     { tabs: ['mercado', 'intercambio', 'directorio', 'vendedores', 'conversor'], default: 'mercado' },
-  explorar:  { tabs: ['feed', 'articulos', 'eventos', 'comunidades', 'herramientas', 'multimedia', 'bitcoin'], default: 'feed' },
+  explorar:  { tabs: ['feed', 'articulos', 'eventos', 'mapa', 'comunidades', 'herramientas', 'multimedia', 'bitcoin'], default: 'feed' },
   // W-10: el botón central abre el asistente real. La pestaña informativa
   // «Cómo aparecer» (tab 'publicar') vive SOLO en Info: si estuviera en dos
   // grupos, tabToDest() devolvería este y el chip dejaría Info a medias.
@@ -22,7 +22,7 @@ export const GROUPS = {
 const CHIP_LABELS = {
   mercado: '🛒 Mercado', intercambio: '🔄 Intercambio', directorio: '📒 Directorio',
   vendedores: '👥 Vendedores', conversor: '💱 Conversor',
-  feed: '💬 Feed', articulos: '📄 Artículos', eventos: '📅 Eventos', comunidades: '🏘 Comunidades',
+  feed: '💬 Feed', articulos: '📄 Artículos', eventos: '📅 Eventos', mapa: '🗺 Mapa', comunidades: '🏘 Comunidades',
   herramientas: '🔧 Herramientas', multimedia: '🎙 Multimedia', bitcoin: '₿ Bitcoin',
   acerca: '📋 Acerca', nostr: '⚡ Nostr', relays: '🔗 Relays', 'app-android': '📱 App',
   publicar: '✍️ Cómo aparecer',

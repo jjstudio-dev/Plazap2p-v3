@@ -4456,3 +4456,31 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   .mbn-btn { transition: none; }
 }
+
+/* ── Mapa (js/mapa.js) ───────────────────────────────────────── */
+.map-container {
+  height: min(70vh, 640px);
+  min-height: 360px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border, #333);
+  background: #1c1c1e;
+}
+.map-status { font-size: 0.85rem; color: var(--t-2, #aaa); margin: 8px 2px 0; }
+.map-note { font-size: 0.8rem; color: var(--t-3, #999); margin: 6px 2px 0; }
+.map-note a { color: var(--btc); }
+.map-container .leaflet-control-layers { font-size: 0.85rem; line-height: 1.6; }
+.map-container .leaflet-popup-content { font-size: 0.85rem; min-width: 180px; }
+.map-popup strong { display: block; margin-bottom: 2px; }
+.map-popup-sub, .map-popup-note { color: #555; font-size: 0.8rem; }
+.map-popup-note { font-style: italic; margin-top: 4px; }
+.map-popup-actions { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+.map-popup-actions a { color: #0a63c9; }
+.map-popup-directions a { margin-right: 6px; }
+.map-locate-btn {
+  width: 34px; height: 34px; border-radius: 4px; border: 2px solid rgba(0,0,0,0.2);
+  background: #fff; font-size: 18px; cursor: pointer;
+}
+.map-locate-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.local-communities-notice { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.local-community-card .directory-footer { flex-wrap: wrap; gap: 6px; }

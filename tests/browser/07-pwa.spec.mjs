@@ -35,7 +35,7 @@ export const tests = [
       for (const url of ['/index.html', '/', '/index.html?tab=eventos', '/index.html#/explorar/feed']) {
         page.errors.length = 0; page.failed.length = 0
         await page.goto(server.origin + url)
-        await page.waitFor(`document.querySelectorAll('.nav-tab').length === 17 && document.getElementById('relay-status-list').children.length > 0`,
+        await page.waitFor(`document.querySelectorAll('.nav-tab').length === 18 && document.getElementById('relay-status-list').children.length > 0`,
           { label: `arranque sin red de ${url}` })
         t.assert.deepEqual(t.appErrors(page).filter(e => !/ratings\.json/.test(e)), [], `sin red: ${url}`)
       }
@@ -89,7 +89,7 @@ export const tests = [
       await page.evaluate(`navigator.serviceWorker.getRegistration().then(r => r.update())`)
       await page.waitFor(`(async () => (await caches.keys()).join() === ${JSON.stringify(CACHE_ACTUAL)})()`, { timeout: 12000, label: 'solo queda la caché nueva' })
       await page.reload()
-      await page.waitFor(`document.querySelectorAll('.nav-tab').length === 17`)
+      await page.waitFor(`document.querySelectorAll('.nav-tab').length === 18`)
       t.assert.deepEqual(t.appErrors(page), [])
     },
   },

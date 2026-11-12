@@ -7,6 +7,9 @@ import { parseAnuncioHash, anuncioRoute, routeForTab } from './router.js';
 import { isBlocked, blockPubkey, unblockPubkey, listBlocked, exportBlocked, importBlocked } from './moderation.js';
 import { trustLevel, compareSellersByRating } from './trust-signals.js';
 import { fetchZapReceipts } from './zaps.js';
+import { communitiesFrom } from './comunidades-2140.js';
+import { communityPoints, listingPoints, eventPoints, COMMERCE_TAG } from './map-data.js';
+import { mostPreciseGeohash } from './geohash.js';
 import { externalMarketsFrom, marketTags, marketOf, externalCategory, normalizeCurrency, marketListingUrl, isMarketSigned } from './external-markets.js';
 import { isFavorite, toggleFavorite } from './favorites.js';
 import { channelTagFilters, isExpired, expirationTs, isItemExpired, parseCalendarDate, calDate, detectCategory, detectPayment, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts, safeHref, allDayLastDay } from './listing-utils.js';
@@ -16,7 +19,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '66';
+const ASSET_VERSION  = '68';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -38,10 +41,11 @@ let trustedMostroHexPubkeys = []; // resolved at init from config.intercambio.tr
 let liveRatings  = {};  // { [pubkeyHex]: { avg, n, aspects, comments } | null } — kind 1985 live (null = consultado, sin datos)
 let liveRatingsFetching = false;
 
-const STATIC_TABS = new Set(['comunidades', 'herramientas', 'multimedia', 'vendedores']);
+const STATIC_TABS = new Set(['comunidades', 'herramientas', 'multimedia', 'vendedores', 'mapa']);
 
 let staticEvents = [];  // curated fallback events loaded from data/eventos.json
 let staticComunidades = [];
+let staticComunidades2140 = [];   // comunidades de España de 2140meetups.com (mapa y listado)
 let staticHerramientas = [];
 let staticComunidadesError = false;
 let staticHerramientasError = false;
@@ -384,6 +388,7 @@ function addEvent(channelId, event) {
 
     saveToCache();
     if (activeTab === channelId) renderActiveChannel();
+    else if (activeTab === 'mapa' && (channelId === 'mercado' || channelId === 'eventos')) scheduleMapRefresh();
     // W-04: una propuesta nueva de comunidad/herramienta llega por el canal
     // Mercado; hay que repintar la pestaña estática que la enseña.
     else if (isDirectoryProposal(parsed) && (activeTab === 'comunidades' || activeTab === 'herramientas')) {
@@ -443,6 +448,9 @@ function parseListing(event) {
     pubkeyHex: pubkey, created_at, expiresAt: expirationTs(event),
     tTags, links: getTagValues(tags, 'r'), platforms: getTagValues(tags, 'platform'),
     market: marketInfo,
+    // Mapa: zona (`g`) y si es un punto de venta con ubicación exacta.
+    geohash: mostPreciseGeohash(tags),
+    isCommerce: tTags.includes(COMMERCE_TAG),
   };
 }
 
@@ -500,6 +508,7 @@ function parseCalendarEvent(event) {
     links,
     naddr,
     status: getTagValue(tags, 'status') || 'active',   // la retirada desde publicar.html republica con status:inactive
+    geohash: mostPreciseGeohash(tags),
     npub: hexToNpub(pubkey),
     publishedAt: start?.ts || created_at,
     created_at
@@ -783,6 +792,7 @@ function renderActiveChannel() {
 
 function renderActiveChannelInner() {
   if (activeTab === 'vendedores') { renderSellersDirectory(); return; }
+  if (activeTab === 'mapa') { renderMapa(); return; }
   if (activeTab === 'comunidades') {
     if (staticComunidadesError) renderStaticError('comunidades', 'las comunidades');
     else renderComunidades(staticComunidades, GITHUB_REPO_URL);
@@ -2063,6 +2073,20 @@ async function fetchStaticJson(path) {
   }
 }
 
+/** Como fetchStaticJson, para un archivo que es un objeto (comunidades-2140.json). */
+async function fetchStaticDoc(path) {
+  try {
+    const res = await fetchWithTimeout(versioned(path));
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('respuesta sin objeto');
+    return data;
+  } catch (err) {
+    console.warn(`[static] No se pudo cargar ${path}:`, err?.message || err);
+    return STATIC_ERROR;
+  }
+}
+
 function renderStaticError(targetId, label) {
   const container = document.getElementById(`channel-${targetId}`);
   if (!container) return;
@@ -2078,12 +2102,14 @@ window.retryStaticData = function() { loadStaticData(); };
 
 async function loadStaticData() {
   try {
-    const [comunidades, herramientas, multimedia, eventosData] = await Promise.all([
+    const [comunidades, herramientas, multimedia, eventosData, comunidades2140] = await Promise.all([
       fetchStaticJson('data/comunidades.json'),
       fetchStaticJson('data/herramientas.json'),
       fetchStaticJson('data/multimedia.json'),
-      fetchStaticJson('data/eventos.json')
+      fetchStaticJson('data/eventos.json'),
+      fetchStaticDoc('data/comunidades-2140.json'),
     ]);
+    staticComunidades2140 = comunidades2140 === STATIC_ERROR ? [] : communitiesFrom(comunidades2140);
     staticComunidadesError = comunidades === STATIC_ERROR;
     staticHerramientasError = herramientas === STATIC_ERROR;
     staticMultimediaError = multimedia === STATIC_ERROR;
@@ -2100,7 +2126,7 @@ async function loadStaticData() {
     if (activeTab === 'vendedores') renderSellersDirectory();
     // Eventos también: si los relays contestaron antes que eventos.json, la
     // pestaña quedaba pintada sin los eventos curados hasta otro repintado.
-    if (activeTab === 'mercado' || activeTab === 'eventos') renderActiveChannel();
+    if (activeTab === 'mercado' || activeTab === 'eventos' || activeTab === 'mapa') renderActiveChannel();
   } catch (err) {
     console.warn('[static] Error cargando datos estáticos:', err);
   }
@@ -2314,13 +2340,73 @@ function renderToolProposalCard(p) {
 }
 
 // ── Render: Comunidades ────────────────────────────────────────
+// ── Render: Mapa ───────────────────────────────────────────────
+// Leaflet solo se descarga al abrir la pestaña (mapa.js lo importa).
+let mapModule = null;
+let mapRefreshTimer = null;
+
+function mapPoints() {
+  return [
+    ...communityPoints(staticComunidades2140),
+    ...listingPoints([...(channels.mercado?.values() || [])]),
+    ...eventPoints([...(channels.eventos?.values() || [])]),
+  ];
+}
+
+function renderMapa() {
+  const container = document.getElementById('map-container');
+  if (!container) return;
+  import('./mapa.js')
+    .then(m => { mapModule = m; return m.showMap(container, mapPoints); })
+    .catch(e => {
+      console.warn('[mapa]', e);
+      const status = document.getElementById('map-status');
+      if (status) status.textContent = 'No se pudo cargar el mapa. Comprueba tu conexión y vuelve a abrir la pestaña.';
+    });
+}
+
+function scheduleMapRefresh() {
+  clearTimeout(mapRefreshTimer);
+  mapRefreshTimer = setTimeout(() => mapModule?.refreshMap(), 800);
+}
+
+window.showOnMap = function() { window.switchTab('mapa'); };
+
+/** Comunidades locales de España (2140meetups.com): nombre, ciudad y enlaces. */
+function renderLocalCommunitiesHtml(list) {
+  if (!list.length) return '';
+  const cards = list.map(c => {
+    const links = [
+      c.telegram && `<a href="${safeUrl(c.telegram)}" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-sm">Telegram ↗</a>`,
+      c.web && `<a href="${safeUrl(c.web)}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm">Web ↗</a>`,
+      c.ficha && `<a href="${safeUrl(c.ficha)}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm">Ficha ↗</a>`,
+    ].filter(Boolean).join(' ');
+    return `<article class="community-card directory-card local-community-card">
+      <div class="directory-accent"></div>
+      <div class="directory-card-body">
+        <h3 class="community-name">${esc(c.nombre)}</h3>
+        <div class="community-top">
+          <span class="community-country">📍 ${esc(c.ciudad || 'España')}</span>
+          ${c.npub ? '<span class="community-platform" title="Tiene cuenta Nostr">⚡ Nostr</span>' : ''}
+        </div>
+        <div class="directory-footer">${links}</div>
+      </div>
+    </article>`;
+  }).join('');
+  return `<div class="proposals-notice local-communities-notice">
+      <strong>Comunidades locales en España</strong> (${list.length}) · fuente:
+      <a href="https://2140meetups.com/comunidades/" target="_blank" rel="noopener noreferrer">2140meetups.com</a> ·
+      <button type="button" class="btn-ghost btn-sm" onclick="showOnMap()">🗺 Ver en el mapa</button>
+    </div>` + cards;
+}
+
 function renderComunidades(items, githubUrl) {
   const container = document.getElementById('channel-comunidades');
   if (!container) return;
   const footer = document.getElementById('comunidades-footer');
   const proposals = directoryProposals(PROPOSAL_COMUNIDAD);
 
-  if (items.length === 0 && proposals.length === 0) {
+  if (items.length === 0 && proposals.length === 0 && staticComunidades2140.length === 0) {
     container.innerHTML = staticEmpty('🏘', 'comunidades', githubUrl, 'comunidad.yml');
     return;
   }
@@ -2358,7 +2444,7 @@ function renderComunidades(items, githubUrl) {
     </article>`;
   }).join('');
 
-  container.innerHTML = curatedHtml + (proposals.length
+  container.innerHTML = curatedHtml + renderLocalCommunitiesHtml(staticComunidades2140) + (proposals.length
     ? proposalsNoticeHtml('Propuestas publicadas desde PlazaP2P. Todavía no han pasado la revisión del directorio.') +
       proposals.map(renderCommunityProposalCard).join('')
     : '');
