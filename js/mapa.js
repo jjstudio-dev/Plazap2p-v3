@@ -66,6 +66,10 @@ function safeLink(url, label) {
 /** Contenido del globo de un punto: todo con textContent, nada de HTML ajeno. */
 function popupFor(p) {
   const box = el('div', { class: 'map-popup' })
+  // Foto de la comunidad (solo 2140meetups.com, validada al cargar los datos).
+  if (p.image && /^https:\/\/2140meetups\.com\//.test(p.image)) {
+    box.appendChild(el('img', { src: p.image, alt: '', class: 'map-popup-img', loading: 'lazy', referrerpolicy: 'no-referrer' }))
+  }
   box.appendChild(el('strong', {}, p.title || ''))
   if (p.subtitle) box.appendChild(el('div', { class: 'map-popup-sub' }, p.subtitle))
   if (!p.exact) box.appendChild(el('div', { class: 'map-popup-note' }, 'Zona aproximada (unos kilómetros), no la dirección exacta.'))

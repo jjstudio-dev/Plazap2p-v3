@@ -52,7 +52,7 @@ export function communityPoints(communities) {
       c.web && { label: 'Web', url: c.web },
       c.npub && { label: 'Perfil Nostr', url: `https://njump.me/${c.npub}` },
       c.ficha && { label: 'Ficha en 2140meetups', url: c.ficha },
-    ].filter(Boolean), npub: c.npub || null,
+    ].filter(Boolean), npub: c.npub || null, image: c.foto || null,
   }))
 }
 

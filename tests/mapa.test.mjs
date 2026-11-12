@@ -28,6 +28,7 @@ test('comunidades de 2140meetups: solo lo que se usa y validado', () => {
     id: '7852', nombre: 'Alkarria & BTC', ciudad: 'Guadalajara', direccion: 'Pl. Mayor', lat: 40.633743, lon: -3.166898,
     telegram: 'https://t.me/alkarriabtc', web: null, lightning: 'alkarriabtc@jabato.space',
     npub: 'npub1uay28kq0hq8xr98k2uqk0vjrzqz8fdjh38esz4acdtk045lmgzpqn9naxf', ficha: 'https://2140meetups.com/comunidad/7852/',
+    foto: null, destacada: false,
   })
   assert.ok(!('email' in c), 'el email no se guarda')
   const raro = cleanCommunity({ title: 'X', lat: '40', lon: '-3', telegram: 'http://t.me/x', enlace: 'javascript:alert(1)', nostr: 'npub1corto', link: 'https://otro.example/c/1' })
@@ -104,4 +105,14 @@ test('las capas tienen BTC Map apagada por defecto (llama a un servicio externo)
 test('comunidades: la dirección repetida de 2140meetups se limpia', () => {
   const c = cleanCommunity({ title: 'X', lat: '37.3', lon: '-5.9', direccion: 'Sevilla, Sevilla, España, Sevilla, España' })
   assert.equal(c.direccion, 'Sevilla, España')
+})
+
+test('comunidades: foto solo de 2140meetups y marca de destacada', () => {
+  const base = { title: 'X', lat: '39.4', lon: '-0.3' }
+  assert.equal(cleanCommunity({ ...base, foto: 'https://2140meetups.com/wp-content/uploads/2023/02/a.jpg' }).foto, 'https://2140meetups.com/wp-content/uploads/2023/02/a.jpg')
+  assert.equal(cleanCommunity({ ...base, foto: 'https://otro.example/wp-content/uploads/a.jpg' }).foto, null)
+  assert.equal(cleanCommunity({ ...base, foto: 'https://2140meetups.com/wp-content/uploads/a.svg' }).foto, null, 'un SVG puede llevar código')
+  assert.equal(cleanCommunity({ ...base, foto: 'javascript:alert(1)' }).foto, null)
+  assert.equal(cleanCommunity({ ...base, destacada: true }).destacada, true)
+  assert.equal(cleanCommunity({ ...base, destacada: 'sí' }).destacada, false)
 })

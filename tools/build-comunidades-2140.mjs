@@ -16,7 +16,10 @@ import { cleanCommunity } from '../js/comunidades-2140.js'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const OUT = path.join(here, '..', 'data', 'comunidades-2140.json')
-const FIELDS = 'id,title,link,modified,direccion,ciudad,pais,telegram,enlace,lightning_address,lat,lon,nostr,status'
+const FIELDS = 'id,title,link,modified,direccion,ciudad,pais,telegram,enlace,lightning_address,lat,lon,nostr,status,featured_media'
+const MEDIA = 'https://2140meetups.com/wp-json/wp/v2/media?per_page=100&_fields=id,source_url,mime_type&include='
+// Comunidades que salen primero en el listado (por su id en 2140meetups).
+const DESTACADAS = new Set(['5541'])   // Valencia Bitcoin Plebs
 const API = `https://2140meetups.com/wp-json/wp/v2/community?per_page=100&_fields=${FIELDS}`
 
 async function fetchAll() {
@@ -32,12 +35,26 @@ async function fetchAll() {
   return out
 }
 
-const raw = await fetchAll()
+/** Foto de cada comunidad: el API de la comunidad solo da el número de su imagen. */
+async function fetchPhotos(mediaIds) {
+  const photos = new Map()
+  const ids = [...new Set(mediaIds.filter(n => Number.isInteger(n) && n > 0))]
+  for (let i = 0; i < ids.length; i += 100) {
+    const res = await fetch(MEDIA + ids.slice(i, i + 100).join(','), { headers: { 'User-Agent': 'PlazaP2P-directorio/1.0' } })
+    if (!res.ok) throw new Error(`HTTP ${res.status} al pedir las fotos`)
+    for (const m of await res.json()) {
+      if (/^image\/(png|jpeg|webp)$/.test(m.mime_type)) photos.set(m.id, m.source_url)
+    }
+  }
+  return photos
+}
+
+const raw = (await fetchAll()).filter(c => c.status === 'publish' && /^espa(ñ|n)a$/i.test(String(c.pais || '').trim()))
+const photos = await fetchPhotos(raw.map(c => c.featured_media))
 const items = raw
-  .filter(c => c.status === 'publish' && /^espa(ñ|n)a$/i.test(String(c.pais || '').trim()))
-  .map(cleanCommunity)
+  .map(c => cleanCommunity({ ...c, foto: photos.get(c.featured_media), destacada: DESTACADAS.has(String(c.id)) }))
   .filter(Boolean)
-  .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+  .sort((a, b) => (b.destacada - a.destacada) || a.nombre.localeCompare(b.nombre, 'es'))
 
 const doc = {
   fuente: 'https://2140meetups.com/comunidades/',
@@ -47,7 +64,7 @@ const doc = {
 const next = JSON.stringify(doc, null, 2) + '\n'
 const prev = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : ''
 const strip = s => s.replace(/"generado": "[^"]*",?\n/, '')
-console.log(`${raw.length} comunidades en 2140meetups; ${items.length} de España (${items.filter(c => c.npub).length} con Nostr).`)
+console.log(`${items.length} comunidades de España (${items.filter(c => c.npub).length} con Nostr, ${items.filter(c => c.foto).length} con foto).`)
 if (strip(prev) === strip(next)) {
   console.log('Sin cambios.')
 } else if (process.argv.includes('--check')) {

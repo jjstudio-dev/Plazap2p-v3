@@ -4,6 +4,7 @@
 // la web al leerlo: los dos pasan por la misma limpieza.
 
 const NPUB_RE = /^npub1[02-9ac-hj-np-z]{58}$/
+const PHOTO_RE = /^https:\/\/2140meetups\.com\/wp-content\/uploads\/[^?#]+\.(png|jpe?g|webp)$/i
 const LN_ADDRESS_RE = /^[a-z0-9._-]{1,64}@[a-z0-9.-]{3,253}\.[a-z]{2,}$/i
 
 function text(v, max) {
@@ -66,6 +67,9 @@ export function cleanCommunity(c) {
     lightning: LN_ADDRESS_RE.test(ln) ? ln.toLowerCase() : null,
     npub: NPUB_RE.test(npub) ? npub : null,
     ficha: (() => { const f = httpsUrl(c.ficha ?? c.link); return f && f.startsWith('https://2140meetups.com/') ? f : null })(),
+    // Foto de la comunidad, solo del propio 2140meetups y con extensión de imagen.
+    foto: (() => { const f = httpsUrl(c.foto); return f && PHOTO_RE.test(f) ? f : null })(),
+    destacada: c.destacada === true,
   }
 }
 

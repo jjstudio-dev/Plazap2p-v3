@@ -19,7 +19,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '71';
+const ASSET_VERSION  = '73';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -2372,6 +2372,13 @@ function scheduleMapRefresh() {
 
 window.showOnMap = function() { window.switchTab('mapa'); };
 
+/** «Pontevedra 2140 / Vigo Bitcoin P2P» y «Pontevedra _2140_» son la misma comunidad. */
+function sameCommunityName(a, b) {
+  const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
+  const x = norm(a), y = norm(b);
+  return !!x && !!y && (x === y || (y.length >= 6 && x.includes(y)) || (x.length >= 6 && y.includes(x)));
+}
+
 /** Comunidades locales de España (2140meetups.com): nombre, ciudad y enlaces. */
 function renderLocalCommunitiesHtml(list) {
   if (!list.length) return '';
@@ -2381,13 +2388,23 @@ function renderLocalCommunitiesHtml(list) {
       c.web && `<a href="${safeUrl(c.web)}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm">Web ↗</a>`,
       c.ficha && `<a href="${safeUrl(c.ficha)}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm">Ficha ↗</a>`,
     ].filter(Boolean).join(' ');
-    return `<article class="community-card directory-card local-community-card">
+    // La foto viene de 2140meetups.com (validada en comunidades-2140.js); si falla, las iniciales.
+    const initials = esc(initialsFromName(c.nombre));
+    const avatar = c.foto
+      ? `<img src="${safeUrl(c.foto)}" alt="" class="directory-avatar-img" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="directory-avatar-fallback" style="display:none">${initials}</span>`
+      : `<span class="directory-avatar-fallback">${initials}</span>`;
+    return `<article class="community-card directory-card local-community-card${c.destacada ? ' local-community-featured' : ''}">
       <div class="directory-accent"></div>
       <div class="directory-card-body">
-        <h3 class="community-name">${esc(c.nombre)}</h3>
+        <div class="directory-head">
+          <div class="directory-avatar directory-avatar-${toneFromSeed(c.nombre)}" aria-hidden="true">${avatar}</div>
+          <div class="directory-meta">
+        <h3 class="community-name">${esc(c.nombre)}${c.destacada ? ' <span class="local-community-badge">destacada</span>' : ''}</h3>
         <div class="community-top">
           <span class="community-country">📍 ${esc(c.ciudad || 'España')}</span>
           ${c.npub ? '<span class="community-platform" title="Tiene cuenta Nostr">⚡ Nostr</span>' : ''}
+        </div>
+          </div>
         </div>
         <div class="directory-footer">${links}</div>
       </div>
@@ -2444,7 +2461,9 @@ function renderComunidades(items, githubUrl) {
     </article>`;
   }).join('');
 
-  container.innerHTML = curatedHtml + renderLocalCommunitiesHtml(staticComunidades2140) + (proposals.length
+  // Las del directorio curado ya salen arriba (con su descripción): en el bloque local, solo las demás.
+  const local = staticComunidades2140.filter(c => !items.some(i => sameCommunityName(i.nombre, c.nombre)));
+  container.innerHTML = curatedHtml + renderLocalCommunitiesHtml(local) + (proposals.length
     ? proposalsNoticeHtml('Propuestas publicadas desde PlazaP2P. Todavía no han pasado la revisión del directorio.') +
       proposals.map(renderCommunityProposalCard).join('')
     : '');

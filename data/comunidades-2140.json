@@ -3,6 +3,21 @@
   "generado": "2026-11-12",
   "comunidades": [
     {
+      "id": "5541",
+      "nombre": "Valencia Bitcoin Plebs",
+      "ciudad": "Valencia",
+      "direccion": "Valencia, España",
+      "lat": 39.469707,
+      "lon": -0.376335,
+      "telegram": "https://t.me/+s58_1nTCzqplZDhk",
+      "web": null,
+      "lightning": null,
+      "npub": null,
+      "ficha": "https://2140meetups.com/comunidad/5541/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2023/02/photo_2023-02-01_12-18-33.jpg",
+      "destacada": true
+    },
+    {
       "id": "5619",
       "nombre": "2140 Bilbo",
       "ciudad": "Bilbao",
@@ -13,7 +28,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/5619/"
+      "ficha": "https://2140meetups.com/comunidad/5619/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2022/12/image0.png",
+      "destacada": false
     },
     {
       "id": "6032",
@@ -26,7 +43,9 @@
       "web": null,
       "lightning": "alicantebitcoinplebs@getalby.com",
       "npub": "npub1cgqdph3tyt9fk54gy6ygx5n0uvsyupqmsh5q0whqmzyxl3skt05s0lls50",
-      "ficha": "https://2140meetups.com/comunidad/6032/"
+      "ficha": "https://2140meetups.com/comunidad/6032/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2026/04/Pfp_Alcbtcplebs_17.png",
+      "destacada": false
     },
     {
       "id": "7852",
@@ -39,7 +58,9 @@
       "web": null,
       "lightning": "alkarriabtc@jabato.space",
       "npub": "npub1uay28kq0hq8xr98k2uqk0vjrzqz8fdjh38esz4acdtk045lmgzpqn9naxf",
-      "ficha": "https://2140meetups.com/comunidad/7852/"
+      "ficha": "https://2140meetups.com/comunidad/7852/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2026/02/AlkarriaBTC_2140.jpg",
+      "destacada": false
     },
     {
       "id": "5893",
@@ -52,7 +73,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/5893/"
+      "ficha": "https://2140meetups.com/comunidad/5893/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2022/12/btc2astur-1.jpg",
+      "destacada": false
     },
     {
       "id": "7480",
@@ -65,7 +88,9 @@
       "web": "https://x.com/bcnbtchub",
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/7480/"
+      "ficha": "https://2140meetups.com/comunidad/7480/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2025/02/Barcelona-Aerial-BBH-BFH-logos-sub-2mb.jpg",
+      "destacada": false
     },
     {
       "id": "5573",
@@ -78,7 +103,9 @@
       "web": "https://bitcoinbarcelona.xyz/",
       "lightning": "bitcoinbarcelona@getalby.com",
       "npub": "npub10nlyn8wm0da6wqgawnl0qvjx6thyy00mvlpm0aetkx5nf7kw9xdsgz26e8",
-      "ficha": "https://2140meetups.com/comunidad/5573/"
+      "ficha": "https://2140meetups.com/comunidad/5573/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2022/12/bbo.jpg",
+      "destacada": false
     },
     {
       "id": "7759",
@@ -91,7 +118,9 @@
       "web": "https://bitcanario.com/",
       "lightning": "bitcanario@walletofsatoshi.com",
       "npub": "npub1jm7znumkgcxsgqkwk0lw94hnyexghcmxqntq6rjp8xg4eu2vdwnqh2nqe9",
-      "ficha": "https://2140meetups.com/comunidad/7759/"
+      "ficha": "https://2140meetups.com/comunidad/7759/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2025/10/logo_bitcanario_neu_trans.png",
+      "destacada": false
     },
     {
       "id": "6514",
@@ -104,7 +133,9 @@
       "web": "https://bitcoinorihuelacosta.xyz/",
       "lightning": "bitcoinorihuelacosta@getalby.com",
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/6514/"
+      "ficha": "https://2140meetups.com/comunidad/6514/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2023/03/bitcoin-orihuela-costa.png",
+      "destacada": false
     },
     {
       "id": "5563",
@@ -117,7 +148,9 @@
       "web": null,
       "lightning": "bitcoin2140coruna@getalby.com",
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/5563/"
+      "ficha": "https://2140meetups.com/comunidad/5563/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2022/12/2140-a-coruna-copia.jpg",
+      "destacada": false
     },
     {
       "id": "5950",
@@ -130,7 +163,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/5950/"
+      "ficha": "https://2140meetups.com/comunidad/5950/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2024/04/Untitled-design.jpg",
+      "destacada": false
     },
     {
       "id": "7594",
@@ -143,7 +178,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/7594/"
+      "ficha": "https://2140meetups.com/comunidad/7594/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2025/05/BAsinmet.jpg",
+      "destacada": false
     },
     {
       "id": "7146",
@@ -156,7 +193,9 @@
       "web": "https://t.me/bitcoin_campodegibraltar",
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/7146/"
+      "ficha": "https://2140meetups.com/comunidad/7146/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2024/02/2f752a8a-b8a1-4031-acf2-9806d5f56f5c.jpg",
+      "destacada": false
     },
     {
       "id": "6916",
@@ -169,7 +208,9 @@
       "web": "https://btcanarias.com/",
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/6916/"
+      "ficha": "https://2140meetups.com/comunidad/6916/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2023/09/btcanarias-banner-1024x682-1.png",
+      "destacada": false
     },
     {
       "id": "5553",
@@ -182,7 +223,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/5553/"
+      "ficha": "https://2140meetups.com/comunidad/5553/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2022/12/IMG_20221205_155324_002.jpg",
+      "destacada": false
     },
     {
       "id": "6396",
@@ -195,7 +238,9 @@
       "web": "https://cobraenbitcoin.org/",
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/6396/"
+      "ficha": "https://2140meetups.com/comunidad/6396/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2023/03/figueres-bitcoin-1024.jpg",
+      "destacada": false
     },
     {
       "id": "6781",
@@ -208,7 +253,9 @@
       "web": null,
       "lightning": "bitcoinibiza@getalby.com",
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/6781/"
+      "ficha": "https://2140meetups.com/comunidad/6781/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2023/05/Screenshot_20230513_095622_Chrome.jpg",
+      "destacada": false
     },
     {
       "id": "7172",
@@ -221,7 +268,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/7172/"
+      "ficha": "https://2140meetups.com/comunidad/7172/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2024/02/Bitcoin-despegue.jpg",
+      "destacada": false
     },
     {
       "id": "5555",
@@ -234,7 +283,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/5555/"
+      "ficha": "https://2140meetups.com/comunidad/5555/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2023/01/1ecf8ab7-e39b-4326-aa61-5bb9e2b337f3.png",
+      "destacada": false
     },
     {
       "id": "6936",
@@ -247,7 +298,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/6936/"
+      "ficha": "https://2140meetups.com/comunidad/6936/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2022/11/2140meetups-default.jpg",
+      "destacada": false
     },
     {
       "id": "5983",
@@ -260,7 +313,9 @@
       "web": "https://twitter.com/BSCM_Madrid",
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/5983/"
+      "ficha": "https://2140meetups.com/comunidad/5983/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2022/12/madrid.png",
+      "destacada": false
     },
     {
       "id": "5606",
@@ -273,7 +328,9 @@
       "web": "https://www.meetup.com/bitcoin-tuesday/",
       "lightning": "tuesdaymadrid@pagos.dinerosinreglas.com",
       "npub": "npub1p2lhsafh8cdygax6dfznxua4ufx3r5cdxgqtaexqrtvx4g4ccujq2vl4ue",
-      "ficha": "https://2140meetups.com/comunidad/5606/"
+      "ficha": "https://2140meetups.com/comunidad/5606/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2024/11/NewLogo.png",
+      "destacada": false
     },
     {
       "id": "5791",
@@ -286,7 +343,9 @@
       "web": "https://2140meetups.com/comunidad/5791/",
       "lightning": "btc_cadiz@getalby.com",
       "npub": "npub1j3w4682g37d4unssk3gysaccdhfqpflv5nd996pnsj69udq7szdsrhdah9",
-      "ficha": "https://2140meetups.com/comunidad/5791/"
+      "ficha": "https://2140meetups.com/comunidad/5791/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2024/04/1024x682.png",
+      "destacada": false
     },
     {
       "id": "6933",
@@ -299,7 +358,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/6933/"
+      "ficha": "https://2140meetups.com/comunidad/6933/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2023/09/Cantabria2140.jpg",
+      "destacada": false
     },
     {
       "id": "7880",
@@ -312,7 +373,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/7880/"
+      "ficha": "https://2140meetups.com/comunidad/7880/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2026/04/Gemini_Generated_Image_l4ukdrl4ukdrl4uk-1-1.png",
+      "destacada": false
     },
     {
       "id": "5631",
@@ -325,7 +388,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/5631/"
+      "ficha": "https://2140meetups.com/comunidad/5631/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2022/12/Screenshot-2022-12-07-at-11.14.54-min.png",
+      "destacada": false
     },
     {
       "id": "7374",
@@ -338,7 +403,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/7374/"
+      "ficha": "https://2140meetups.com/comunidad/7374/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2024/09/logo.png",
+      "destacada": false
     },
     {
       "id": "5978",
@@ -351,7 +418,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/5978/"
+      "ficha": "https://2140meetups.com/comunidad/5978/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2022/12/3e4bd341-0574-40fd-ba49-8e15d75a8307.png",
+      "destacada": false
     },
     {
       "id": "7576",
@@ -364,7 +433,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/7576/"
+      "ficha": "https://2140meetups.com/comunidad/7576/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2025/04/LogoHorizontalHuelva.jpg",
+      "destacada": false
     },
     {
       "id": "7135",
@@ -377,7 +448,9 @@
       "web": null,
       "lightning": null,
       "npub": "npub1mf7wsk0frc3hmeee4t3qwh9duqfks568m2vrmzsz5ph0cuh5dvgswvyx3a",
-      "ficha": "https://2140meetups.com/comunidad/7135/"
+      "ficha": "https://2140meetups.com/comunidad/7135/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2024/01/2140.png",
+      "destacada": false
     },
     {
       "id": "5605",
@@ -390,7 +463,9 @@
       "web": "https://malaga2140.xyz/",
       "lightning": "malaga2140@getalby.com",
       "npub": "npub1zf4zn6qcrstx8tnprn3g2avtpz68tnupkd35m53hhq35e5f5rxqskppwpd",
-      "ficha": "https://2140meetups.com/comunidad/5605/"
+      "ficha": "https://2140meetups.com/comunidad/5605/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2022/12/malaga2140-meetups.png",
+      "destacada": false
     },
     {
       "id": "6064",
@@ -403,7 +478,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/6064/"
+      "ficha": "https://2140meetups.com/comunidad/6064/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2023/01/logo-meetup-mallora.jpg",
+      "destacada": false
     },
     {
       "id": "6076",
@@ -416,7 +493,9 @@
       "web": "https://www.meetup.com/es-ES/meetbmad/",
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/6076/"
+      "ficha": "https://2140meetups.com/comunidad/6076/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2023/02/MeetBMad_467347468.png",
+      "destacada": false
     },
     {
       "id": "5565",
@@ -429,7 +508,9 @@
       "web": "https://twitter.com/2140Pontevedra",
       "lightning": "valor_pontevedra_2140@getalby.com",
       "npub": "npub1477r6vz3lm6u0lhnq5ysnnw5pts8w32hh5xq9wn8kn2pnep2fu2qs9gaxz",
-      "ficha": "https://2140meetups.com/comunidad/5565/"
+      "ficha": "https://2140meetups.com/comunidad/5565/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2023/08/FERRERAS-REN2.jpg",
+      "destacada": false
     },
     {
       "id": "5822",
@@ -442,7 +523,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/5822/"
+      "ficha": "https://2140meetups.com/comunidad/5822/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2022/12/Screenshot_2022-12-10-13-47-22-987_com.google.android.googlequicksearchbox.jpg",
+      "destacada": false
     },
     {
       "id": "7333",
@@ -455,7 +538,9 @@
       "web": "https://www.youtube.com/channel/UCXkNHkdbM2hbccYhN1MGp2w",
       "lightning": "weakravine510@minibits.cash",
       "npub": "npub1l2fxnjjhnppmasw7wl4hmct5kzeh5phwutakkt279j0dc547lt2slwaq6y",
-      "ficha": "https://2140meetups.com/comunidad/7333/"
+      "ficha": "https://2140meetups.com/comunidad/7333/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2024/07/23-1.jpg",
+      "destacada": false
     },
     {
       "id": "5559",
@@ -468,7 +553,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/5559/"
+      "ficha": "https://2140meetups.com/comunidad/5559/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2025/02/IMG_20250226_130135.jpg",
+      "destacada": false
     },
     {
       "id": "7343",
@@ -481,7 +568,9 @@
       "web": null,
       "lightning": null,
       "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/7343/"
+      "ficha": "https://2140meetups.com/comunidad/7343/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2025/07/Tenerife2140_logo_metal.png",
+      "destacada": false
     },
     {
       "id": "6856",
@@ -494,20 +583,9 @@
       "web": "https://vagabonds.undervan.me/",
       "lightning": null,
       "npub": "npub17xrq2xw0qlth9clp0vm06lky44g043gddylqmd53hqhyzqtrnx8s6uaarc",
-      "ficha": "https://2140meetups.com/comunidad/6856/"
-    },
-    {
-      "id": "5541",
-      "nombre": "Valencia Bitcoin Plebs",
-      "ciudad": "Valencia",
-      "direccion": "Valencia, España",
-      "lat": 39.469707,
-      "lon": -0.376335,
-      "telegram": "https://t.me/+s58_1nTCzqplZDhk",
-      "web": null,
-      "lightning": null,
-      "npub": null,
-      "ficha": "https://2140meetups.com/comunidad/5541/"
+      "ficha": "https://2140meetups.com/comunidad/6856/",
+      "foto": "https://2140meetups.com/wp-content/uploads/2023/06/Bitcoin_EN_cover-2.png",
+      "destacada": false
     }
   ]
 }

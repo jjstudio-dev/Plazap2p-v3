@@ -58,11 +58,15 @@ export const tests = [
       const server = await t.server()
       const page = await t.open({ scenario: { events: [] } })
       await page.goto(server.origin + '/index.html?tab=comunidades')
-      await page.waitFor(`document.querySelectorAll('#channel-comunidades .local-community-card').length > 30`, { timeout: 10000, label: 'comunidades locales' })
+      await page.waitFor(`document.querySelectorAll('#channel-comunidades .local-community-card').length > 15`, { timeout: 10000, label: 'comunidades locales' })
       const txt = await page.text('#channel-comunidades')
       t.assert.match(txt, /Comunidades locales en España/)
       t.assert.match(txt, /2140meetups\.com/)
       t.assert.match(txt, /Sevilla Bitcoin Only/)
+      t.assert.match(await page.text('#channel-comunidades .community-card'), /Valencia Bitcoin Plebs/, 'Valencia la primera')
+      const names = await page.evaluate(`[...document.querySelectorAll('#channel-comunidades .community-name')].map(n => n.textContent.replace('destacada', '').trim())`)
+      t.assert.equal(names.filter(n => n === 'Valencia Bitcoin Plebs').length, 1, 'sin repetir las del directorio curado')
+      t.assert.ok(await page.evaluate(`[...document.querySelectorAll('#channel-comunidades .local-community-card img')].every(i => i.src.startsWith('https://2140meetups.com/'))`), 'fotos solo de 2140meetups')
       t.assert.deepEqual(t.appErrors(page), [])
     },
   },
