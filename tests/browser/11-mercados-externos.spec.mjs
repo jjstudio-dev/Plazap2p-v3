@@ -39,6 +39,7 @@ export const tests = [
       t.assert.match(ficha, /marca los vendidos en su web, no en Nostr/)
       t.assert.match(ficha, /en nombre de otro vendedor/)
       t.assert.doesNotMatch(ficha, /Ser el primero en valorar/)
+      t.assert.doesNotMatch(ficha, /Enviar zap|Pagar/, 'ni zap ni pago a la cuenta del mercado')
       t.assert.equal(await page.evaluate(`document.querySelector('#listing-modal .modal-market-notice a')?.getAttribute('href')`), 'https://mercasats.kilombino.com/?p=412')
       await page.evaluate(`closeModal()`)
 
@@ -48,6 +49,7 @@ export const tests = [
       const ficha2 = await page.text('#listing-modal')
       t.assert.match(ficha2, /5000 SATS/)
       t.assert.match(ficha2, /valorar/i)
+      t.assert.match(ficha2, /Enviar zap/)
       t.assert.deepEqual(t.appErrors(page), [])
     },
   },

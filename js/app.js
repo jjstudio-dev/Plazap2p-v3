@@ -16,7 +16,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '64';
+const ASSET_VERSION  = '65';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -1421,12 +1421,12 @@ window.openModal = function(naddr, options = {}) {
         </a>
         <button onclick="closeModal()" class="btn-secondary">Cerrar</button>
       </div>
-      <a class="btn-ghost btn-sm modal-rate-btn" href="publicar.html?zap=${l.npub}&ref=${encodeURIComponent(l.naddr)}" title="Pago Lightning con recibo Nostr (NIP-57)">
+      ${l.market?.proxied ? '' : `<a class="btn-ghost btn-sm modal-rate-btn" href="publicar.html?zap=${l.npub}&ref=${encodeURIComponent(l.naddr)}" title="Pago Lightning con recibo Nostr (NIP-57)">
         ⚡ Enviar zap
       </a>
       <a class="btn-ghost btn-sm modal-rate-btn" href="publicar.html?pagar=${encodeURIComponent(l.naddr)}" title="Pagar una factura Lightning (PAY-001)">
         💳 Pagar
-      </a>
+      </a>`}
       <div class="modal-zap-total" id="modal-zap-total"></div>
       <div class="modal-secondary-actions">
         <button class="modal-hide-seller-btn" onclick="hideSeller('${l.pubkeyHex}')" title="Deja de ver publicaciones de este autor en este navegador">
