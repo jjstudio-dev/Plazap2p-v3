@@ -4500,3 +4500,20 @@ footer {
 .community-sources { font-size: 0.78rem; color: var(--t-3, #999); margin: 4px 0 0; }
 .community-sources a { color: var(--btc); }
 .community-links { display: inline-flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+
+/* ── Perfil del vendedor ─────────────────────────────────────── */
+.seller-profile-head { display: flex; gap: 14px; align-items: center; margin: 6px 0 10px; }
+.seller-profile-avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex: none; }
+.seller-profile-initials { display: grid; place-items: center; background: var(--surface-2, #2c2c2e); color: var(--btc); font-weight: 700; font-size: 1.2rem; }
+.seller-profile-nip05 { font-size: 0.8rem; color: var(--t-2, #aaa); word-break: break-all; }
+.seller-profile-npub { font-family: var(--font-mono); font-size: 0.75rem; color: var(--t-3, #999); }
+.seller-profile-chips, .seller-profile-contact { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.seller-listings { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 12px; max-height: 320px; overflow-y: auto; }
+.seller-listing-row {
+  display: flex; justify-content: space-between; gap: 10px; text-align: left; width: 100%;
+  padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border, #333); background: transparent;
+  color: inherit; font: inherit; cursor: pointer; min-height: 44px;
+}
+.seller-listing-row:hover, .seller-listing-row:focus-visible { border-color: var(--btc); outline: none; }
+.seller-listing-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seller-listing-price { color: var(--btc); white-space: nowrap; }

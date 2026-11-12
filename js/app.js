@@ -1,5 +1,7 @@
 import { encodeNaddr, hexToNpub, hexToNote, getTagValue, getTagValues, decodeNpub } from './nostr.js';
-import { RelayPool } from './relay-pool.js';
+import { RelayPool, collectUntilEose } from './relay-pool.js';
+import { fetchProfileMeta } from './profile.js';
+import { summarizeSellerListings, sellerDisplayName, sinceLabel } from './seller-profile.js';
 import { fetchSignedConfig } from './signed-config.js';
 import { loadServedConfig } from './config-loader.js';
 import { fetchReputacionBatch } from './reputacion.js';
@@ -19,7 +21,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '75';
+const ASSET_VERSION  = '77';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -676,10 +678,120 @@ function renderSellersDirectory() {
       <div class="seller-npub">${esc(s.npub.slice(0, 20))}…</div>
       <div class="seller-rating-row">${stars}</div>
       <div class="seller-meta">${s.listingCount} anuncio${s.listingCount !== 1 ? 's' : ''}</div>
-      <button type="button" class="btn-secondary btn-sm seller-check-btn" onclick="openReputacionModal('${s.hex}')">Ver reputación →</button>
+      <button type="button" class="btn-secondary btn-sm seller-check-btn" onclick="openSellerProfile('${s.hex}')">Ver perfil →</button>
     </article>`;
   }).join('');
 }
+
+// ── Perfil del vendedor: perfil Nostr, contacto, anuncios y reputación ──
+// Una ventana con todo lo que se sabe de quien publica. Su perfil (kind 0) y
+// sus anuncios se piden a los relays; lo que ya hay en memoria se pinta antes.
+
+function sellerListingsFromMemory(hex) {
+  return [...(channels.mercado?.values() || [])].filter(l => l.pubkeyHex === hex);
+}
+
+async function sellerListingsFromRelays(hex) {
+  const out = [];
+  await collectUntilEose(pool, [{ kinds: [30402], authors: [hex], limit: 100 }], {
+    prefix: 'seller', timeoutMs: 6000,
+    onEvent(ev) {
+      if (ev.kind !== 30402 || ev.pubkey !== hex || isBlocked(ev.pubkey)) return;
+      const parsed = parseListing(ev);
+      if (parsed) out.push(parsed);
+    },
+  });
+  return out;
+}
+
+function renderSellerProfile(hex, meta, listings, rating) {
+  const npub = hexToNpub(hex);
+  const name = sellerDisplayName(meta, npub);
+  const { active, sold, since } = summarizeSellerListings(listings);
+  const initials = esc(initialsFromName(name));
+  const avatar = meta?.picture
+    ? `<img src="${safeUrl(meta.picture)}" alt="" class="seller-profile-avatar" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="seller-profile-avatar seller-profile-initials" style="display:none">${initials}</span>`
+    : `<span class="seller-profile-avatar seller-profile-initials">${initials}</span>`;
+  const chips = [
+    `📦 ${active.length} ${plural(active.length, 'anuncio activo', 'anuncios activos')}`,
+    sold ? `✅ ${sold} ${plural(sold, 'vendido', 'vendidos')}` : '',
+    since ? `🗓 Publica desde ${esc(sinceLabel(since))}` : '',
+  ].filter(Boolean).map(t => `<span class="directory-chip">${t}</span>`).join(' ');
+  const njump = `https://njump.me/${npub}`;
+  const contact = [
+    `<button type="button" class="btn-secondary btn-sm" onclick="copyToClipboard('${npub}')">📋 Copiar npub</button>`,
+    `<a href="${safeUrl(njump)}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm">Abrir en Nostr ↗</a>`,
+    meta?.lud16 ? `<a href="publicar.html?zap=${npub}" class="btn-ghost btn-sm">⚡ Enviar zap</a>` : '',
+  ].filter(Boolean).join(' ');
+  const stars = rating
+    ? renderStarDisplay(rating.avg, rating.n, false)
+    : '<span class="no-rating-text">Sin valoraciones aún</span>';
+  const rows = active.slice(0, 30).map(l => `<button type="button" class="seller-listing-row" onclick="openModal('${esc(l.naddr)}')">
+      <span class="seller-listing-title">${esc(l.title)}</span>
+      <span class="seller-listing-price">${l.price ? `${esc(l.price)} ${esc(l.currency || '')}` : ''}</span>
+    </button>`).join('');
+  return `
+    <div class="modal-overlay" onclick="closeModal()"></div>
+    <div class="modal-box seller-profile">
+      <button class="modal-close" onclick="closeModal()" aria-label="Cerrar">✕</button>
+      <div class="modal-category" style="color:var(--btc, #f7931a)">PERFIL DEL VENDEDOR</div>
+      <div class="seller-profile-head">
+        ${avatar}
+        <div>
+          <h2 id="modal-title" class="modal-title">${esc(name)}</h2>
+          ${meta?.nip05 ? `<div class="seller-profile-nip05" title="Dirección NIP-05 que declara en su perfil (no comprobada)">${esc(meta.nip05.slice(0, 80))}</div>` : ''}
+          <div class="seller-profile-npub">${esc(npub.slice(0, 24))}…</div>
+        </div>
+      </div>
+      <div class="seller-profile-chips">${chips}</div>
+      <div class="seller-profile-contact">${contact}</div>
+      <div class="modal-rating-section">
+        <div class="modal-rating-header">Reputación en PlazaP2P</div>
+        ${stars}
+        <div class="seller-profile-contact">
+          <button type="button" class="btn-ghost btn-sm" onclick="openReputacionModal('${hex}')">Ver valoraciones →</button>
+          <a href="publicar.html?valorar=${npub}" class="btn-ghost btn-sm">⭐ Valorar</a>
+        </div>
+      </div>
+      <div class="modal-rating-header" style="margin-top:12px">Anuncios activos</div>
+      <div class="seller-listings">${rows || '<p class="no-rating-text">No tiene anuncios activos ahora mismo.</p>'}</div>
+      <div class="modal-notice"><span>🔒</span><span>Todo esto es público en Nostr. El contacto y el pago se hacen fuera de PlazaP2P: comprueba la reputación antes de operar.</span></div>
+      <div class="modal-actions"><button onclick="closeModal()" class="btn-secondary">Cerrar</button></div>
+    </div>`;
+}
+
+window.openSellerProfile = async function(hex) {
+  if (!/^[0-9a-f]{64}$/i.test(String(hex))) return;
+  const modal = document.getElementById('listing-modal');
+  if (!modal) return;
+  modal.dataset.sellerHex = hex;   // descarta respuestas si ya se abrió otro
+  const draw = (meta, listings) => {
+    if (modal.dataset.sellerHex !== hex) return;
+    modal.innerHTML = renderSellerProfile(hex, meta, listings, getSellerRating(hex));
+  };
+  let meta = null;
+  let listings = sellerListingsFromMemory(hex);
+  draw(meta, listings);
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  trapFocus(modal);
+  if (!pool) return;
+  const [m, fromRelays] = await Promise.all([
+    fetchProfileMeta(pool, hex).catch(() => null),
+    sellerListingsFromRelays(hex).catch(() => []),
+  ]);
+  if (modal.classList.contains('hidden')) return;
+  meta = m;
+  listings = [...listings, ...fromRelays];
+  draw(meta, listings);
+  if (!(hex in liveRatings)) {
+    fetchReputacionBatch(pool, [hex]).then(results => {
+      const r = results[hex];
+      liveRatings[hex] = (r && r.showsAverage) ? { avg: r.avg, n: r.count, aspects: r.aspects, comments: r.comments } : null;
+      if (!modal.classList.contains('hidden')) draw(meta, listings);
+    }).catch(() => {});
+  }
+};
 
 // ── Modal de reputación (detalle live, kind 1985 de los relays) ──
 window.openReputacionModal = async function(hex) {
@@ -1438,6 +1550,7 @@ window.openModal = function(naddr, options = {}) {
         💳 Pagar
       </a>`}
       <div class="modal-zap-total" id="modal-zap-total"></div>
+      ${l.market?.proxied ? '' : `<button type="button" class="btn-ghost btn-sm modal-rate-btn" onclick="openSellerProfile('${l.pubkeyHex}')">👤 Ver perfil del vendedor</button>`}
       <div class="modal-secondary-actions">
         <button class="modal-hide-seller-btn" onclick="hideSeller('${l.pubkeyHex}')" title="Deja de ver publicaciones de este autor en este navegador">
           🚫 Ocultar este vendedor
