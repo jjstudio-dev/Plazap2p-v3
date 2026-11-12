@@ -1,5 +1,5 @@
 {
-  "fuente": "https://2140meetups.com/comunidades/ y https://btcmap.org/communities",
+  "fuente": "Directorio de PlazaP2P (data/comunidades.json), https://2140meetups.com/comunidades/ y https://btcmap.org/communities",
   "generado": "2026-11-12",
   "comunidades": [
     {
@@ -19,9 +19,14 @@
       "destacada": true,
       "exacta": true,
       "fuentes": [
+        "plazap2p",
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": true,
+      "descripcion": "Grupo Bitcoin only de la comunidad pleb en Valencia.",
+      "idioma": "Español",
+      "plataforma": "Telegram"
     },
     {
       "id": "5619",
@@ -42,7 +47,11 @@
       "fuentes": [
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "6032",
@@ -61,8 +70,13 @@
       "destacada": false,
       "exacta": true,
       "fuentes": [
+        "plazap2p",
         "2140meetups"
-      ]
+      ],
+      "curada": true,
+      "descripcion": "Comunidad bitcoiner en Alicante con meetups mensuales. Cubre tecnología, economía, fiscalidad cripto en España, privacidad, Lightning Network y soberanía financiera. Desde 2024 con más de 15 ediciones.",
+      "idioma": "Español",
+      "plataforma": "Telegram"
     },
     {
       "id": "7852",
@@ -81,8 +95,37 @@
       "destacada": false,
       "exacta": true,
       "fuentes": [
+        "plazap2p",
         "2140meetups"
-      ]
+      ],
+      "curada": true,
+      "descripcion": "Comunidad Bitcoin-only de Guadalajara y alrededores. Lightning Network, autocustodia y soberanía financiera. Todos bienvenidos.",
+      "idioma": "Español",
+      "plataforma": "Telegram"
+    },
+    {
+      "id": "cur-com-007",
+      "nombre": "AprendeBTC — Comunidad educativa",
+      "ciudad": null,
+      "direccion": null,
+      "lat": null,
+      "lon": null,
+      "telegram": null,
+      "web": "https://aprendebtc.com/",
+      "lightning": null,
+      "npub": null,
+      "ficha": null,
+      "btcmap": null,
+      "foto": null,
+      "destacada": false,
+      "exacta": false,
+      "fuentes": [
+        "plazap2p"
+      ],
+      "curada": true,
+      "descripcion": "Comunidad educativa en torno a la plataforma AprendeBTC. 92 páginas de contenido estructurado en 6 niveles para aprender Bitcoin desde cero hasta nivel avanzado. Gratuito, en español.",
+      "idioma": "Español",
+      "plataforma": "Web"
     },
     {
       "id": "5893",
@@ -101,9 +144,14 @@
       "destacada": false,
       "exacta": true,
       "fuentes": [
+        "plazap2p",
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": true,
+      "descripcion": "Comunidad local de Bitcoin en Asturias centrada en aprendizaje mutuo. Debates, aplicaciones prácticas, proyectos y educación para la libertad financiera.",
+      "idioma": "Español",
+      "plataforma": "Telegram"
     },
     {
       "id": "7480",
@@ -122,8 +170,13 @@
       "destacada": false,
       "exacta": true,
       "fuentes": [
+        "plazap2p",
         "2140meetups"
-      ]
+      ],
+      "curada": true,
+      "descripcion": "Espacio dedicado a Bitcoin dentro del Barcelona Finance Hub, ubicado en el edificio de la Bolsa de Barcelona. Explora la intersección entre Bitcoin, economía, finanzas y política. Meetups mensuales para profesionales y principiantes.",
+      "idioma": "Español",
+      "plataforma": "Telegram"
     },
     {
       "id": "5573",
@@ -142,9 +195,14 @@
       "destacada": false,
       "exacta": true,
       "fuentes": [
+        "plazap2p",
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": true,
+      "descripcion": "Comunidad local de Bitcoin y Lightning Network en Barcelona, enfocada en principios Bitcoin-only. Talleres de SeedSigner, debates sobre protocolo, minería y filosofía de libertad.",
+      "idioma": "Español",
+      "plataforma": "Telegram"
     },
     {
       "id": "7759",
@@ -163,9 +221,14 @@
       "destacada": false,
       "exacta": true,
       "fuentes": [
+        "plazap2p",
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": true,
+      "descripcion": "Organización dirigida por voluntarios que ofrece talleres, reuniones y consultas gratuitas sobre Bitcoin en Canarias. Educación práctica para todos los niveles.",
+      "idioma": "Español",
+      "plataforma": "Web"
     },
     {
       "id": "6514",
@@ -186,7 +249,11 @@
       "fuentes": [
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "5563",
@@ -207,7 +274,11 @@
       "fuentes": [
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "5950",
@@ -228,7 +299,11 @@
       "fuentes": [
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "btcmap-bitcoin-alpujarra",
@@ -248,7 +323,11 @@
       "exacta": false,
       "fuentes": [
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "7594",
@@ -268,7 +347,11 @@
       "exacta": true,
       "fuentes": [
         "2140meetups"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "7146",
@@ -288,7 +371,11 @@
       "exacta": true,
       "fuentes": [
         "2140meetups"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "6916",
@@ -307,8 +394,13 @@
       "destacada": false,
       "exacta": true,
       "fuentes": [
+        "plazap2p",
         "2140meetups"
-      ]
+      ],
+      "curada": true,
+      "descripcion": "Comunidad canaria que explora seguridad, privacidad, cultura hacker/cypherpunk y últimos desarrollos de Bitcoin. Reuniones estilo socrático cada dos semanas en Talleres Palermo.",
+      "idioma": "Español",
+      "plataforma": "Telegram"
     },
     {
       "id": "5553",
@@ -329,7 +421,11 @@
       "fuentes": [
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "6396",
@@ -350,7 +446,11 @@
       "fuentes": [
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "6781",
@@ -371,7 +471,11 @@
       "fuentes": [
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "7172",
@@ -391,7 +495,35 @@
       "exacta": true,
       "fuentes": [
         "2140meetups"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
+    },
+    {
+      "id": "cur-com-006",
+      "nombre": "Bitcoin Madrid",
+      "ciudad": null,
+      "direccion": null,
+      "lat": null,
+      "lon": null,
+      "telegram": "https://t.me/bitcoinmadrid",
+      "web": null,
+      "lightning": null,
+      "npub": null,
+      "ficha": null,
+      "btcmap": null,
+      "foto": null,
+      "destacada": false,
+      "exacta": false,
+      "fuentes": [
+        "plazap2p"
+      ],
+      "curada": true,
+      "descripcion": "Comunidad de bitcoiners en Madrid. Organizamos meetups mensuales, compartimos noticias y debatimos sobre Bitcoin, Lightning y soberanía financiera. Ambiente técnico y filosófico, sin spam.",
+      "idioma": "Español",
+      "plataforma": "Telegram"
     },
     {
       "id": "5555",
@@ -412,7 +544,11 @@
       "fuentes": [
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "6936",
@@ -432,7 +568,11 @@
       "exacta": true,
       "fuentes": [
         "2140meetups"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "5983",
@@ -453,7 +593,11 @@
       "fuentes": [
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "5606",
@@ -474,7 +618,11 @@
       "fuentes": [
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "btcmap-bitcoin-txoko",
@@ -494,7 +642,11 @@
       "exacta": false,
       "fuentes": [
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "5791",
@@ -515,7 +667,11 @@
       "fuentes": [
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "6933",
@@ -535,7 +691,11 @@
       "exacta": true,
       "fuentes": [
         "2140meetups"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "btcmap-einundzwanzig-gran-canaria",
@@ -555,7 +715,11 @@
       "exacta": false,
       "fuentes": [
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "7880",
@@ -574,8 +738,13 @@
       "destacada": false,
       "exacta": true,
       "fuentes": [
+        "plazap2p",
         "2140meetups"
-      ]
+      ],
+      "curada": true,
+      "descripcion": "Espacio dedicado al estudio y divulgación de Bitcoin en Extremadura. Nodos, Lightning Network, autocustodia y dinero sólido como estándar monetario.",
+      "idioma": "Español",
+      "plataforma": "Telegram"
     },
     {
       "id": "5631",
@@ -596,7 +765,11 @@
       "fuentes": [
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "7374",
@@ -606,7 +779,7 @@
       "lat": 41.982811,
       "lon": 2.824416,
       "telegram": null,
-      "web": null,
+      "web": "https://x.com/GirBitcoinOnly",
       "lightning": null,
       "npub": null,
       "ficha": "https://2140meetups.com/comunidad/7374/",
@@ -615,8 +788,13 @@
       "destacada": false,
       "exacta": true,
       "fuentes": [
+        "plazap2p",
         "2140meetups"
-      ]
+      ],
+      "curada": true,
+      "descripcion": "Comunidad local de Bitcoin en Girona para conectar y agrupar bitcoiners de la región.",
+      "idioma": "Español / Català",
+      "plataforma": "Web"
     },
     {
       "id": "5978",
@@ -637,7 +815,11 @@
       "fuentes": [
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "7576",
@@ -656,8 +838,13 @@
       "destacada": false,
       "exacta": true,
       "fuentes": [
+        "plazap2p",
         "2140meetups"
-      ]
+      ],
+      "curada": true,
+      "descripcion": "Comunidad Bitcoin-only en Huelva para organizar meetups y compartir conocimiento sobre Bitcoin, Lightning y soberanía financiera.",
+      "idioma": "Español",
+      "plataforma": "Telegram"
     },
     {
       "id": "7135",
@@ -676,8 +863,13 @@
       "destacada": false,
       "exacta": true,
       "fuentes": [
+        "plazap2p",
         "2140meetups"
-      ]
+      ],
+      "curada": true,
+      "descripcion": "Comunidad apasionada de Bitcoin en León que explora dimensiones técnicas, filosóficas, sociales y económicas. Meetups regulares en locales del centro con charlas, documentales y talleres.",
+      "idioma": "Español",
+      "plataforma": "Telegram"
     },
     {
       "id": "5605",
@@ -686,7 +878,7 @@
       "direccion": "Málaga, España",
       "lat": 36.721303,
       "lon": -4.421637,
-      "telegram": "https://t.me/%20WF5B_6BILcg4N2Ey",
+      "telegram": "https://t.me/malaga2140",
       "web": "https://malaga2140.xyz/",
       "lightning": "malaga2140@getalby.com",
       "npub": "npub1zf4zn6qcrstx8tnprn3g2avtpz68tnupkd35m53hhq35e5f5rxqskppwpd",
@@ -696,9 +888,14 @@
       "destacada": false,
       "exacta": true,
       "fuentes": [
+        "plazap2p",
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": true,
+      "descripcion": "Comunidad centrada en Bitcoin y todas sus madrigueras. Punto de encuentro para bitcoiners malagueños con ganas de aprender, colaborar y construir. Meetups regulares sobre privacidad, criptografía y Lightning.",
+      "idioma": "Español",
+      "plataforma": "Telegram"
     },
     {
       "id": "6064",
@@ -717,9 +914,14 @@
       "destacada": false,
       "exacta": true,
       "fuentes": [
+        "plazap2p",
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": true,
+      "descripcion": "Comunidad Bitcoin-only en Mallorca para compartir, aprender y enseñar. Reuniones sociales en ambiente relajado que incluyen cenas, tapas y eventos. Abierta a principiantes y expertos.",
+      "idioma": "Español / Català",
+      "plataforma": "Telegram"
     },
     {
       "id": "6076",
@@ -740,7 +942,59 @@
       "fuentes": [
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
+    },
+    {
+      "id": "cur-com-004",
+      "nombre": "Nostr En Español (AYUDA)",
+      "ciudad": null,
+      "direccion": null,
+      "lat": null,
+      "lon": null,
+      "telegram": "https://t.me/nostrespanol",
+      "web": null,
+      "lightning": null,
+      "npub": null,
+      "ficha": null,
+      "btcmap": null,
+      "foto": null,
+      "destacada": false,
+      "exacta": false,
+      "fuentes": [
+        "plazap2p"
+      ],
+      "curada": true,
+      "descripcion": "Grupo de ayuda en español para personas que quieren empezar, resolver dudas o aprender a usar Nostr.",
+      "idioma": "Español",
+      "plataforma": "Telegram"
+    },
+    {
+      "id": "cur-com-005",
+      "nombre": "Nostrfacil.com — Comunidad Nostr en Español",
+      "ciudad": null,
+      "direccion": null,
+      "lat": null,
+      "lon": null,
+      "telegram": null,
+      "web": "https://nostrfacil.com/",
+      "lightning": null,
+      "npub": null,
+      "ficha": null,
+      "btcmap": null,
+      "foto": null,
+      "destacada": false,
+      "exacta": false,
+      "fuentes": [
+        "plazap2p"
+      ],
+      "curada": true,
+      "descripcion": "Comunidad hispanohablante en torno al protocolo Nostr. Proyecto open source mantenido por Crackloss. La referencia para entender Nostr en español: clientes, wallets, relays, zaps y privacidad.",
+      "idioma": "Español",
+      "plataforma": "Nostr"
     },
     {
       "id": "5565",
@@ -759,9 +1013,38 @@
       "destacada": false,
       "exacta": true,
       "fuentes": [
+        "plazap2p",
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": true,
+      "descripcion": "Comunidad Bitcoin en Galicia. Organiza el Vigo Bitcoin P2P — encuentros para comprar y vender sats sin KYC. Meetups sobre custodia, Lightning y libertad financiera.",
+      "idioma": "Español",
+      "plataforma": "Telegram"
+    },
+    {
+      "id": "cur-com-002",
+      "nombre": "PROMETEA",
+      "ciudad": null,
+      "direccion": null,
+      "lat": null,
+      "lon": null,
+      "telegram": "https://t.me/+wLZbI-QVegdjNTcx",
+      "web": null,
+      "lightning": null,
+      "npub": null,
+      "ficha": null,
+      "btcmap": null,
+      "foto": null,
+      "destacada": false,
+      "exacta": false,
+      "fuentes": [
+        "plazap2p"
+      ],
+      "curada": true,
+      "descripcion": "Grupo de la comunidad PROMETEA, club de lectura Bitcoin.",
+      "idioma": "Español",
+      "plataforma": "Telegram"
     },
     {
       "id": "5822",
@@ -782,7 +1065,11 @@
       "fuentes": [
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "7333",
@@ -802,7 +1089,11 @@
       "exacta": true,
       "fuentes": [
         "2140meetups"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "5559",
@@ -823,7 +1114,11 @@
       "fuentes": [
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
     },
     {
       "id": "7343",
@@ -842,9 +1137,14 @@
       "destacada": false,
       "exacta": true,
       "fuentes": [
+        "plazap2p",
         "2140meetups",
         "btcmap"
-      ]
+      ],
+      "curada": true,
+      "descripcion": "Espacio abierto para compartir conocimiento sobre Bitcoin y Lightning Network. Reuniones el segundo viernes de cada mes. Organizan el Bitcoin Market Tenerife, un mercado de productos y servicios pagados en Bitcoin.",
+      "idioma": "Español",
+      "plataforma": "Telegram"
     },
     {
       "id": "6856",
@@ -864,7 +1164,35 @@
       "exacta": true,
       "fuentes": [
         "2140meetups"
-      ]
+      ],
+      "curada": false,
+      "descripcion": null,
+      "idioma": null,
+      "plataforma": null
+    },
+    {
+      "id": "cur-com-003",
+      "nombre": "Watch Out, Bitcoin!",
+      "ciudad": null,
+      "direccion": null,
+      "lat": null,
+      "lon": null,
+      "telegram": "https://t.me/WoBitcoin",
+      "web": null,
+      "lightning": null,
+      "npub": null,
+      "ficha": null,
+      "btcmap": null,
+      "foto": null,
+      "destacada": false,
+      "exacta": false,
+      "fuentes": [
+        "plazap2p"
+      ],
+      "curada": true,
+      "descripcion": "Grupo informativo del evento Watch Out, Bitcoin! para presentarse, comentar asistencia y resolver dudas.",
+      "idioma": "Español",
+      "plataforma": "Telegram"
     }
   ]
 }

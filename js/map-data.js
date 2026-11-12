@@ -44,7 +44,8 @@ function pointFromGeohash(gh) {
 
 /** Comunidades ya limpias (comunidades-2140.js) → puntos de la capa comunidades. */
 export function communityPoints(communities) {
-  return (communities || []).map(c => ({
+  // Las que solo están en el directorio curado no tienen sitio: no salen en el mapa.
+  return (communities || []).filter(c => c.lat != null && c.lon != null).map(c => ({
     // Su punto es el lugar público donde quedan (una plaza, un local): se puede ir.
     // De 2140meetups es el sitio donde quedan; de BTC Map solo la zona de la comunidad.
     layer: 'comunidades', id: `c-${c.id || c.nombre}`, lat: c.lat, lon: c.lon, exact: c.exacta !== false,

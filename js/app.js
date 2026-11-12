@@ -7,7 +7,7 @@ import { parseAnuncioHash, anuncioRoute, routeForTab } from './router.js';
 import { isBlocked, blockPubkey, unblockPubkey, listBlocked, exportBlocked, importBlocked } from './moderation.js';
 import { trustLevel, compareSellersByRating } from './trust-signals.js';
 import { fetchZapReceipts } from './zaps.js';
-import { communitiesFrom, sameCommunityName } from './comunidades-2140.js';
+import { communitiesFrom } from './comunidades-2140.js';
 import { communityPoints, listingPoints, eventPoints, COMMERCE_TAG } from './map-data.js';
 import { mostPreciseGeohash } from './geohash.js';
 import { externalMarketsFrom, marketTags, marketOf, externalCategory, normalizeCurrency, marketListingUrl, isMarketSigned } from './external-markets.js';
@@ -19,7 +19,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '74';
+const ASSET_VERSION  = '75';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -2372,44 +2372,53 @@ function scheduleMapRefresh() {
 
 window.showOnMap = function() { window.switchTab('mapa'); };
 
-/** Comunidades locales de España (2140meetups.com): nombre, ciudad y enlaces. */
-function renderLocalCommunitiesHtml(list) {
-  if (!list.length) return '';
-  const cards = list.map(c => {
-    const links = [
-      c.telegram && `<a href="${safeUrl(c.telegram)}" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-sm">Telegram ↗</a>`,
-      c.web && `<a href="${safeUrl(c.web)}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm">Web ↗</a>`,
-      c.ficha && `<a href="${safeUrl(c.ficha)}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm">2140meetups ↗</a>`,
-      c.btcmap && `<a href="${safeUrl(c.btcmap)}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm">BTC Map ↗</a>`,
-    ].filter(Boolean).join(' ');
-    // La foto viene de 2140meetups.com (validada en comunidades-2140.js); si falla, las iniciales.
-    const initials = esc(initialsFromName(c.nombre));
-    const avatar = c.foto
-      ? `<img src="${safeUrl(c.foto)}" alt="" class="directory-avatar-img" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="directory-avatar-fallback" style="display:none">${initials}</span>`
-      : `<span class="directory-avatar-fallback">${initials}</span>`;
-    return `<article class="community-card directory-card local-community-card${c.destacada ? ' local-community-featured' : ''}">
+/**
+ * Una tarjeta por comunidad. La lista ya viene unificada (directorio curado +
+ * 2140meetups + BTC Map, ver mergeCommunities): descripción e idioma del
+ * directorio; ciudad, foto, sitio y contactos de las otras fuentes.
+ */
+function renderCommunityCard(c) {
+  const PLAT_ICONS = { Telegram: '✈️', Nostr: '⚡', Discord: '🎮', Matrix: '🔷', Signal: '🔒', Web: '🌐', Otra: '💬' };
+  const initials = esc(initialsFromName(c.nombre));
+  // Foto validada en comunidades-2140.js (2140meetups o BTC Map); si falla, las iniciales.
+  const avatar = c.foto
+    ? `<img src="${safeUrl(c.foto)}" alt="" class="directory-avatar-img" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="directory-avatar-fallback" style="display:none">${initials}</span>`
+    : `<span class="directory-avatar-fallback">${initials}</span>`;
+  const join = c.telegram || c.web;
+  const links = [
+    join && `<a href="${safeUrl(join)}" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-sm">Unirse ↗</a>`,
+    c.telegram && c.web && `<a href="${safeUrl(c.web)}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm">Web ↗</a>`,
+    c.npub && `<a href="${safeUrl(`https://njump.me/${c.npub}`)}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm">Nostr ↗</a>`,
+    c.lat != null && `<button type="button" class="btn-ghost btn-sm" onclick="showOnMap()">🗺 Mapa</button>`,
+  ].filter(Boolean).join(' ');
+  const plataforma = c.plataforma || (c.telegram ? 'Telegram' : 'Comunidad');
+  const desc = c.descripcion || (c.ciudad ? `Comunidad Bitcoin local de ${c.ciudad}.` : 'Comunidad Bitcoin local.');
+  const sources = [
+    c.ficha && `<a href="${safeUrl(c.ficha)}" target="_blank" rel="noopener noreferrer">2140meetups</a>`,
+    c.btcmap && `<a href="${safeUrl(c.btcmap)}" target="_blank" rel="noopener noreferrer">BTC Map</a>`,
+  ].filter(Boolean).join(' · ');
+  return `<article class="community-card directory-card${c.destacada ? ' local-community-featured' : ''}">
       <div class="directory-accent"></div>
       <div class="directory-card-body">
         <div class="directory-head">
           <div class="directory-avatar directory-avatar-${toneFromSeed(c.nombre)}" aria-hidden="true">${avatar}</div>
           <div class="directory-meta">
-        <h3 class="community-name">${esc(c.nombre)}${c.destacada ? ' <span class="local-community-badge">destacada</span>' : ''}</h3>
-        <div class="community-top">
-          <span class="community-country">📍 ${esc(c.ciudad || 'España')}</span>
-          ${c.npub ? '<span class="community-platform" title="Tiene cuenta Nostr">⚡ Nostr</span>' : ''}
-        </div>
+            <h3 class="community-name">${esc(c.nombre)}${c.destacada ? ' <span class="local-community-badge">destacada</span>' : ''}</h3>
+            <div class="community-top">
+              <span class="community-platform"><span class="community-platform-icon">${PLAT_ICONS[plataforma] || '💬'}</span>${esc(plataforma)}</span>
+              ${c.ciudad ? `<span class="community-country">📍 ${esc(c.ciudad)}</span>` : ''}
+              ${c.npub ? '<span class="community-platform" title="Tiene cuenta Nostr">⚡ Nostr</span>' : ''}
+            </div>
           </div>
         </div>
-        <div class="directory-footer">${links}</div>
+        <p class="community-desc">${esc(desc)}</p>
+        ${sources ? `<p class="community-sources">Ficha: ${sources}</p>` : ''}
+        <div class="directory-footer">
+          ${c.idioma ? `<span class="directory-chip">${esc(langBadge(c.idioma))}</span>` : '<span></span>'}
+          <span class="community-links">${links}</span>
+        </div>
       </div>
     </article>`;
-  }).join('');
-  return `<div class="proposals-notice local-communities-notice">
-      <strong>Comunidades locales en España</strong> (${list.length}) · fuente:
-      <a href="https://2140meetups.com/comunidades/" target="_blank" rel="noopener noreferrer">2140meetups.com</a> y
-      <a href="https://btcmap.org/communities" target="_blank" rel="noopener noreferrer">BTC Map</a> ·
-      <button type="button" class="btn-ghost btn-sm" onclick="showOnMap()">🗺 Ver en el mapa</button>
-    </div>` + cards;
 }
 
 function renderComunidades(items, githubUrl) {
@@ -2417,53 +2426,23 @@ function renderComunidades(items, githubUrl) {
   if (!container) return;
   const footer = document.getElementById('comunidades-footer');
   const proposals = directoryProposals(PROPOSAL_COMUNIDAD);
+  // La lista unificada; si no llegó, el directorio curado tal cual.
+  const list = staticComunidades2140.length ? staticComunidades2140 : items.map(c => ({ ...c, telegram: c.link, curada: true }));
 
-  if (items.length === 0 && proposals.length === 0 && staticComunidades2140.length === 0) {
+  if (list.length === 0 && proposals.length === 0) {
     container.innerHTML = staticEmpty('🏘', 'comunidades', githubUrl, 'comunidad.yml');
     return;
   }
 
-  const PLAT_ICONS = { Telegram: '✈️', Nostr: '⚡', Discord: '🎮', Matrix: '🔷', Signal: '🔒', Web: '🌐', Otra: '💬' };
-
-  const curatedHtml = items.map(c => {
-    const icon = PLAT_ICONS[c.plataforma] || '💬';
-    const logo = mediaImageUrl(c);
-    const initials = initialsFromName(c.nombre);
-    const tone = toneFromSeed(c.nombre || c.id);
-    const avatar = logo
-      ? `<img src="${logo}" alt="" class="directory-avatar-img" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="directory-avatar-fallback" style="display:none">${esc(initials)}</span>`
-      : `<span class="directory-avatar-fallback">${esc(initials)}</span>`;
-
-    return `<article class="community-card directory-card">
-      <div class="directory-accent"></div>
-      <div class="directory-card-body">
-        <div class="directory-head">
-          <div class="directory-avatar directory-avatar-${tone}" aria-hidden="true">${avatar}</div>
-          <div class="directory-meta">
-            <h3 class="community-name">${esc(c.nombre)}</h3>
-            <div class="community-top">
-              <span class="community-platform"><span class="community-platform-icon">${icon}</span>${esc(c.plataforma || 'Comunidad')}</span>
-              ${c.pais ? `<span class="community-country">${esc(c.pais)}</span>` : ''}
-            </div>
-          </div>
-        </div>
-        <p class="community-desc">${esc(c.descripcion || '')}</p>
-        <div class="directory-footer">
-          ${c.idioma ? `<span class="directory-chip">${esc(langBadge(c.idioma))}</span>` : '<span></span>'}
-          <a href="${safeUrl(c.link)}" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-sm">Unirse ↗</a>
-        </div>
-      </div>
-    </article>`;
-  }).join('');
-
-  // Las del directorio curado ya salen arriba (con su descripción): en el bloque local, solo las demás.
-  const local = staticComunidades2140.filter(c => !items.some(i => sameCommunityName(i.nombre, c.nombre)));
-  container.innerHTML = curatedHtml + renderLocalCommunitiesHtml(local) + (proposals.length
+  container.innerHTML = list.map(renderCommunityCard).join('') + (proposals.length
     ? proposalsNoticeHtml('Propuestas publicadas desde PlazaP2P. Todavía no han pasado la revisión del directorio.') +
       proposals.map(renderCommunityProposalCard).join('')
     : '');
 
-  if (footer) footer.innerHTML = staticDisclaimer('comunidad', githubUrl, 'comunidad.yml');
+  if (footer) {
+    footer.innerHTML = staticDisclaimer('comunidad', githubUrl, 'comunidad.yml') +
+      `<p class="community-sources">Comunidades del directorio de PlazaP2P, <a href="https://2140meetups.com/comunidades/" target="_blank" rel="noopener noreferrer">2140meetups.com</a> y <a href="https://btcmap.org/communities" target="_blank" rel="noopener noreferrer">BTC Map</a>, juntadas sin repetir.</p>`;
+  }
 }
 
 // ── Render: Herramientas ───────────────────────────────────────

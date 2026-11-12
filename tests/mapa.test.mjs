@@ -2,7 +2,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { decodeGeohash, encodeGeohash, mostPreciseGeohash, EXACT_GEOHASH_PRECISION } from '../js/geohash.js'
-import { cleanCommunity, communitiesFrom, sameCommunityName, samePlaceWords } from '../js/comunidades-2140.js'
+import { cleanCommunity, communitiesFrom, sameCommunityName, samePlaceWords, mergeCommunities } from '../js/comunidades-2140.js'
+import { readFileSync } from 'node:fs'
 import { communityPoints, listingPoints, eventPoints, btcmapPoints, directionsLinks, btcmapSearchUrl, LAYERS } from '../js/map-data.js'
 
 test('geohash: decodificar devuelve el centro de la celda y su tamaño', () => {
@@ -29,6 +30,7 @@ test('comunidades de 2140meetups: solo lo que se usa y validado', () => {
     telegram: 'https://t.me/alkarriabtc', web: null, lightning: 'alkarriabtc@jabato.space',
     npub: 'npub1uay28kq0hq8xr98k2uqk0vjrzqz8fdjh38esz4acdtk045lmgzpqn9naxf', ficha: 'https://2140meetups.com/comunidad/7852/',
     btcmap: null, foto: null, destacada: false, exacta: true, fuentes: ['2140meetups'],
+    curada: false, descripcion: null, idioma: null, plataforma: null,
   })
   assert.ok(!('email' in c), 'el email no se guarda')
   const raro = cleanCommunity({ title: 'X', lat: '40', lon: '-3', telegram: 'http://t.me/x', enlace: 'javascript:alert(1)', nostr: 'npub1corto', link: 'https://otro.example/c/1' })
@@ -136,4 +138,39 @@ test('misma comunidad: nombre igual o, si es la única, el mismo sitio', () => {
   assert.ok(samePlaceWords('Bitcoin Cádiz', 'BTC CADIZ'))
   assert.ok(!samePlaceWords('Bitcoin Canarias', 'Bitcanario'))
   assert.ok(!samePlaceWords('Bitcoin', 'BTC 2140'), 'sin sitio en el nombre no se junta')
+})
+
+test('directorio + locales: una entrada por comunidad, con la información de las dos', () => {
+  const curated = [
+    { id: 'com-1', nombre: 'Málaga 2140', plataforma: 'Telegram', link: 'https://t.me/malaga2140', descripcion: 'Grupo de Málaga', idioma: 'Español', aprobado: true },
+    { id: 'com-2', nombre: 'Bitcoin Madrid', link: 'https://t.me/bitcoinmadrid', aprobado: true },
+    { id: 'com-3', nombre: 'Nostr En Español', link: 'https://t.me/nostrespanol', aprobado: true },
+    { id: 'com-4', nombre: 'Borrador', link: 'https://t.me/x', aprobado: false },
+  ]
+  const local = [
+    cleanCommunity({ id: '1', nombre: 'Málaga 2140', lat: 36.7, lon: -4.4, telegram: 'https://t.me/%20roto', foto: 'https://2140meetups.com/wp-content/uploads/m.jpg' }),
+    cleanCommunity({ id: '2', nombre: 'Bitcoin Social Club MADRID', lat: 40.4, lon: -3.7, telegram: 'https://t.me/bscmadrid' }),
+  ]
+  const u = mergeCommunities(curated, local)
+  assert.deepEqual(u.map(c => c.nombre).sort(), ['Bitcoin Madrid', 'Bitcoin Social Club MADRID', 'Málaga 2140', 'Nostr En Español'])
+  const malaga = u.find(c => c.nombre === 'Málaga 2140')
+  assert.equal(malaga.telegram, 'https://t.me/malaga2140', 'el contacto revisado del directorio manda (el importado venía roto)')
+  assert.equal(malaga.descripcion, 'Grupo de Málaga')
+  assert.ok(malaga.foto && malaga.lat != null && malaga.curada)
+  // Distinto Telegram: «Bitcoin Madrid» no es «Bitcoin Social Club MADRID».
+  assert.equal(u.find(c => c.nombre === 'Bitcoin Madrid').lat, null)
+  // Sin sitio no salen en el mapa.
+  assert.deepEqual(communityPoints(u).map(p => p.title).sort(), ['Bitcoin Social Club MADRID', 'Málaga 2140'])
+})
+
+test('data/comunidades-2140.json está al día con el directorio y sin nombres repetidos', () => {
+  const doc = JSON.parse(readFileSync(new URL('../data/comunidades-2140.json', import.meta.url), 'utf8'))
+  const curated = JSON.parse(readFileSync(new URL('../data/comunidades.json', import.meta.url), 'utf8')).filter(c => c.aprobado)
+  const list = communitiesFrom(doc)
+  const names = list.map(c => c.nombre.toLowerCase())
+  assert.equal(new Set(names).size, names.length, 'cada comunidad una sola vez')
+  for (const c of curated) {
+    assert.ok(list.some(l => l.curada && (l.nombre === c.nombre || sameCommunityName(l.nombre, c.nombre) || samePlaceWords(l.nombre, c.nombre))),
+      `falta «${c.nombre}» del directorio: ejecuta node tools/build-comunidades-2140.mjs`)
+  }
 })

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Genera data/comunidades-2140.json con las comunidades Bitcoin de España de
 // dos directorios públicos, juntadas sin repetir (el nombre del archivo es
-// histórico: al principio solo venían de 2140meetups):
+// histórico: al principio solo venían de 2140meetups), y con el directorio
+// curado de PlazaP2P (data/comunidades.json), en una sola lista:
 //   - 2140meetups.com (API pública de su página /developers/): el sitio donde
 //     quedan, su foto y contactos.
 //   - BTC Map (api.btcmap.org, «áreas» de tipo comunidad): la zona de la
@@ -20,7 +21,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { cleanCommunity, sameCommunityName, samePlaceWords } from '../js/comunidades-2140.js'
+import { cleanCommunity, sameCommunityName, samePlaceWords, mergeCommunities } from '../js/comunidades-2140.js'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const OUT = path.join(here, '..', 'data', 'comunidades-2140.json')
@@ -154,18 +155,22 @@ for (const b of fromBtcmap) {
   twin.btcmap = b.btcmap
   twin.fuentes = ['2140meetups', 'btcmap']
 }
-items.sort((a, b) => (b.destacada - a.destacada) || a.nombre.localeCompare(b.nombre, 'es'))
+// Y con el directorio curado de PlazaP2P (data/comunidades.json): una sola
+// lista, una entrada por comunidad, con la información de todas las fuentes.
+const curated = JSON.parse(fs.readFileSync(path.join(here, '..', 'data', 'comunidades.json'), 'utf8'))
+const unified = mergeCommunities(curated, items)
 
 const doc = {
-  fuente: 'https://2140meetups.com/comunidades/ y https://btcmap.org/communities',
+  fuente: 'Directorio de PlazaP2P (data/comunidades.json), https://2140meetups.com/comunidades/ y https://btcmap.org/communities',
   generado: new Date().toISOString().slice(0, 10),
-  comunidades: items,
+  comunidades: unified,
 }
 const next = JSON.stringify(doc, null, 2) + '\n'
 const prev = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : ''
 const strip = s => s.replace(/"generado": "[^"]*",?\n/, '')
-console.log(`2140meetups: ${from2140.length} · BTC Map: ${fromBtcmap.length} (${merged} ya estaban) · total ${items.length} comunidades de España ` +
-  `(${items.filter(c => c.npub).length} con Nostr, ${items.filter(c => c.foto).length} con foto).`)
+console.log(`2140meetups: ${from2140.length} · BTC Map: ${fromBtcmap.length} (${merged} ya estaban) · directorio: ${curated.filter(c => c.aprobado).length} · ` +
+  `total ${unified.length} comunidades, una por entrada (${unified.filter(c => c.npub).length} con Nostr, ${unified.filter(c => c.foto).length} con foto, ` +
+  `${unified.filter(c => c.lat == null).length} sin sitio en el mapa).`)
 if (strip(prev) === strip(next)) {
   console.log('Sin cambios.')
 } else if (process.argv.includes('--check')) {
