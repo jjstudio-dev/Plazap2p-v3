@@ -180,6 +180,8 @@ export function buildServicio(data, userPubHex, dTag = null, publishedAt = null)
     ['t',            'plazap2p-servicio'],
     ['service_type', String(data.catId || 'otros')],
   ]
+  const geoErr = addLocationTags(tags, data, { listing: true })
+  if (geoErr) return { ok: false, error: geoErr }
   applyCommonOptionalTags(tags, data)
 
   const { unsignedEvent, dTag: uid } = assembleEvent(30402, tags, String(data.desc) + FOOTER, userPubHex, dTag, publishedAt, durationDays)
@@ -200,6 +202,34 @@ export function buildServicio(data, userPubHex, dTag = null, publishedAt = null)
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const GEOHASH_TAG_RE = /^[0-9bcdefghjkmnpqrstuvwxyz]{3,9}$/
+
+/** F8-02: etiqueta de un punto de venta (comercio) con ubicación exacta. */
+export const COMMERCE_TAG = 'plazap2p-comercio'
+/** Zona aproximada (≈5 km): lo máximo que se publica de un particular. */
+export const APPROX_GEOHASH_LENGTH = 5
+/** Desde esta longitud la ubicación se considera exacta (celda ≤ ~150 m). */
+export const EXACT_GEOHASH_MIN = 7
+
+/**
+ * Etiquetas `g` (una por precisión, de la dada hasta 3) y, en anuncios, la de
+ * punto de venta. Un anuncio de un particular se recorta a zona aproximada
+ * aunque llegue más preciso; un punto de venta exige ubicación exacta.
+ * Devuelve un mensaje de error o null.
+ */
+function addLocationTags(tags, data, { listing }) {
+  const commerce = listing && data.commerce === true
+  if (!data.geohash) return commerce ? 'un punto de venta necesita su ubicación exacta' : null
+  let gh = String(data.geohash).toLowerCase()
+  if (!GEOHASH_TAG_RE.test(gh)) return 'zona inválida'
+  if (commerce) {
+    if (gh.length < EXACT_GEOHASH_MIN) return 'un punto de venta necesita su ubicación exacta'
+    tags.push(['t', COMMERCE_TAG])
+  } else if (listing) {
+    gh = gh.slice(0, APPROX_GEOHASH_LENGTH)
+  }
+  for (let n = gh.length; n >= 3; n--) tags.push(['g', gh.slice(0, n)])
+  return null
+}
 const CALENDAR_COORD_RE = /^31924:[0-9a-f]{64}:[^:\s]{1,64}$/
 
 /** F7-07: identificador (d) del calendario NIP-52 «PlazaP2P» que firma el mantenedor. */
@@ -269,14 +299,10 @@ export function buildEvento(data, userPubHex, dTag = null, publishedAt = null) {
   }
 
   if (data.location) tags.push(['location', String(data.location).slice(0, 200)])
-  // F7-07: zona aproximada (geohash) para buscadores de quedadas por cercanía.
-  // Una etiqueta por precisión (de la dada hasta 3 caracteres): quien busca
-  // por una celda más grande también lo encuentra.
-  if (data.geohash) {
-    const gh = String(data.geohash).toLowerCase()
-    if (!GEOHASH_TAG_RE.test(gh)) return { ok: false, error: 'zona inválida' }
-    for (let n = gh.length; n >= 3; n--) tags.push(['g', gh.slice(0, n)])
-  }
+  // F7-07 / F8-02: zona (≈5 km) o ubicación exacta del evento, para buscadores
+  // de quedadas por cercanía y el mapa. Una etiqueta por precisión.
+  const geoErr = addLocationTags(tags, data, { listing: false })
+  if (geoErr) return { ok: false, error: geoErr }
   // F7-07 (NIP-52): pide entrar en el calendario de PlazaP2P; lo decide su dueño.
   if (data.calendarCoord && CALENDAR_COORD_RE.test(String(data.calendarCoord))) tags.push(['a', String(data.calendarCoord)])
   applyCommonOptionalTags(tags, data)
@@ -411,6 +437,8 @@ export function buildTransaccion(data, userPubHex, dTag = null, publishedAt = nu
   // F7-02 (estándar de tiendas Nostr, Gamma Markets): sin `type` esas tiendas
   // tratan el anuncio como producto digital. Una venta es un objeto físico.
   if (data.tipoTag === 'plazap2p-venta') tags.push(['type', 'simple', 'physical'])
+  const geoErr = addLocationTags(tags, data, { listing: true })
+  if (geoErr) return { ok: false, error: geoErr }
   applyCommonOptionalTags(tags, data)
 
   const { unsignedEvent, dTag: uid } = assembleEvent(30402, tags, content, userPubHex, dTag, publishedAt, durationDays)

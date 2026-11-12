@@ -12,7 +12,7 @@
 import { RelayPool, collectUntilEose } from './relay-pool.js'
 import { writeRelaysFrom } from './outbox.js'
 import { externalMarketsFrom, isMarketEvent, marketRelays } from './external-markets.js'
-import { encodeGeohash, EVENT_GEOHASH_PRECISION, GEOHASH_RE } from './geohash.js'
+import { encodeGeohash, EVENT_GEOHASH_PRECISION, EXACT_GEOHASH_PRECISION, GEOHASH_RE, parseCoordinates } from './geohash.js'
 import { MAINTAINER_PUBKEY } from './signed-config.js'
 import { encodeNaddr, decodeNaddr, getTagValue, getTagValues, hexToNpub } from './nostr.js'
 import * as signer from './signer.js'
@@ -22,6 +22,7 @@ import {
   VALID_CATS_SERVICIO, VALID_PLATS_COMUNIDAD, VALID_CATS_HERRAMIENTA,
   VALID_ALCANCES, VALID_CURRENCIES, VALID_REPORT_TYPES,
   DURATION_OPTIONS, DEFAULT_DURATION_DAYS, NO_EXPIRATION, durationDaysOf, PLAZA_CALENDAR_D,
+  COMMERCE_TAG, EXACT_GEOHASH_MIN,
 } from './publish-builders.js'
 import { sanitizeContact } from './publish-utils.js'
 import { allDayLastDay, shiftIsoDate } from './listing-utils.js'
@@ -48,11 +49,11 @@ const ALL_SECTIONS = [
   'sec-wallet', 'sec-resultado', 'sec-paste-event',
 ]
 const FORM_FIELD_IDS = [
-  's-title', 's-desc', 's-price', 's-currency', 's-negociar', 's-image', 's-contact',
-  'e-title', 'e-desc', 'e-date', 'e-allday', 'e-date-end', 'e-location', 'e-geohash', 'e-image', 'e-contact',
+  's-title', 's-desc', 's-price', 's-currency', 's-negociar', 's-image', 's-contact', 's-geohash', 'chk-s-geo-exact',
+  'e-title', 'e-desc', 'e-date', 'e-allday', 'e-date-end', 'e-location', 'e-geohash', 'chk-e-geo-exact', 'e-image', 'e-contact',
   'c-title', 'c-desc', 'c-access', 'c-image',
   'h-title', 'h-desc', 'h-url', 'h-image',
-  'tx-title', 'tx-desc', 'tx-price', 'tx-currency', 'tx-negociar', 'tx-image', 'tx-contact',
+  'tx-title', 'tx-desc', 'tx-price', 'tx-currency', 'tx-negociar', 'tx-image', 'tx-contact', 'tx-geohash', 'chk-tx-geo-exact',
   'v-npub', 'v-comment', 'r-npub', 'r-comment',
 ]
 // W-02: el número de versión sale de la propia URL del módulo
@@ -240,7 +241,7 @@ async function loadConfig() {
 // ── Cableado de UI ────────────────────────────────────────────────────────────
 
 function wireUi() {
-  wireEventGeo()   // F7-07
+  wireAllGeoFields()   // F7-07 / F8-02
 
   // Cards de tipo
   document.querySelectorAll('.type-card').forEach(card => {
@@ -489,7 +490,7 @@ function navigateTo(type, options = {}) {
   }
   showSection(secId)
   renderExpirationHints(type)
-  if (type === 'evento') syncEventGeoUi()
+  syncAllGeoUi()
   $('btn-publicar').textContent = editingDTag ? '💾 Guardar cambios' : '📢 Publicar'
 }
 
@@ -537,38 +538,91 @@ function renderExpirationHints(type) {
   if (tx) tx.textContent = TX_META[type] ? text : ''
 }
 
-// ── F7-07: zona aproximada del evento (geohash) ──────────────────────────────
+// ── F7-07 / F8-02: ubicación en el mapa (geohash) ────────────────────────────
+// Un bloque por formulario: 's' (servicio), 'tx' (venta/compra/intercambio) y
+// 'e' (evento). Sin la casilla marcada se guarda una zona de ~5 km; con ella,
+// el punto exacto (comercio o local del evento). Las coordenadas solo viven
+// en esta pestaña mientras se edita: lo que se publica es el geohash.
 
-function syncEventGeoUi() {
-  const gh = $('e-geohash')?.value || ''
-  $('btn-e-geo-clear')?.classList.toggle('hidden', !gh)
-  const status = $('e-geo-status')
-  if (status) status.textContent = gh ? `Zona añadida (unos 5 km alrededor): ${gh}` : ''
+const GEO_PREFIXES = ['s', 'tx', 'e']
+const geoCoords = {}   // { [prefijo]: { lat, lon } } de la última ubicación tomada o pegada
+
+function geoExact(p) { return !!$(`chk-${p}-geo-exact`)?.checked }
+
+function syncGeoUi(p) {
+  const gh = $(`${p}-geohash`)?.value || ''
+  $(`btn-${p}-geo-clear`)?.classList.toggle('hidden', !gh)
+  const status = $(`${p}-geo-status`)
+  if (!status) return
+  if (!gh) status.textContent = ''
+  else status.textContent = gh.length >= EXACT_GEOHASH_MIN
+    ? `Ubicación exacta añadida (${gh}). Se podrá llegar con el GPS.`
+    : `Zona añadida (unos 5 km alrededor): ${gh}`
 }
 
-function setEventGeohash(gh) {
-  const input = $('e-geohash')
+function syncAllGeoUi() { GEO_PREFIXES.forEach(syncGeoUi) }
+
+function setGeohash(p, gh) {
+  const input = $(`${p}-geohash`)
   if (input) input.value = gh || ''
-  syncEventGeoUi()
+  if (!gh) delete geoCoords[p]
+  syncGeoUi(p)
 }
 
-function wireEventGeo() {
-  $('btn-e-geo')?.addEventListener('click', () => {
-    const status = $('e-geo-status')
-    if (!navigator.geolocation) { if (status) status.textContent = 'Este navegador no da la ubicación; el evento se publica sin zona.'; return }
+/** Vuelve a calcular el geohash con la precisión que marca la casilla. */
+function applyGeoPrecision(p) {
+  const c = geoCoords[p]
+  const current = $(`${p}-geohash`)?.value || ''
+  if (c) return setGeohash(p, encodeGeohash(c.lat, c.lon, geoExact(p) ? EXACT_GEOHASH_PRECISION : EVENT_GEOHASH_PRECISION))
+  if (!current) return syncGeoUi(p)
+  if (!geoExact(p) && current.length > EVENT_GEOHASH_PRECISION) return setGeohash(p, current.slice(0, EVENT_GEOHASH_PRECISION))
+  if (geoExact(p) && current.length < EXACT_GEOHASH_MIN) {
+    setGeohash(p, '')
+    const status = $(`${p}-geo-status`)
+    if (status) status.textContent = 'Para la ubicación exacta, pulsa «Usar mi ubicación» en el sitio o pega sus coordenadas.'
+  }
+}
+
+function setGeoCoords(p, lat, lon) {
+  geoCoords[p] = { lat, lon }
+  applyGeoPrecision(p)
+}
+
+function wireGeoField(p) {
+  $(`btn-${p}-geo`)?.addEventListener('click', () => {
+    const status = $(`${p}-geo-status`)
+    if (!navigator.geolocation) { if (status) status.textContent = 'Este navegador no da la ubicación; pega las coordenadas o publica sin ubicación.'; return }
     if (status) status.textContent = 'Pidiendo la ubicación…'
     navigator.geolocation.getCurrentPosition(
-      pos => setEventGeohash(encodeGeohash(pos.coords.latitude, pos.coords.longitude, EVENT_GEOHASH_PRECISION)),
+      pos => setGeoCoords(p, pos.coords.latitude, pos.coords.longitude),
       err => {
         if (status) status.textContent = err?.code === 1
-          ? 'Sin permiso de ubicación: el evento se publica sin zona.'
-          : 'No se pudo obtener la ubicación; el evento se publica sin zona.'
+          ? 'Sin permiso de ubicación: pega las coordenadas o publica sin ubicación.'
+          : 'No se pudo obtener la ubicación; pega las coordenadas o publica sin ubicación.'
       },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 },
+      // Para un punto exacto hace falta el GPS; para una zona basta la red.
+      { enableHighAccuracy: geoExact(p), timeout: 15000, maximumAge: geoExact(p) ? 0 : 600000 },
     )
   })
-  $('btn-e-geo-clear')?.addEventListener('click', () => setEventGeohash(''))
+  $(`${p}-geo-coords`)?.addEventListener('change', ev => {
+    const raw = ev.target.value
+    if (!raw.trim()) return
+    const c = parseCoordinates(raw)
+    const status = $(`${p}-geo-status`)
+    if (!c) { if (status) status.textContent = 'No se entienden esas coordenadas. Ejemplo: 40.4168, -3.7038'; return }
+    ev.target.value = ''
+    setGeoCoords(p, c.lat, c.lon)
+  })
+  $(`chk-${p}-geo-exact`)?.addEventListener('change', () => applyGeoPrecision(p))
+  $(`btn-${p}-geo-clear`)?.addEventListener('click', () => setGeohash(p, ''))
 }
+
+function geoPayload(p) {
+  const gh = val(`${p}-geohash`)
+  return GEOHASH_RE.test(gh) ? gh : null
+}
+
+function wireAllGeoFields() { GEO_PREFIXES.forEach(wireGeoField) }
 
 // ── Identidad ─────────────────────────────────────────────────────────────────
 
@@ -1340,6 +1394,7 @@ function validateForm(type) {
       checkUrl(errors, 's-image')
       checkPrice(errors, 's-price', 's-negociar')
       checkContact(errors, 's-contact')
+      checkCommerceGeo(errors, 's')
       break
     case 'evento':
       checkLen(errors, 'e-title', 5, 200)
@@ -1374,9 +1429,17 @@ function validateForm(type) {
       checkUrl(errors, 'tx-image')
       checkPrice(errors, 'tx-price', 'tx-negociar')
       checkContact(errors, 'tx-contact')
+      checkCommerceGeo(errors, 'tx')
       break
   }
   return { ok: errors.size === 0, errors }
+}
+
+/** F8-02: un punto de venta necesita su ubicación exacta para salir en el mapa. */
+function checkCommerceGeo(errors, p) {
+  if (!geoExact(p)) return
+  const gh = val(`${p}-geohash`)
+  if (gh.length < EXACT_GEOHASH_MIN) errors.set(`${p}-geo-coords`, 'Un punto de venta necesita su ubicación exacta: pulsa «Usar mi ubicación» en la tienda o pega sus coordenadas.')
 }
 
 function checkLen(errors, id, min, max) {
@@ -1477,6 +1540,8 @@ function buildPayload(type) {
         currency: neg ? null : (VALID_CURRENCIES.includes(val('s-currency')) ? val('s-currency') : null),
         imageUrl: val('s-image') || null,
         contact: val('s-contact') || null,
+        geohash: geoPayload('s'),
+        commerce: boolChk('chk-s-geo-exact'),
       }
     }
     case 'evento': {
@@ -1505,7 +1570,7 @@ function buildPayload(type) {
         endTs:     allDay ? null : toTs(endRaw),
         tzid,
         location: val('e-location') || null,
-        geohash: GEOHASH_RE.test(val('e-geohash')) ? val('e-geohash') : null,
+        geohash: geoPayload('e'),
         calendarCoord: `31924:${MAINTAINER_PUBKEY}:${PLAZA_CALENDAR_D}`,
         imageUrl: val('e-image') || null,
         contact: val('e-contact') || null,
@@ -1538,6 +1603,8 @@ function buildPayload(type) {
         currency: neg ? null : (VALID_CURRENCIES.includes(val('tx-currency')) ? val('tx-currency') : null),
         imageUrl: val('tx-image') || null,
         contact: val('tx-contact') || null,
+        geohash: geoPayload('tx'),
+        commerce: boolChk('chk-tx-geo-exact'),
       }
     }
     default: return {}
@@ -1790,6 +1857,13 @@ function populateFormFromEvent(ev, type) {
   if (price) { set(`${prefix}-price`, price[1]); if (price[2]) set(`${prefix}-currency`, price[2]) }
   set(`${prefix}-image`, getTagValue(tags, 'image'))
   set(`${prefix}-contact`, getTagValue(tags, 'contact'))
+  // F8-02: ubicación del anuncio (zona o punto de venta).
+  if (prefix === 's' || prefix === 'tx') {
+    const geo = getTagValues(tags, 'g').filter(g => GEOHASH_RE.test(g)).sort((a, b) => b.length - a.length)[0]
+    const chk = $(`chk-${prefix}-geo-exact`)
+    if (chk) chk.checked = getTagValues(tags, 't').includes(COMMERCE_TAG)
+    setGeohash(prefix, geo || '')
+  }
 
   // Restaurar selección de pills/checkboxes desde los tags (si no, la edición
   // perdería categoría/plataforma/alcance en silencio al re-publicar).
@@ -1801,7 +1875,9 @@ function populateFormFromEvent(ev, type) {
     set('e-location', getTagValue(tags, 'location'))
     // F7-07: la zona más precisa de las etiquetas g.
     const geo = getTagValues(tags, 'g').filter(g => GEOHASH_RE.test(g)).sort((a, b) => b.length - a.length)[0]
-    setEventGeohash(geo || '')
+    const chk = $('chk-e-geo-exact')
+    if (chk) chk.checked = !!geo && geo.length >= EXACT_GEOHASH_MIN
+    setGeohash('e', geo || '')
     // PROT-001: start puede ser Unix (31923, o 31922 legado con bug) o
     // fecha ISO (31922 correcto). end análogo.
     const pad = n => String(n).padStart(2, '0')
@@ -1972,7 +2048,7 @@ function restoreFormSnapshot(snap) {
     if (cb) cb.checked = true
   }
   syncNegociarState()
-  syncEventGeoUi()
+  syncAllGeoUi()
   selectedType = VALID_TYPES.includes(snap.selectedType) ? snap.selectedType : null
   editingDTag = snap.editingDTag || null
   editingPublishedAt = (Number.isInteger(snap.editingPublishedAt) && snap.editingPublishedAt > 0)
@@ -1990,7 +2066,7 @@ function resetFormsAfterSuccess() {
   document.querySelectorAll('.pill.active').forEach(p => p.classList.remove('active'))
   document.querySelectorAll('input[name="h-platform"]').forEach(cb => { cb.checked = false })
   syncNegociarState()
-  syncEventGeoUi()
+  syncAllGeoUi()
   editingDTag = null
   editingPublishedAt = null
   editingOriginal = null

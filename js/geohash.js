@@ -73,3 +73,31 @@ export function mostPreciseGeohash(tags) {
   }
   return best
 }
+
+/**
+ * Coordenadas escritas o pegadas: «40.4168, -3.7038», «geo:40.4,-3.7» o un
+ * enlace de Google Maps / OpenStreetMap (…/@40.4,-3.7,17z, ?q=40.4,-3.7,
+ * !3d40.4!4d-3.7, #map=17/40.4/-3.7). null si no hay unas válidas.
+ */
+export function parseCoordinates(text) {
+  const s = String(text || '').trim().slice(0, 500)
+  if (!s) return null
+  const num = String.raw`(-?\d{1,3}(?:\.\d+)?)`
+  const patterns = [
+    new RegExp(String.raw`!3d${num}!4d${num}`),
+    new RegExp(String.raw`@${num},${num}`),
+    new RegExp(String.raw`[?&](?:q|ll|query|destination|mlat)=${num}(?:,|%2C|&mlon=)${num}`, 'i'),
+    new RegExp(String.raw`#map=\d{1,2}/${num}/${num}`),
+    new RegExp(String.raw`^(?:geo:)?\s*${num}\s*[,;\s]\s*${num}\s*$`, 'i'),
+  ]
+  for (const re of patterns) {
+    const m = s.match(re)
+    if (!m) continue
+    const lat = Number(m[1])
+    const lon = Number(m[2])
+    if (Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && !(lat === 0 && lon === 0)) {
+      return { lat, lon }
+    }
+  }
+  return null
+}

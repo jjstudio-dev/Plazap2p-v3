@@ -332,6 +332,47 @@ export const tests = [
     },
   },
   {
+    name: 'F8-02: punto de venta con coordenadas pegadas → ubicación exacta; sin marcar → zona de 5 km',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: identidad })
+      await page.goto(`${server.origin}/publicar.html?type=venta`)
+      await page.waitFor(`!document.getElementById('publish-bar').classList.contains('hidden')`)
+      await rellenar(page, TIPOS.venta)
+      // Marcar «punto de venta» sin ubicación no deja publicar.
+      await page.evaluate(`document.getElementById('chk-tx-geo-exact').click()`)
+      await page.click('#btn-publicar')
+      await page.waitFor(`document.getElementById('err-tx-geo-coords').textContent.includes('ubicación exacta')`, { label: 'aviso de ubicación exacta' })
+      // Pegar un enlace de Google Maps da el punto exacto.
+      await page.evaluate(`(() => { const i = document.getElementById('tx-geo-coords'); i.value = 'https://www.google.com/maps/place/X/@40.4168,-3.7038,17z'; i.dispatchEvent(new Event('change', { bubbles: true })) })()`)
+      t.assert.match(await page.text('#tx-geo-status'), /Ubicación exacta añadida/)
+      const res = await publicar(page)
+      t.assert.ok(res.ok, `${res.titulo} — ${res.sub}`)
+      const ev = (await publicados(page)).find(e => e.kind === 30402)
+      t.assert.ok(tTags(ev).includes('plazap2p-comercio'))
+      t.assert.equal(ev.tags.filter(x => x[0] === 'g').map(x => x[1])[0].length, 9)
+      t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
+  {
+    name: 'F8-02: un particular que pega coordenadas solo publica la zona',
+    async run(t) {
+      const server = await t.server()
+      const page = await t.open({ scenario: identidad })
+      await page.goto(`${server.origin}/publicar.html?type=venta`)
+      await page.waitFor(`!document.getElementById('publish-bar').classList.contains('hidden')`)
+      await rellenar(page, TIPOS.venta)
+      await page.evaluate(`(() => { const i = document.getElementById('tx-geo-coords'); i.value = '40.4168, -3.7038'; i.dispatchEvent(new Event('change', { bubbles: true })) })()`)
+      t.assert.match(await page.text('#tx-geo-status'), /unos 5 km/)
+      const res = await publicar(page)
+      t.assert.ok(res.ok, `${res.titulo} — ${res.sub}`)
+      const ev = (await publicados(page)).find(e => e.kind === 30402)
+      t.assert.ok(!tTags(ev).includes('plazap2p-comercio'))
+      t.assert.deepEqual(ev.tags.filter(x => x[0] === 'g').map(x => x[1]), ['ezjmg', 'ezjm', 'ezj'])
+      t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
+  {
     name: 'Mercasats: el anuncio se envía también a sus relays públicos',
     async run(t) {
       const server = await t.server()

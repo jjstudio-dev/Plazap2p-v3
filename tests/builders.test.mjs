@@ -195,3 +195,30 @@ test('F7-07: evento con zona (g por precisión) y petición de entrar en el cale
   const sin = buildEvento({ ...base, calendarCoord: '30402:x:y' }, PK1)
   assert.equal(sin.unsignedEvent.tags.some(t => t[0] === 'a' || t[0] === 'g'), false, 'sin zona ni calendario válido no hay etiquetas')
 })
+
+test('F8-02: punto de venta con ubicación exacta; un particular solo publica zona', async () => {
+  const { buildTransaccion, buildServicio, buildEvento, COMMERCE_TAG } = await import('../js/publish-builders.js')
+  const exact = 'ezjmgu4p6'   // 9 caracteres: unos metros
+  const venta = { tipoTag: 'plazap2p-venta', title: 'Vendo café', desc: 'Café de especialidad tostado en la tienda.' }
+  const tienda = buildTransaccion({ ...venta, geohash: exact, commerce: true }, PK1)
+  assert.equal(tienda.ok, true)
+  const g = t => t.unsignedEvent.tags.filter(x => x[0] === 'g').map(x => x[1])
+  assert.deepEqual(g(tienda), ['ezjmgu4p6', 'ezjmgu4p', 'ezjmgu4', 'ezjmgu', 'ezjmg', 'ezjm', 'ezj'])
+  assert.ok(tienda.unsignedEvent.tags.some(x => x[0] === 't' && x[1] === COMMERCE_TAG))
+
+  // Un particular nunca publica más que la zona de ~5 km, aunque le llegue un punto exacto.
+  const particular = buildTransaccion({ ...venta, geohash: exact }, PK1)
+  assert.deepEqual(g(particular), ['ezjmg', 'ezjm', 'ezj'])
+  assert.ok(!particular.unsignedEvent.tags.some(x => x[1] === COMMERCE_TAG))
+
+  // Un punto de venta sin ubicación exacta no se publica.
+  assert.equal(buildTransaccion({ ...venta, geohash: 'ezjmg', commerce: true }, PK1).ok, false)
+  assert.equal(buildTransaccion({ ...venta, commerce: true }, PK1).ok, false)
+  assert.equal(buildTransaccion({ ...venta, geohash: 'ezjmga', commerce: true }, PK1).ok, false, 'geohash inválido')
+
+  const servicio = buildServicio({ title: 'Peluquería en el barrio', desc: 'Cortes de pelo, se paga en sats.', geohash: exact, commerce: true }, PK1)
+  assert.ok(servicio.unsignedEvent.tags.some(x => x[1] === COMMERCE_TAG))
+  // Un evento sí puede llevar el punto exacto (el local donde se celebra).
+  const ev = buildEvento({ title: 'Meetup en el bar', desc: 'Quedada mensual para hablar de Bitcoin.', allDay: true, startDate: '2099-05-01', geohash: exact }, PK1)
+  assert.equal(g(ev)[0], exact)
+})

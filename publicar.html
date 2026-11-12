@@ -26,8 +26,8 @@
   <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/fonts.css?v=68">
-  <link rel="stylesheet" href="css/publicar.css?v=68">
+  <link rel="stylesheet" href="css/fonts.css?v=69">
+  <link rel="stylesheet" href="css/publicar.css?v=69">
 </head>
 <body>
 
@@ -224,6 +224,24 @@
         placeholder="@usuario, correo o npub (sin enlaces)" autocomplete="off">
       <div class="f-error" id="err-s-contact"></div>
     </div>
+    <div class="field-group geo-field">
+      <label class="field-label" id="lbl-s-geo">Ubicación en el mapa (opcional)</label>
+      <label class="negociar-label">
+        <input type="checkbox" id="chk-s-geo-exact">
+        Soy un comercio o punto de venta: publicar la ubicación exacta (para llegar con el GPS)
+      </label>
+      <div class="price-row" role="group" aria-labelledby="lbl-s-geo">
+        <button type="button" class="btn-secondary" id="btn-s-geo">📍 Usar mi ubicación</button>
+        <button type="button" class="btn-secondary hidden" id="btn-s-geo-clear">Quitar</button>
+      </div>
+      <input type="text" id="s-geo-coords" maxlength="300" autocomplete="off" inputmode="text"
+        aria-label="Coordenadas o enlace de Google Maps"
+        placeholder="o pega coordenadas (40.4168, -3.7038) o un enlace de Google Maps">
+      <input type="hidden" id="s-geohash">
+      <div class="f-error" id="err-s-geo-coords"></div>
+      <p class="id-hint" id="s-geo-status" aria-live="polite"></p>
+      <div class="img-hint">ℹ️ Sin marcar, solo se publica una zona de unos 5 km, nunca tu dirección. El anuncio sale en el mapa de PlazaP2P y en apps que buscan por cercanía.</div>
+    </div>
     <div class="field-group">
       <label class="field-label" id="lbl-s-duracion">Visible durante</label>
       <div class="pills pills-duracion" id="pills-s-duracion" role="group" aria-labelledby="lbl-s-duracion">
@@ -288,15 +306,23 @@
         placeholder="p.ej. Bar Satoshi, Madrid" autocomplete="off">
     </div>
 
-    <div class="field-group">
-      <label class="field-label" id="lbl-e-geo">Zona para buscadores (opcional)</label>
+    <div class="field-group geo-field">
+      <label class="field-label" id="lbl-e-geo">Ubicación en el mapa (opcional)</label>
+      <label class="negociar-label">
+        <input type="checkbox" id="chk-e-geo-exact">
+        Ubicación exacta (el local o la plaza donde se celebra)
+      </label>
       <div class="price-row" role="group" aria-labelledby="lbl-e-geo">
-        <button type="button" class="btn-secondary" id="btn-e-geo">📍 Usar mi ubicación aproximada</button>
+        <button type="button" class="btn-secondary" id="btn-e-geo">📍 Usar mi ubicación</button>
         <button type="button" class="btn-secondary hidden" id="btn-e-geo-clear">Quitar</button>
       </div>
+      <input type="text" id="e-geo-coords" maxlength="300" autocomplete="off" inputmode="text"
+        aria-label="Coordenadas o enlace de Google Maps"
+        placeholder="o pega coordenadas (40.4168, -3.7038) o un enlace de Google Maps">
       <input type="hidden" id="e-geohash">
+      <div class="f-error" id="err-e-geo-coords"></div>
       <p class="id-hint" id="e-geo-status" aria-live="polite"></p>
-      <div class="img-hint">ℹ️ Úsalo si estás en el sitio del evento o cerca. Solo se guarda una zona de unos 5 km, no tu dirección, para que el evento salga en apps de quedadas por cercanía.</div>
+      <div class="img-hint">ℹ️ Sin marcar, solo se publica una zona de unos 5 km. Úsalo si estás en el sitio o pega sus coordenadas. Sale en el mapa y en apps de quedadas por cercanía.</div>
     </div>
 
     <div class="field-group">
@@ -530,6 +556,24 @@
       <input type="text" id="tx-contact" maxlength="200"
         placeholder="@usuario, correo o npub (sin enlaces)" autocomplete="off">
       <div class="f-error" id="err-tx-contact"></div>
+    </div>
+    <div class="field-group geo-field">
+      <label class="field-label" id="lbl-tx-geo">Ubicación en el mapa (opcional)</label>
+      <label class="negociar-label">
+        <input type="checkbox" id="chk-tx-geo-exact">
+        Soy un comercio o punto de venta: publicar la ubicación exacta (para llegar con el GPS)
+      </label>
+      <div class="price-row" role="group" aria-labelledby="lbl-tx-geo">
+        <button type="button" class="btn-secondary" id="btn-tx-geo">📍 Usar mi ubicación</button>
+        <button type="button" class="btn-secondary hidden" id="btn-tx-geo-clear">Quitar</button>
+      </div>
+      <input type="text" id="tx-geo-coords" maxlength="300" autocomplete="off" inputmode="text"
+        aria-label="Coordenadas o enlace de Google Maps"
+        placeholder="o pega coordenadas (40.4168, -3.7038) o un enlace de Google Maps">
+      <input type="hidden" id="tx-geohash">
+      <div class="f-error" id="err-tx-geo-coords"></div>
+      <p class="id-hint" id="tx-geo-status" aria-live="polite"></p>
+      <div class="img-hint">ℹ️ Sin marcar, solo se publica una zona de unos 5 km, nunca tu dirección. El anuncio sale en el mapa de PlazaP2P y en apps que buscan por cercanía.</div>
     </div>
     <div class="field-group">
       <label class="field-label" id="lbl-tx-duracion">Visible durante</label>
@@ -832,6 +876,6 @@
   </button>
 </nav>
 
-<script type="module" src="js/publicar-app.js?v=68"></script>
+<script type="module" src="js/publicar-app.js?v=69"></script>
 </body>
 </html>

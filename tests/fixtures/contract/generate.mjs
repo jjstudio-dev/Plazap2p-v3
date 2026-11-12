@@ -47,6 +47,9 @@ export const CASES = [
   ['aviso en el muro de una venta', 'avisoMuro', { kind: 30402, dTag: 'plazap2p-app-1-abcd', naddr: 'naddr1qqtest', title: 'Vendo bicicleta', price: '120.50', currency: 'EUR' }],
   ['aviso en el muro de un evento', 'avisoMuro', { kind: 31923, dTag: 'plazap2p-app-2-ef01', naddr: 'naddr1qqevento', title: 'Meetup Bitcoin' }],
   ['retirada', 'retirada', { kind: 30402, dTag: 'plazap2p-app-1-abcd', eventId: 'c'.repeat(64) }],
+  ['venta de un punto de venta con ubicación exacta', 'transaccion', { tipoTag: 'plazap2p-venta', title: 'Vendo café', desc: DESC, price: '5', currency: 'EUR', geohash: 'ezjmgu4p6', commerce: true }],
+  ['servicio de particular con punto exacto (se recorta a zona)', 'servicio', { title: 'Clases de guitarra', desc: DESC, geohash: 'ezjmgu4p6' }],
+  ['evento con ubicación exacta', 'evento', { title: 'Meetup en el bar', desc: DESC, allDay: true, startDate: '2099-07-01', geohash: 'ezjmgu4p6' }],
 ]
 
 const BUILDERS = {

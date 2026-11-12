@@ -1343,6 +1343,257 @@
         "content": "Anuncio retirado por el autor (PlazaP2P)",
         "category": null
       }
+    },
+    {
+      "name": "venta de un punto de venta con ubicación exacta",
+      "builder": "transaccion",
+      "input": {
+        "tipoTag": "plazap2p-venta",
+        "title": "Vendo café",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario.",
+        "price": "5",
+        "currency": "EUR",
+        "geohash": "ezjmgu4p6",
+        "commerce": true
+      },
+      "expected": {
+        "kind": 30402,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Vendo café"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-venta"
+          ],
+          [
+            "price",
+            "5",
+            "EUR"
+          ],
+          [
+            "type",
+            "simple",
+            "physical"
+          ],
+          [
+            "t",
+            "plazap2p-comercio"
+          ],
+          [
+            "g",
+            "ezjmgu4p6"
+          ],
+          [
+            "g",
+            "ezjmgu4p"
+          ],
+          [
+            "g",
+            "ezjmgu4"
+          ],
+          [
+            "g",
+            "ezjmgu"
+          ],
+          [
+            "g",
+            "ezjmg"
+          ],
+          [
+            "g",
+            "ezjm"
+          ],
+          [
+            "g",
+            "ezj"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ],
+          [
+            "expiration",
+            "<ahora+90d>"
+          ]
+        ],
+        "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📦 Venta publicado vía PlazaP2P\nPrecio: 5 EUR\n⚠️ Verifica la reputación antes de operar",
+        "category": "venta"
+      }
+    },
+    {
+      "name": "servicio de particular con punto exacto (se recorta a zona)",
+      "builder": "servicio",
+      "input": {
+        "title": "Clases de guitarra",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario.",
+        "geohash": "ezjmgu4p6"
+      },
+      "expected": {
+        "kind": 30402,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Clases de guitarra"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-servicio"
+          ],
+          [
+            "service_type",
+            "otros"
+          ],
+          [
+            "g",
+            "ezjmg"
+          ],
+          [
+            "g",
+            "ezjm"
+          ],
+          [
+            "g",
+            "ezj"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ],
+          [
+            "expiration",
+            "<ahora+90d>"
+          ]
+        ],
+        "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📢 Publicado vía PlazaP2P",
+        "category": "servicio"
+      }
+    },
+    {
+      "name": "evento con ubicación exacta",
+      "builder": "evento",
+      "input": {
+        "title": "Meetup en el bar",
+        "desc": "Descripción suficientemente larga para pasar la validación del formulario.",
+        "allDay": true,
+        "startDate": "2099-07-01",
+        "geohash": "ezjmgu4p6"
+      },
+      "expected": {
+        "kind": 31922,
+        "tags": [
+          [
+            "d",
+            "<d>"
+          ],
+          [
+            "published_at",
+            "<ahora>"
+          ],
+          [
+            "title",
+            "Meetup en el bar"
+          ],
+          [
+            "summary",
+            "Descripción suficientemente larga para pasar la validación del formulario."
+          ],
+          [
+            "t",
+            "plazap2p"
+          ],
+          [
+            "t",
+            "plazap2p-evento"
+          ],
+          [
+            "start",
+            "2099-07-01"
+          ],
+          [
+            "g",
+            "ezjmgu4p6"
+          ],
+          [
+            "g",
+            "ezjmgu4p"
+          ],
+          [
+            "g",
+            "ezjmgu4"
+          ],
+          [
+            "g",
+            "ezjmgu"
+          ],
+          [
+            "g",
+            "ezjmg"
+          ],
+          [
+            "g",
+            "ezjm"
+          ],
+          [
+            "g",
+            "ezj"
+          ],
+          [
+            "client",
+            "PlazaP2P App",
+            "https://jjstudio-dev.github.io/Plazap2p-v3/"
+          ],
+          [
+            "status",
+            "active"
+          ]
+        ],
+        "content": "Descripción suficientemente larga para pasar la validación del formulario.\n\n---\n📢 Publicado vía PlazaP2P",
+        "category": null
+      }
     }
   ]
 }
