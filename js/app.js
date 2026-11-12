@@ -7,7 +7,7 @@ import { parseAnuncioHash, anuncioRoute, routeForTab } from './router.js';
 import { isBlocked, blockPubkey, unblockPubkey, listBlocked, exportBlocked, importBlocked } from './moderation.js';
 import { trustLevel, compareSellersByRating } from './trust-signals.js';
 import { fetchZapReceipts } from './zaps.js';
-import { externalMarketsFrom, marketTags, marketOf, externalCategory, normalizeCurrency, marketListingUrl, proxiedSeller } from './external-markets.js';
+import { externalMarketsFrom, marketTags, marketOf, externalCategory, normalizeCurrency, marketListingUrl, isMarketSigned } from './external-markets.js';
 import { isFavorite, toggleFavorite } from './favorites.js';
 import { channelTagFilters, isExpired, expirationTs, isItemExpired, parseCalendarDate, calDate, detectCategory, detectPayment, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts, safeHref, allDayLastDay } from './listing-utils.js';
 
@@ -16,7 +16,7 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '65';
+const ASSET_VERSION  = '66';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -436,7 +436,7 @@ function parseListing(event) {
     id: market.id, label: market.label,
     url: marketListingUrl(event, market),
     // Firmado por la cuenta del mercado en nombre de otro vendedor (anuncios de Telegram).
-    proxied: !!proxiedSeller(event),
+    proxied: isMarketSigned(event, market),
   } : null;
   return {
     kind: 30402, title, summary, location, category, payment, price, currency, publishedAt, status, naddr, npub,

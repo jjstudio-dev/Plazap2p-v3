@@ -5,7 +5,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   DEFAULT_EXTERNAL_MARKETS, externalMarketsFrom, marketTags, marketOf, externalCategory,
-  normalizeCurrency, marketListingUrl, proxiedSeller, isMarketEvent, marketRelays, MAX_MARKET_RELAYS,
+  normalizeCurrency, marketListingUrl, proxiedSeller, isMarketSigned, isMarketEvent, marketRelays, MAX_MARKET_RELAYS,
 } from '../js/external-markets.js'
 
 const MARKET_PK = '0'.repeat(7) + '2' + 'a'.repeat(56)
@@ -92,6 +92,18 @@ test('vendedor representado: solo cuando firma la cuenta del mercado', () => {
   assert.equal(proxiedSeller(webListing), null)
   const selfTagged = { ...webListing, tags: [...webListing.tags, ['p', SELLER_PK, '', 'seller']] }
   assert.equal(proxiedSeller(selfTagged), null)
+})
+
+test('firmado por la cuenta del mercado: con p seller o con su etiqueta r (los de Telegram)', () => {
+  const [m] = externalMarketsFrom({})
+  assert.ok(isMarketSigned(telegramListing, m))
+  // 48 de los anuncios reales de Telegram no llevan `p … seller`, solo la `r`.
+  const sinP = { ...telegramListing, tags: telegramListing.tags.filter(t => t[0] !== 'p') }
+  assert.ok(isMarketSigned(sinP, m))
+  // El del vendedor desde la web solo trae el enlace en el texto.
+  assert.ok(!isMarketSigned(webListing, m))
+  const rAjena = { ...webListing, tags: [...webListing.tags, ['r', 'https://otra.example/x']] }
+  assert.ok(!isMarketSigned(rAjena, m))
 })
 
 test('a los relays del mercado van los anuncios y sus borrados, nada más', () => {

@@ -126,6 +126,21 @@ export function proxiedSeller(event) {
   return typeof pk === 'string' && pk !== event.pubkey ? pk : null
 }
 
+/**
+ * ¿Lo firma la cuenta del mercado en nombre de otro vendedor? Mercasats lo hace
+ * con los anuncios que llegan de Telegram (buildMarketplaceEvent): llevan la
+ * etiqueta `r` con el enlace a su web, y a veces `p … seller`. Los que firma
+ * el vendedor desde la web de Mercasats no llevan ninguna de las dos.
+ */
+export function isMarketSigned(event, market) {
+  if (proxiedSeller(event)) return true
+  if (!market?.url) return false
+  return (event?.tags || []).some(t => {
+    if (!Array.isArray(t) || t[0] !== 'r') return false
+    try { return new URL(t[1]).origin === market.url } catch { return false }
+  })
+}
+
 /** ¿Hay que mandar también este evento a los relays de los mercados externos? */
 export function isMarketEvent(event) {
   if (!event) return false
