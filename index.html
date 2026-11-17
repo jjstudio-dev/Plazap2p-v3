@@ -35,8 +35,8 @@
   <meta name="twitter:title" content="PlazaP2P — Economía Circular P2P en Nostr" />
   <meta name="twitter:description" content="Mercado, comunidad y recursos Bitcoin sobre Nostr. Publicaciones abiertas, sin registro y sin intermediarios." />
   <link rel="canonical" href="https://jjstudio-dev.github.io/Plazap2p-v3/" />
-  <link rel="stylesheet" href="css/fonts.css?v=77" />
-  <link rel="stylesheet" href="css/style.css?v=77" />
+  <link rel="stylesheet" href="css/fonts.css?v=78" />
+  <link rel="stylesheet" href="css/style.css?v=78" />
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg" />
@@ -901,18 +901,19 @@
 
     <div class="about-block">
       <h2 class="subsection-title">Descarga</h2>
-      <p><span class="guia-tipo-badge badge-beta">Beta</span> Versión 1.1.0 (octubre de 2026). Sustituye a la 1.0.2 y se instala encima, sin perder tus datos. Es un APK de instalación directa: no está en Google Play. El código fuente todavía no se ha publicado.</p>
-      <p>Es una beta avanzada: más estable y más segura que la 1.0.2, pero todavía puede tener fallos y algunas partes cambiarán. Si encuentras uno, avísanos por GitHub Issue (enlace abajo).</p>
+      <p><span class="guia-tipo-badge badge-beta">Beta</span> Versión 1.2.0 (noviembre de 2026). Sustituye a la 1.1.0 y se instala encima, sin perder tus datos. Es un APK de instalación directa: no está en Google Play. El código fuente todavía no se ha publicado.</p>
+      <p>Es una beta avanzada: trae el mapa, las comunidades y el perfil del vendedor de la web, pero todavía puede tener fallos y algunas partes cambiarán. Si encuentras uno, avísanos por GitHub Issue (enlace abajo).</p>
       <ul class="about-list">
-        <li><strong>Tus datos, cifrados en el teléfono</strong> y separados por identidad: al cambiar de cuenta no ves los de la otra (la app se reinicia sola para cambiarlos; es normal).</li>
-        <li><strong>Menos saltos a Amber:</strong> con el permiso «siempre», firma y descifra sin abrirse cada vez, y la app comprueba que el firmador es el Amber auténtico.</li>
-        <li><strong>Mensajes privados</strong> más rápidos de leer y entregados en los relays de mensajes de cada contacto.</li>
-        <li><strong>Huella o PIN para pagar</strong> desde la wallet conectada.</li>
-        <li><strong>Reputación por tu red de confianza:</strong> la nota solo cuenta a quien sigues tú o sigue PlazaP2P, y solo se enseña con 3 o más valoraciones.</li>
+        <li><strong>Mapa</strong> con capas de anuncios, eventos y comunidades, y botón «Cómo llegar». Los puntos de venta muestran su dirección exacta; los particulares, solo una zona aproximada.</li>
+        <li><strong>Comunidades locales de España</strong> (2140meetups y BTC Map) con sus fotos.</li>
+        <li><strong>Perfil del vendedor:</strong> su perfil, sus anuncios activos y vendidos, y su reputación.</li>
+        <li><strong>Tú decides cuánto dura un anuncio</strong> y lo renuevas desde «Mis anuncios», ahora también en Más y en Perfil.</li>
+        <li><strong>Más alcance:</strong> lo que publicas llega también a tus propios relays, puedes anunciarlo en tu muro y ves los anuncios de Mercasats en el Mercado.</li>
+        <li><strong>Más cómoda:</strong> el teclado ya no tapa los campos, Atrás cierra la conversación abierta y nada se pierde al girar el teléfono.</li>
       </ul>
-      <a class="btn-primary" id="apk-download" href="app/PlazaP2P-3.1-Android-App-v1.1.0.apk" download>📱 Descargar APK · 1.1.0 · 23,1 MB</a>
+      <a class="btn-primary" id="apk-download" href="app/PlazaP2P-3.1-Android-App-v1.2.0.apk" download>📱 Descargar APK · 1.2.0 · 22,2 MB</a>
       <p class="about-note">Antes de instalarlo, comprueba que el archivo descargado es el original. Su huella SHA-256 debe ser exactamente:<br>
-        <code id="apk-sha256" style="word-break:break-all">0248EFB2388697A12F62920B548F852AD033843D5AE1A66E402E9CD01A1EFF2E</code><br>
+        <code id="apk-sha256" style="word-break:break-all">1AC269BC47F7D9979467C4500B4F868C0333B50102231E774679D2330880AC0D</code><br>
         (en Android, con cualquier gestor de archivos que muestre la suma SHA-256; en un ordenador, <code>sha256sum</code> o <code>Get-FileHash</code>).</p>
     </div>
 
@@ -1522,15 +1523,15 @@
 <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <!-- ESM module — app.js imports nostr.js and relay-pool.js -->
-<script type="module" src="js/app.js?v=77"></script>
+<script type="module" src="js/app.js?v=78"></script>
 <script type="module">
-  import { initBtcStats }      from './js/btc-stats.js?v=77';
-  import { initPriceChart }    from './js/btc-chart.js?v=77';
-  import { initConverter }     from './js/converter.js?v=77';
-  import { initMiniConverter } from './js/mini-converter.js?v=77';
-  import { initBtcMarket }     from './js/btc-market.js?v=77';
-  import { initAppShell }      from './js/app-shell.js?v=77';
-  import { initRouter }        from './js/router.js?v=77';
+  import { initBtcStats }      from './js/btc-stats.js?v=78';
+  import { initPriceChart }    from './js/btc-chart.js?v=78';
+  import { initConverter }     from './js/converter.js?v=78';
+  import { initMiniConverter } from './js/mini-converter.js?v=78';
+  import { initBtcMarket }     from './js/btc-market.js?v=78';
+  import { initAppShell }      from './js/app-shell.js?v=78';
+  import { initRouter }        from './js/router.js?v=78';
 
   initAppShell();
   initRouter();

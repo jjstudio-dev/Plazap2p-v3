@@ -94,7 +94,7 @@ Presentación breve — el detalle técnico se publicará junto con el código:
 | [Amber](https://github.com/greenart7c3/Amber) | Firmador NIP-55 — necesaria | `github.com/greenart7c3/Amber` | `com.greenart7c3.nostrsigner` |
 | [Minibits Wallet](https://minibits.cash) | Wallet Lightning con NWC — recomendada | `minibits.cash` | `com.minibits_wallet` |
 
-Descarga: APK 1.1.0 (beta avanzada) en la pestaña [📱 App Android](https://jjstudio-dev.github.io/Plazap2p-v3/?tab=app-android) de esta web y en [`app/`](app/), junto a su suma SHA-256.
+Descarga: APK 1.2.0 (beta avanzada) en la pestaña [📱 App Android](https://jjstudio-dev.github.io/Plazap2p-v3/?tab=app-android) de esta web y en [`app/`](app/), junto a su suma SHA-256.
 
 ---
 
@@ -173,7 +173,7 @@ plazap2p-v3/
 │   ├── herramientas.json   # 34+ herramientas Bitcoin
 │   └── multimedia.json
 ├── icons/
-├── app/                    # APK de PlazaP2P Android 1.1.0 + su SHA-256, e historia bot → TWA → app nativa (ver app/README.md)
+├── app/                    # APK de PlazaP2P Android 1.2.0 + su SHA-256, e historia bot → TWA → app nativa (ver app/README.md)
 └── .github/
     ├── workflows/app.yml   # CI: sintaxis, JSON, tests, enlaces, versión de assets; publica en Pages solo si todo pasa
     └── ISSUE_TEMPLATE/     # plantillas para contribuciones al JSON
@@ -182,7 +182,7 @@ plazap2p-v3/
         └── multimedia.yml
 ```
 
-`app/` no forma parte de la app web activa: contiene el APK publicado de PlazaP2P Android (1.1.0) con su suma SHA-256, y el registro histórico bot → wrapper TWA → app nativa. Ver [`app/README.md`](app/README.md) para el detalle, y la sección [V3.1 — Del bot a la app nativa](#v31--del-bot-a-la-app-nativa) más arriba para el resumen.
+`app/` no forma parte de la app web activa: contiene el APK publicado de PlazaP2P Android (1.2.0) con su suma SHA-256, y el registro histórico bot → wrapper TWA → app nativa. Ver [`app/README.md`](app/README.md) para el detalle, y la sección [V3.1 — Del bot a la app nativa](#v31--del-bot-a-la-app-nativa) más arriba para el resumen.
 
 ---
 
