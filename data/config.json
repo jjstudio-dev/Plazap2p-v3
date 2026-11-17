@@ -38,5 +38,16 @@
   "external_markets": [
     { "id": "mercasats", "tag": "mercasats", "label": "Mercasats", "url": "https://mercasats.kilombino.com",
       "relays": ["wss://relay.kilombino.com", "wss://relay.minibolt.info"] }
+  ],
+
+  "hidden_pubkeys": [
+    "2849724649464fd636d0e63d2699d669c174832acd9641a61107c581e8b33397",
+    "f7c315fa566ac8b5bf139c07249a4ceab7617e322052e6e9a10844a4f9fd4e6c",
+    "afa2648e770765cc906484219044c6b6d3a32c7f566b1c07c363dec70d2ba764",
+    "0da04f257eefbb5c16f0958783e5afc54c1239418620b8fc4d370198ff664e48",
+    "d0e2138b57b86e4da5e8514e47e68ce8d75b21362ca61cb9138c68bd64b4b63a",
+    "b7c2cea12179a8901928083bb0eb0e8e7983cf7151d9d0f6cd4c2c8c4f533112",
+    "2642e0941c470d559917c1cfb8fd4727b7f8b8a0cfc8f1bb9c1334b5291d7407",
+    "b77b54a41872e110b1371f4f69c53397f4ec7a76cfcbc54e63814bf9522e5e43"
   ]
 }

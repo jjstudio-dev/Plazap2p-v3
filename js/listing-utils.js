@@ -17,6 +17,20 @@ export function channelTagFilters(ch) {
   return list.length ? [...new Set(list)] : null;
 }
 
+/**
+ * Autores que el mantenedor oculta para todo el mundo (`config.json → hidden_pubkeys`):
+ * claves de prueba cuyos eventos ya no se pueden borrar de los relays porque la clave
+ * se perdió. Solo afecta a lo que se pinta; el evento sigue en los relays.
+ * Entradas que no son una pubkey hex de 64 caracteres se ignoran.
+ */
+export function hiddenPubkeySet(cfg) {
+  const raw = Array.isArray(cfg?.hidden_pubkeys) ? cfg.hidden_pubkeys : []
+  return new Set(raw
+    .filter(h => typeof h === 'string')
+    .map(h => h.trim().toLowerCase())
+    .filter(h => /^[0-9a-f]{64}$/.test(h)))
+}
+
 // Tag opcional ['expiration', '<unix segs>']. Timestamp inválido (no
 // numérico, negativo) se ignora en vez de tratarse como "ya caducado" —
 // un tag malformado no debe ocultar un anuncio válido.

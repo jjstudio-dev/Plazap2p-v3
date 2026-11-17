@@ -3,7 +3,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { detectCategory, detectPayment, parseCalendarDate, calDate, isExpired, expirationTs, isItemExpired, channelTagFilters, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts, safeHref } from '../js/listing-utils.js'
+import { detectCategory, detectPayment, parseCalendarDate, calDate, isExpired, expirationTs, isItemExpired, hiddenPubkeySet, channelTagFilters, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts, safeHref } from '../js/listing-utils.js'
 import { hexToNpub, hexToNote, encodeNaddr } from '../js/nostr.js'
 import { buildTransaccion, buildComunidad, buildHerramienta, buildServicio } from '../js/publish-builders.js'
 import { PK1 } from './fixtures/events.mjs'
@@ -231,4 +231,24 @@ test('safeHref: enlaces externos, identificadores Nostr y esquemas peligrosos', 
   assert.equal(safeHref('npub1abc', SITE), 'https://njump.me/npub1abc')
   for (const bad of ['javascript:alert(1)', 'data:text/html,x', 'blob:x', 'nostr:npub1x', '', null, undefined, 'http://['])
     assert.equal(safeHref(bad, SITE), '', String(bad))
+})
+
+// ── Ocultos por el mantenedor (config.json → hidden_pubkeys) ─────────────
+test('hiddenPubkeySet: normaliza a minúsculas y descarta lo que no es una pubkey hex', () => {
+  const ok = 'a'.repeat(64)
+  const set = hiddenPubkeySet({ hidden_pubkeys: [ok, ' ' + 'B'.repeat(64) + ' ', 'npub1xyz', 'a'.repeat(63), 42, null] })
+  assert.deepEqual([...set].sort(), [ok, 'b'.repeat(64)])
+})
+
+test('hiddenPubkeySet: sin campo o con un valor que no es lista no oculta nada', () => {
+  assert.equal(hiddenPubkeySet({}).size, 0)
+  assert.equal(hiddenPubkeySet(null).size, 0)
+  assert.equal(hiddenPubkeySet({ hidden_pubkeys: 'a'.repeat(64) }).size, 0)
+})
+
+test('config.json: todas las claves ocultas son válidas y no incluyen al mantenedor', () => {
+  const cfg = JSON.parse(readFileSync(new URL('../data/config.json', import.meta.url), 'utf8'))
+  const set = hiddenPubkeySet(cfg)
+  assert.equal(set.size, cfg.hidden_pubkeys.length)
+  assert.ok(!set.has(cfg.maintainer_pubkey))
 })

@@ -14,14 +14,14 @@ import { communityPoints, listingPoints, eventPoints, COMMERCE_TAG } from './map
 import { mostPreciseGeohash } from './geohash.js';
 import { externalMarketsFrom, marketTags, marketOf, externalCategory, normalizeCurrency, marketListingUrl, isMarketSigned } from './external-markets.js';
 import { isFavorite, toggleFavorite } from './favorites.js';
-import { channelTagFilters, isExpired, expirationTs, isItemExpired, parseCalendarDate, calDate, detectCategory, detectPayment, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts, safeHref, allDayLastDay } from './listing-utils.js';
+import { channelTagFilters, isExpired, expirationTs, isItemExpired, hiddenPubkeySet, parseCalendarDate, calDate, detectCategory, detectPayment, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts, safeHref, allDayLastDay } from './listing-utils.js';
 
 // ── Constants ──────────────────────────────────────────────────
 const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '78';
+const ASSET_VERSION  = '79';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -40,6 +40,7 @@ let intercambioFiat    = 'EUR';   // selected fiat currency filter
 let trustedMostroHexPubkeys = []; // resolved at init from config.intercambio.trustedMostroInstances
 
 // Ratings state
+let hiddenPubkeys = new Set(); // ocultos por el mantenedor (config.json → hidden_pubkeys)
 let liveRatings  = {};  // { [pubkeyHex]: { avg, n, aspects, comments } | null } — kind 1985 live (null = consultado, sin datos)
 let liveRatingsFetching = false;
 
@@ -118,6 +119,7 @@ function showInitError() {
 async function loadConfig() {
   // W-02: misma carga (URL versionada + config firmada + reserva) que publicar.html.
   config = await loadServedConfig({ version: ASSET_VERSION });
+  hiddenPubkeys = hiddenPubkeySet(config);
 }
 
 // PZ-F1-01: la configuración firmada (kind 30078 del mantenedor) sustituye a la servida. Los
@@ -127,6 +129,10 @@ async function applySignedConfig() {
     const signed = await fetchSignedConfig(pool);
     if (!signed) return;
     config = { ...config, ...signed, relays: config.relays, channels: config.channels };
+    if (Array.isArray(signed.hidden_pubkeys)) {
+      hiddenPubkeys = hiddenPubkeySet(config);
+      purgeBlocked();
+    }
     resolveIntercambioConfig();
     if (activeTab === 'intercambio') renderActiveChannel();
   } catch (err) {
@@ -212,7 +218,7 @@ function loadFromCache() {
 // Los items parseados no guardan todos la pubkey en hex (feed/artículos/
 // eventos solo llevan npub), así que se compara por ambas formas.
 function blockedIndex() {
-  const hexes = listBlocked();
+  const hexes = [...listBlocked(), ...hiddenPubkeys];
   return { hexes: new Set(hexes), npubs: new Set(hexes.map(hexToNpub)) };
 }
 
@@ -338,6 +344,8 @@ function addEvent(channelId, event) {
     // MOD-001: moderación LOCAL — el autor sigue publicando normalmente en
     // Nostr, esta app simplemente no le muestra su contenido EN ESTE navegador.
     if (isBlocked(event.pubkey)) return;
+    // Ocultos por el mantenedor para todo el mundo: claves de prueba sin borrar.
+    if (hiddenPubkeys.has(event.pubkey)) return;
 
     const key      = eventKey(event);
     unconfirmed[channelId]?.delete(key);   // un relay lo sigue sirviendo: no es un resto de la caché
@@ -696,7 +704,7 @@ async function sellerListingsFromRelays(hex) {
   await collectUntilEose(pool, [{ kinds: [30402], authors: [hex], limit: 100 }], {
     prefix: 'seller', timeoutMs: 6000,
     onEvent(ev) {
-      if (ev.kind !== 30402 || ev.pubkey !== hex || isBlocked(ev.pubkey)) return;
+      if (ev.kind !== 30402 || ev.pubkey !== hex || isBlocked(ev.pubkey) || hiddenPubkeys.has(ev.pubkey)) return;
       const parsed = parseListing(ev);
       if (parsed) out.push(parsed);
     },
