@@ -2116,8 +2116,9 @@ function syncNegociarState() {
  * MED-001 — sube la imagen elegida a Blossom y rellena el campo de URL con
  * el resultado. Solo con NIP-07: Amber necesita un salto de página con
  * estado pendiente (igual que la firma del anuncio) que este paso
- * intermedio no implementa todavía — con Amber el input queda deshabilitado
- * y el campo de URL manual sigue siendo la vía (no se ha quitado).
+ * intermedio no implementa todavía — con Amber, al elegir una foto se
+ * explica a la vista que hace falta la extensión o la app, y el campo de URL
+ * manual sigue siendo la vía (no se ha quitado).
  */
 function setupImageUpload(prefix) {
   const fileInput = $(`${prefix}-image-file`)
@@ -2125,15 +2126,24 @@ function setupImageUpload(prefix) {
   const status = $(`${prefix}-image-status`)
   if (!fileInput || !urlInput || !status) return
 
-  if (signer.detectSigner() !== 'nip07') {
-    fileInput.disabled = true
-    fileInput.title = 'Subida directa solo disponible con extensión Nostr (NIP-07) — pega una URL abajo'
-    return
-  }
-
+  // El firmador se mira al elegir la foto, no al cargar la página: algunas
+  // extensiones (nos2x, Alby en ciertos navegadores) crean window.nostr un
+  // poco después, y desactivar el campo entonces lo dejaba inútil para siempre.
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files?.[0]
     if (!file) return
+    if (signer.detectSigner() !== 'nip07') {
+      fileInput.value = ''
+      status.className = 'img-upload-status err'
+      status.textContent = '❌ Subir fotos desde la web necesita una extensión Nostr (Alby, nos2x…). En el móvil usa la app PlazaP2P, o pega abajo el enlace de una imagen ya subida.'
+      return
+    }
+    if (!userPubkey) {
+      fileInput.value = ''
+      status.className = 'img-upload-status err'
+      status.textContent = '❌ Conecta tu identidad (arriba) antes de subir la foto.'
+      return
+    }
     status.className = 'img-upload-status'
     status.textContent = '⏳ Subiendo…'
     fileInput.disabled = true

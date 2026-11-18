@@ -21,6 +21,11 @@ export function parseProfileMetadata(event) {
     // lud06 (LNURL bech32 crudo) se acepta pero zaps.js hoy solo resuelve lud16.
     lud16: typeof meta.lud16 === 'string' && /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(meta.lud16) ? meta.lud16 : null,
     nip05: typeof meta.nip05 === 'string' ? meta.nip05 : null,
+    // Para «Perfil del vendedor»: descripción, portada y web. Texto que
+    // escribe el autor: quien lo pinte lo escapa.
+    about: typeof meta.about === 'string' && meta.about.trim() ? meta.about.trim().slice(0, 600) : null,
+    banner: typeof meta.banner === 'string' && /^https:\/\//i.test(meta.banner) ? meta.banner : null,
+    website: typeof meta.website === 'string' && /^https?:\/\/[^\s]+$/i.test(meta.website.trim()) ? meta.website.trim() : null,
     createdAt: event.created_at,
   }
 }

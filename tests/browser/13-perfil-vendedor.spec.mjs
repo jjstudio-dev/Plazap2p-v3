@@ -59,4 +59,32 @@ export const tests = [
       t.assert.deepEqual(t.appErrors(page), [])
     },
   },
+  {
+    name: 'Perfil del vendedor: descripción, portada, web y fotos (solas solo de servidores conocidos)',
+    async run(t) {
+      const server = await t.server()
+      const events = [
+        profile({ sk: SK1, meta: { name: 'Bebop', about: 'Vendo hardware.\nEnvíos a toda España.', banner: 'https://blossom.primal.net/portada.jpg', website: 'https://tienda.ejemplo.test' } }),
+        listing({ sk: SK1, d: 'f1', title: 'Con fotos', extraTags: [['image', 'https://blossom.primal.net/a.jpg'], ['image', 'https://otro.ejemplo.test/b.jpg']] }),
+      ]
+      const page = await t.open({ scenario: { events } })
+      await page.goto(server.origin + '/index.html')
+      // Registra cada <img> que se llega a crear (aunque luego falle la carga y se quite).
+      await page.evaluate(`window.__imgs = []; new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) [n, ...n.querySelectorAll('img')].forEach(i => i.tagName === 'IMG' && window.__imgs.push(i.getAttribute('src'))) }))).observe(document.body, { childList: true, subtree: true })`)
+      await page.waitFor(`document.getElementById('channel-mercado').textContent.includes('Con fotos')`)
+      await page.evaluate(`[...document.querySelectorAll('#channel-mercado .listing-card')].find(c => c.textContent.includes('Con fotos')).click()`)
+      await page.waitFor(`!document.getElementById('listing-modal').classList.contains('hidden')`)
+      t.assert.ok(await page.evaluate(`!!document.querySelector('#listing-modal .gallery-load')`), 'la foto de otro servidor espera a que se pida')
+      t.assert.ok(!(await page.evaluate('window.__imgs')).some(u => u.includes('otro.ejemplo.test')), 'sin pedirla, no se carga')
+      t.assert.ok((await page.evaluate('window.__imgs')).some(u => u.includes('blossom.primal.net/a.jpg')), 'la de un servidor conocido sí')
+      await page.evaluate(`document.querySelector('#listing-modal .gallery-load').click()`)
+      t.assert.ok((await page.evaluate('window.__imgs')).some(u => u.includes('otro.ejemplo.test/b.jpg')), 'al pedirla, se carga')
+      await page.evaluate(`[...document.querySelectorAll('#listing-modal button')].find(b => b.textContent.includes('Ver perfil del vendedor')).click()`)
+      await page.waitFor(`document.querySelector('#listing-modal .seller-profile-about')`, { timeout: 10000, label: 'descripción del perfil' })
+      t.assert.match(await page.text('#listing-modal .seller-profile-about'), /Vendo hardware\.\s+Envíos a toda España\./)
+      t.assert.ok(await page.evaluate(`!!document.querySelector('#listing-modal a[href="https://tienda.ejemplo.test"]')`), 'enlace a su web')
+      t.assert.ok((await page.evaluate('window.__imgs')).some(u => u.includes('portada.jpg')), 'portada de servidor conocido')
+      t.assert.deepEqual(t.appErrors(page), [])
+    },
+  },
 ]

@@ -42,3 +42,15 @@ test('parseProfileMetadata: campos ausentes quedan en null, no undefined', () =>
   assert.equal(meta.lud16, null)
   assert.equal(meta.picture, null)
 })
+
+test('parseProfileMetadata: descripción, portada y web (para «Perfil del vendedor»)', () => {
+  const meta = parseProfileMetadata(kind0(JSON.stringify({
+    about: '  Vendo hardware Bitcoin.\nEnvíos a toda España.  ', banner: 'https://blossom.primal.net/b.jpg', website: 'https://tienda.example',
+  })))
+  assert.equal(meta.about, 'Vendo hardware Bitcoin.\nEnvíos a toda España.')
+  assert.equal(meta.banner, 'https://blossom.primal.net/b.jpg')
+  assert.equal(meta.website, 'https://tienda.example')
+  const bad = parseProfileMetadata(kind0(JSON.stringify({ about: '   ', banner: 'http://x.example/b.jpg', website: 'javascript:alert(1)' })))
+  assert.deepEqual([bad.about, bad.banner, bad.website], [null, null, null])
+  assert.equal(parseProfileMetadata(kind0(JSON.stringify({ about: 'a'.repeat(5000) }))).about.length, 600)
+})

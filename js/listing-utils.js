@@ -264,7 +264,8 @@ export function reviveCachedItem(item) {
         && isStr(item.naddr) && RE_NADDR.test(item.naddr)
         && isStr(item.npub) && RE_NPUB.test(item.npub)
         && isStr(item.pubkeyHex) && RE_HEX64.test(item.pubkeyHex)
-        && (item.expiresAt == null || isTs(item.expiresAt))) ? item : null;
+        && (item.expiresAt == null || isTs(item.expiresAt))
+        && (item.images == null || isStrList(item.images))) ? item : null;
 
     case 30023:
       return (isStr(item.title) && isEscaped(item.summary)
@@ -325,4 +326,40 @@ export function safeHref(url, baseHref) {
     }
     return url
   } catch { return '' }
+}
+
+// ── Fotos de los anuncios (NIP-99: tags ['image', url, 'ancho x alto']) ──
+// Misma regla que la app Android (ImageLoadingPolicy.kt, modo por defecto):
+// las fotos de servidores Nostr conocidos se cargan solas; las de cualquier
+// otro servidor esperan a que el usuario las pida, porque pedirlas le enseña
+// su IP a quien eligió ese servidor (que puede ser quien publica).
+export const KNOWN_IMAGE_HOSTS = new Set([
+  'blossom.primal.net', 'primal.b-cdn.net', 'blossom.band',
+  'nostr.build', 'image.nostr.build', 'cdn.satellite.earth',
+])
+
+/** Hasta `max` direcciones https distintas de los tags 'image', en su orden. */
+export function listingImages(tags, max = 6) {
+  const out = []
+  for (const t of Array.isArray(tags) ? tags : []) {
+    if (!Array.isArray(t) || t[0] !== 'image' || typeof t[1] !== 'string') continue
+    const url = t[1].trim()
+    if (!/^https:\/\/[^\s"'<>]+$/i.test(url) || out.includes(url)) continue
+    out.push(url)
+    if (out.length >= max) break
+  }
+  return out
+}
+
+/**
+ * ¿Se puede cargar sola? Solo https y de un servidor de la lista, o de uno de
+ * `extraHosts` (el servidor del mercado externo del que viene el anuncio:
+ * es del mercado, no lo elige cada vendedor).
+ */
+export function isKnownImageHost(url, extraHosts = []) {
+  try {
+    const u = new URL(String(url))
+    const host = u.hostname.toLowerCase()
+    return u.protocol === 'https:' && (KNOWN_IMAGE_HOSTS.has(host) || extraHosts.includes(host))
+  } catch { return false }
 }

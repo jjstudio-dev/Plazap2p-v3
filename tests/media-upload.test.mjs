@@ -94,3 +94,61 @@ test('uploadImage: si la imagen no se puede redibujar, no se sube nada', async (
   await assert.rejects(uploadImage(file, PK1, async u => u, 'https://blossom.test', { reencode: async () => { throw new Error('no se pudo procesar la imagen') } }))
   assert.equal(fetched, 0)
 })
+
+// 2026-11-18 — requisitos de subida alineados con la app Android.
+test('validateFile: foto grande de móvil vale (se reduce), GIF grande no', async () => {
+  const { MAX_GIF_BYTES } = await import('../js/media-upload.js')
+  assert.equal(validateFile({ size: 25 * 1024 * 1024, type: 'image/jpeg' }), null)
+  assert.ok(validateFile({ size: MAX_GIF_BYTES + 1, type: 'image/gif' })?.includes('GIF'))
+  assert.equal(validateFile({ size: MAX_GIF_BYTES, type: 'image/gif' }), null)
+})
+
+test('validateFile: HEIC sin tipo (Windows) se reconoce por la extensión', async () => {
+  const { fileType } = await import('../js/media-upload.js')
+  assert.equal(fileType({ type: '', name: 'IMG_0001.HEIC' }), 'image/heic')
+  assert.equal(validateFile({ size: 1000, type: '', name: 'IMG_0001.heic' }), null)
+  assert.ok(validateFile({ size: 1000, type: '', name: 'doc.pdf' })?.includes('no admitido'))
+})
+
+test('fitWithin: reduce al lado largo máximo sin deformar y nunca agranda', async () => {
+  const { fitWithin, MAX_DIMENSION } = await import('../js/media-upload.js')
+  assert.deepEqual(fitWithin(8000, 6000), { width: MAX_DIMENSION, height: 1200 })
+  assert.deepEqual(fitWithin(3000, 4000, 1600), { width: 1200, height: 1600 })
+  assert.deepEqual(fitWithin(800, 600), { width: 800, height: 600 })
+})
+
+test('BLOSSOM_SERVERS: sin nostr.build (su /upload no es Blossom)', async () => {
+  const { BLOSSOM_SERVERS } = await import('../js/media-upload.js')
+  assert.ok(!BLOSSOM_SERVERS.some(s => s.includes('nostr.build')))
+  assert.ok(BLOSSOM_SERVERS.length >= 2)
+})
+
+test('uploadImage: si el primer servidor falla, prueba el siguiente con la misma firma', async (t) => {
+  const { uploadImage } = await import('../js/media-upload.js')
+  const original = globalThis.fetch
+  t.after(() => { globalThis.fetch = original })
+  const tried = []
+  globalThis.fetch = async (url, init) => {
+    tried.push(url)
+    if (url.startsWith('https://caido.test')) return { ok: false, status: 503, json: async () => ({}), headers: { get: () => null } }
+    const sha256 = await sha256Hex(await init.body.arrayBuffer())
+    return { ok: true, json: async () => ({ url: 'https://bueno.test/f', sha256 }) }
+  }
+  let signs = 0
+  const sign = async u => { signs++; return { ...u, id: 'i', sig: 's' } }
+  const clean = new Blob(['px'], { type: 'image/jpeg' })
+  const url = await uploadImage(new Blob(['x'], { type: 'image/jpeg' }), PK1, sign, ['https://caido.test', 'https://bueno.test'], { reencode: async () => clean })
+  assert.equal(url, 'https://bueno.test/f')
+  assert.deepEqual(tried, ['https://caido.test/upload', 'https://bueno.test/upload'])
+  assert.equal(signs, 1)
+})
+
+test('uploadImage: sin identidad conectada no firma ni sube', async (t) => {
+  const { uploadImage } = await import('../js/media-upload.js')
+  const original = globalThis.fetch
+  t.after(() => { globalThis.fetch = original })
+  let fetched = 0
+  globalThis.fetch = async () => { fetched++ }
+  await assert.rejects(uploadImage(new Blob(['x'], { type: 'image/jpeg' }), null, async u => u, 'https://b.test', { reencode: async f => f }), /identidad/)
+  assert.equal(fetched, 0)
+})

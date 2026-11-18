@@ -14,14 +14,14 @@ import { communityPoints, listingPoints, eventPoints, COMMERCE_TAG } from './map
 import { mostPreciseGeohash } from './geohash.js';
 import { externalMarketsFrom, marketTags, marketOf, externalCategory, normalizeCurrency, marketListingUrl, isMarketSigned } from './external-markets.js';
 import { isFavorite, toggleFavorite } from './favorites.js';
-import { channelTagFilters, isExpired, expirationTs, isItemExpired, hiddenPubkeySet, parseCalendarDate, calDate, detectCategory, detectPayment, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts, safeHref, allDayLastDay } from './listing-utils.js';
+import { channelTagFilters, isExpired, expirationTs, isItemExpired, hiddenPubkeySet, parseCalendarDate, calDate, detectCategory, detectPayment, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts, safeHref, allDayLastDay, listingImages, isKnownImageHost } from './listing-utils.js';
 
 // ── Constants ──────────────────────────────────────────────────
 const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '79';
+const ASSET_VERSION  = '80';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -456,6 +456,7 @@ function parseListing(event) {
   return {
     kind: 30402, title, summary, location, category, payment, price, currency, publishedAt, status, naddr, npub,
     pubkeyHex: pubkey, created_at, expiresAt: expirationTs(event),
+    images: listingImages(tags),
     tTags, links: getTagValues(tags, 'r'), platforms: getTagValues(tags, 'platform'),
     market: marketInfo,
     // Mapa: zona (`g`) y si es un punto de venta con ubicación exacta.
@@ -712,6 +713,11 @@ async function sellerListingsFromRelays(hex) {
   return out;
 }
 
+/** «tienda.example» de «https://www.tienda.example/x» (o el texto recortado). */
+function webHost(url) {
+  try { return new URL(url).hostname.replace(/^www\./, '').slice(0, 40); } catch { return String(url).slice(0, 40); }
+}
+
 function renderSellerProfile(hex, meta, listings, rating) {
   const npub = hexToNpub(hex);
   const name = sellerDisplayName(meta, npub);
@@ -730,11 +736,21 @@ function renderSellerProfile(hex, meta, listings, rating) {
     `<button type="button" class="btn-secondary btn-sm" onclick="copyToClipboard('${npub}')">📋 Copiar npub</button>`,
     `<a href="${safeUrl(njump)}" target="_blank" rel="noopener noreferrer" class="btn-ghost btn-sm">Abrir en Nostr ↗</a>`,
     meta?.lud16 ? `<a href="publicar.html?zap=${npub}" class="btn-ghost btn-sm">⚡ Enviar zap</a>` : '',
+    meta?.website && safeUrl(meta.website) ? `<a href="${safeUrl(meta.website)}" target="_blank" rel="noopener noreferrer nofollow" class="btn-ghost btn-sm" title="Web que declara en su perfil">🌐 ${esc(webHost(meta.website))}</a>` : '',
   ].filter(Boolean).join(' ');
+  // Portada: con la misma regla que las fotos de anuncios (solo de servidores
+  // conocidos; si no, no se pide).
+  const banner = meta?.banner && isKnownImageHost(meta.banner)
+    ? `<div class="seller-profile-banner"><img src="${safeUrl(meta.banner)}" alt="" referrerpolicy="no-referrer" onerror="this.parentElement.remove()"></div>`
+    : '';
+  const about = meta?.about
+    ? `<p class="seller-profile-about">${esc(meta.about.replace(/\n{3,}/g, '\n\n'))}</p>`
+    : '';
   const stars = rating
     ? renderStarDisplay(rating.avg, rating.n, false)
     : '<span class="no-rating-text">Sin valoraciones aún</span>';
   const rows = active.slice(0, 30).map(l => `<button type="button" class="seller-listing-row" onclick="openModal('${esc(l.naddr)}')">
+      ${l.images?.[0] && isKnownImageHost(l.images[0], marketImageHosts(l)) ? `<img class="seller-listing-thumb" src="${safeUrl(l.images[0])}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
       <span class="seller-listing-title">${esc(l.title)}</span>
       <span class="seller-listing-price">${l.price ? `${esc(l.price)} ${esc(l.currency || '')}` : ''}</span>
     </button>`).join('');
@@ -742,6 +758,7 @@ function renderSellerProfile(hex, meta, listings, rating) {
     <div class="modal-overlay" onclick="closeModal()"></div>
     <div class="modal-box seller-profile">
       <button class="modal-close" onclick="closeModal()" aria-label="Cerrar">✕</button>
+      ${banner}
       <div class="modal-category" style="color:var(--btc, #f7931a)">PERFIL DEL VENDEDOR</div>
       <div class="seller-profile-head">
         ${avatar}
@@ -751,6 +768,7 @@ function renderSellerProfile(hex, meta, listings, rating) {
           <div class="seller-profile-npub">${esc(npub.slice(0, 24))}…</div>
         </div>
       </div>
+      ${about}
       <div class="seller-profile-chips">${chips}</div>
       <div class="seller-profile-contact">${contact}</div>
       <div class="modal-rating-section">
@@ -1124,6 +1142,44 @@ function renderCalendarEvents(grid, items) {
   }
 }
 
+// ── Fotos de anuncios ──
+// Solas si vienen de un servidor Nostr conocido (isKnownImageHost); si no,
+// detrás de un botón, como las imágenes de los artículos.
+/** Servidor del mercado externo del anuncio (sus fotos van ahí), o ninguno. */
+function marketImageHosts(l) {
+  try { return l?.market?.url ? [new URL(l.market.url).hostname.toLowerCase()] : []; } catch { return []; }
+}
+
+function listingThumb(l) {
+  const imgs = l.images || [];
+  if (!imgs.length) return '';
+  const first = imgs[0];
+  if (!isKnownImageHost(first, marketImageHosts(l))) {
+    return `<div class="card-photo-note">📷 ${imgs.length} ${plural(imgs.length, 'foto', 'fotos')}</div>`;
+  }
+  return `<div class="card-thumb"><img src="${safeUrl(first)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentElement.remove()">${imgs.length > 1 ? `<span class="card-thumb-count">📷 ${imgs.length}</span>` : ''}</div>`;
+}
+
+function listingGallery(images, extraHosts = []) {
+  const imgs = images || [];
+  if (!imgs.length) return '';
+  const known = imgs.filter(u => isKnownImageHost(u, extraHosts));
+  const unknown = imgs.filter(u => !isKnownImageHost(u, extraHosts));
+  const tiles = known.map(u => `<a href="${safeUrl(u)}" target="_blank" rel="noopener noreferrer" class="gallery-item"><img src="${safeUrl(u)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentElement.remove()"></a>`).join('');
+  const pending = unknown.length
+    ? `<button type="button" class="btn-ghost btn-sm gallery-load" data-srcs="${esc(JSON.stringify(unknown.map(u => safeHref(u, window.location.href)).filter(Boolean)))}" onclick="loadListingPhotos(this)" title="Están en un servidor que elige quien publica: al verlas, ese servidor ve tu IP">🖼 Mostrar ${unknown.length} ${plural(unknown.length, 'foto', 'fotos')} de otro servidor</button>`
+    : '';
+  return `<div class="listing-gallery">${tiles}${pending}</div>`;
+}
+
+window.loadListingPhotos = function(btn) {
+  let srcs = [];
+  try { srcs = JSON.parse(btn.dataset.srcs || '[]'); } catch { /* lista rota: no se carga nada */ }
+  const html = srcs.filter(u => String(u).startsWith('https://')).map(u => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer" class="gallery-item"><img src="${esc(u)}" alt="" decoding="async" referrerpolicy="no-referrer" onerror="this.parentElement.remove()"></a>`).join('');
+  btn.insertAdjacentHTML('beforebegin', html);
+  btn.remove();
+};
+
 function renderListingCard(l) {
   const color    = CAT_COLORS[l.category] || '#86868b';
   const njumpUrl = `https://njump.me/${l.naddr}`;
@@ -1139,6 +1195,7 @@ function renderListingCard(l) {
       ${l.market ? `<span class="card-market-badge" title="Anuncio publicado en ${esc(l.market.label)}">vía ${esc(l.market.label)}</span>` : ''}
       <button class="card-fav-btn${favActive ? ' active' : ''}" onclick="event.stopPropagation(); toggleFav('${l.naddr}', this)" title="${favActive ? 'Quitar de favoritos' : 'Guardar en favoritos'}" aria-pressed="${favActive}">${favActive ? '⭐' : '☆'}</button>
     </div>
+    ${listingThumb(l)}
     <h3 class="card-title">${esc(l.title)}</h3>
     ${l.location ? `<div class="card-location">📍 ${esc(l.location)}</div>` : ''}
     ${NON_COMMERCE_CATS.has(l.category) ? '' : `<div class="card-payment">⚡ ${payment}</div>`}
@@ -1532,6 +1589,7 @@ window.openModal = function(naddr, options = {}) {
       <div class="modal-category" style="color:${color}">${esc(l.category.toUpperCase())}</div>
       <h2 id="modal-title" class="modal-title">${esc(l.title)}</h2>
       ${l.location ? `<div class="modal-location">📍 ${esc(l.location)}</div>` : ''}
+      ${listingGallery(l.images, marketImageHosts(l))}
       ${l.summary  ? `<p class="modal-summary">${l.summary}</p>` : ''}
       <div class="modal-meta">
         ${NON_COMMERCE_CATS.has(l.category) ? '' : `<span><strong>Pago:</strong> ${l.payment.map(esc).join(', ')}</span>`}

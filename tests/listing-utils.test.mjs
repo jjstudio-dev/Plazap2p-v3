@@ -252,3 +252,27 @@ test('config.json: todas las claves ocultas son válidas y no incluyen al manten
   assert.equal(set.size, cfg.hidden_pubkeys.length)
   assert.ok(!set.has(cfg.maintainer_pubkey))
 })
+
+test('listingImages: tags image https, sin repetir y con tope', async () => {
+  const { listingImages } = await import('../js/listing-utils.js')
+  const tags = [['title', 'x'], ['image', 'https://blossom.primal.net/a.jpg', '800x600'], ['image', 'http://inseguro.example/b.jpg'],
+    ['image', 'https://blossom.primal.net/a.jpg'], ['image', 'javascript:alert(1)'], ['image', 'https://otro.example/c.png'], ['image', 7]]
+  assert.deepEqual(listingImages(tags), ['https://blossom.primal.net/a.jpg', 'https://otro.example/c.png'])
+  assert.equal(listingImages(Array.from({ length: 20 }, (_, i) => ['image', `https://a.example/${i}.jpg`])).length, 6)
+  assert.deepEqual(listingImages(null), [])
+})
+
+test('isKnownImageHost: solo servidores Nostr conocidos y https', async () => {
+  const { isKnownImageHost } = await import('../js/listing-utils.js')
+  assert.equal(isKnownImageHost('https://blossom.primal.net/a.jpg'), true)
+  assert.equal(isKnownImageHost('https://image.nostr.build/a.jpg'), true)
+  assert.equal(isKnownImageHost('http://blossom.primal.net/a.jpg'), false)
+  assert.equal(isKnownImageHost('https://blossom.primal.net.evil.example/a.jpg'), false)
+  assert.equal(isKnownImageHost('no es url'), false)
+})
+
+test('isKnownImageHost: el servidor del mercado externo cuenta solo si se pasa', async () => {
+  const { isKnownImageHost } = await import('../js/listing-utils.js')
+  assert.equal(isKnownImageHost('https://mercasats.kilombino.com/f.jpg'), false)
+  assert.equal(isKnownImageHost('https://mercasats.kilombino.com/f.jpg', ['mercasats.kilombino.com']), true)
+})
