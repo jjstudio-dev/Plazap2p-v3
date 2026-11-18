@@ -140,7 +140,7 @@ Incluye el tag `#plazap2p` en tu publicación. Para eventos, añade también `#p
 ## Cómo funciona
 
 ```
-Relay Nostr (relay.damus.io, nostr.wine, nos.lol...)
+Relay Nostr (nos.lol, relay.primal.net, relay.damus.io...)
     ↓  WebSocket NIP-01
 relay-pool.js  →  app.js  →  render en pantalla
 ```
