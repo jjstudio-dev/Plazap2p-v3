@@ -13,6 +13,7 @@
 
 export const EXPORTABLE = [
   'plazap2p_sort',      // app.js — preferencia de orden por canal
+  'plazap2p_source',    // app.js — origen del Mercado (todos / solo PlazaP2P / otros mercados)
   'plazap2p_pubkey',    // signer.js — pubkey del usuario (pública, no secreta)
   'plazap2p_nwc_meta',  // wallet-session.js — metadatos de wallet SIN secret (stripSecret ya aplicado)
   'plazap2p_favorites',  // favorites.js — anuncios/npubs marcados como favoritos

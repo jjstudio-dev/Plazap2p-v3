@@ -12,7 +12,7 @@ import { fetchZapReceipts } from './zaps.js';
 import { communitiesFrom } from './comunidades-2140.js';
 import { communityPoints, listingPoints, eventPoints, COMMERCE_TAG } from './map-data.js';
 import { mostPreciseGeohash } from './geohash.js';
-import { externalMarketsFrom, marketTags, marketOf, externalCategory, normalizeCurrency, marketListingUrl, isMarketSigned } from './external-markets.js';
+import { externalMarketsFrom, marketTags, marketOf, externalCategory, normalizeCurrency, marketListingUrl, isMarketSigned, filterBySource, SOURCES } from './external-markets.js';
 import { isFavorite, toggleFavorite } from './favorites.js';
 import { channelTagFilters, isExpired, expirationTs, isItemExpired, hiddenPubkeySet, parseCalendarDate, calDate, detectCategory, detectPayment, publishedAtOf, parseOrderTags, reviveCachedItem, maskContacts, safeHref, allDayLastDay, listingImages, isKnownImageHost } from './listing-utils.js';
 
@@ -21,7 +21,8 @@ const CACHE_KEY      = 'plazap2p_v3';
 const CACHE_TTL      = 30 * 60 * 1000;
 const PAGE_SIZE      = 12;
 const SORT_PREF_KEY  = 'plazap2p_sort';
-const ASSET_VERSION  = '80';
+const SOURCE_PREF_KEY = 'plazap2p_source'; // origen del Mercado: todos / solo PlazaP2P / otros mercados
+const ASSET_VERSION  = '81';
 
 // ── State ──────────────────────────────────────────────────────
 let config        = null;
@@ -31,6 +32,7 @@ let lastUpdated   = null;
 let activeTab     = 'mercado';
 let activeFilter   = 'all';
 let activeLocation = 'all';
+let activeSource   = 'all';   // filterBySource: 'all' | 'plaza' | 'externos'
 let searchQuery   = '';
 let sortPrefs     = {};  // { [channelId]: 'newest' | 'oldest' }
 
@@ -176,6 +178,10 @@ function loadSortPrefs() {
     const raw = localStorage.getItem(SORT_PREF_KEY);
     sortPrefs  = raw ? JSON.parse(raw) : {};
   } catch { sortPrefs = {}; }
+  try {
+    const src = localStorage.getItem(SOURCE_PREF_KEY);
+    activeSource = SOURCES.includes(src) ? src : 'all';
+  } catch { activeSource = 'all'; }
 }
 
 function saveSortPrefs() {
@@ -989,6 +995,8 @@ function renderActiveChannelInner() {
     items = items.filter(l => l.location === activeLocation);
   }
 
+  if (activeTab === 'mercado') items = filterBySource(items, activeSource);
+
   const q = searchQuery.trim().toLowerCase();
   if (q) {
     items = items.filter(item => {
@@ -1755,6 +1763,17 @@ function initFilters() {
     limits['mercado'] = PAGE_SIZE;
     renderActiveChannel();
   });
+
+  const sourceSelect = document.getElementById('source-select');
+  if (sourceSelect) {
+    sourceSelect.value = activeSource;
+    sourceSelect.addEventListener('change', e => {
+      activeSource = SOURCES.includes(e.target.value) ? e.target.value : 'all';
+      try { localStorage.setItem(SOURCE_PREF_KEY, activeSource); } catch {}
+      limits['mercado'] = PAGE_SIZE;
+      renderActiveChannel();
+    });
+  }
 }
 
 function updateLocationSelect(items) {
@@ -1869,7 +1888,9 @@ function initSearch() {
 }
 
 function initSort() {
-  document.querySelectorAll('.sort-select').forEach(sel => {
+  // Solo los de ordenar (llevan data-channel): zona y origen comparten la clase
+  // por estilo, y sin esto acababan con valor 'newest' y en sortPrefs.undefined.
+  document.querySelectorAll('.sort-select[data-channel]').forEach(sel => {
     const ch  = sel.dataset.channel;
     sel.value = sortPrefs[ch] || 'newest';
     sel.addEventListener('change', () => {

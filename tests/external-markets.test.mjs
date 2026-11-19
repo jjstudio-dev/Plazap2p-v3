@@ -125,3 +125,24 @@ test('relays de mercados: sin repetir los de PlazaP2P y con tope', () => {
   ] })
   assert.equal(marketRelays(many).length, MAX_MARKET_RELAYS)
 })
+
+test('filtro de origen: solo PlazaP2P, solo otros mercados o todo', async () => {
+  const { filterBySource } = await import('../js/external-markets.js')
+  const items = [{ id: 'p' }, { id: 's', market: { id: 'shopstr' } }, { id: 'm', market: { id: 'mercasats' } }]
+  assert.deepEqual(filterBySource(items, 'plaza').map(i => i.id), ['p'])
+  assert.deepEqual(filterBySource(items, 'externos').map(i => i.id), ['s', 'm'])
+  assert.deepEqual(filterBySource(items, 'all').map(i => i.id), ['p', 's', 'm'])
+  assert.deepEqual(filterBySource(items, 'raro').map(i => i.id), ['p', 's', 'm'])
+})
+
+test('Shopstr de la configuración: entra con su etiqueta, sin relays propios', async () => {
+  const { externalMarketsFrom, marketOf } = await import('../js/external-markets.js')
+  const { readFileSync } = await import('node:fs')
+  const cfg = JSON.parse(readFileSync(new URL('../data/config.json', import.meta.url), 'utf8'))
+  const markets = externalMarketsFrom(cfg)
+  const shop = markets.find(m => m.id === 'shopstr')
+  assert.equal(shop.url, 'https://shopstr.market')
+  assert.deepEqual(shop.relays, [])
+  assert.equal(marketOf(['Shopstr', 'art'], markets).id, 'shopstr')
+  assert.equal(marketOf(['shopstr', 'plazap2p-venta'], markets), null)
+})

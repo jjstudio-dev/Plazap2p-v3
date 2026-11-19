@@ -10,6 +10,14 @@
 //
 // Un derivado (fork) que conserve la etiqueta entra solo; uno que la cambie se
 // añade en data/config.json → external_markets sin tocar código.
+//
+// Shopstr (https://shopstr.market) entra igual: sus anuncios son kind 30402 con
+// `t shopstr` y viven en los relays generales que PlazaP2P ya usa, así que no
+// necesita relays propios. Plebeian Market no deja una etiqueta `t` propia y
+// no se puede pedir por separado a los relays.
+//
+// Quien solo quiera ver lo de PlazaP2P elige «Solo PlazaP2P» en el Mercado
+// (filterBySource).
 
 import { normalizeRelayUrl } from './outbox.js'
 
@@ -162,4 +170,17 @@ export function marketRelays(markets, exclude = []) {
     }
   }
   return out
+}
+
+/** Orígenes que admite el filtro del Mercado. */
+export const SOURCES = Object.freeze(['all', 'plaza', 'externos'])
+
+/**
+ * Filtro de origen del Mercado: 'plaza' deja solo lo de PlazaP2P (sin
+ * `market`), 'externos' solo lo de otros mercados; cualquier otro valor, todo.
+ */
+export function filterBySource(items, source) {
+  if (source === 'plaza') return items.filter(l => !l.market)
+  if (source === 'externos') return items.filter(l => !!l.market)
+  return items
 }

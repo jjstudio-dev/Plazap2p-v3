@@ -35,8 +35,8 @@
   <meta name="twitter:title" content="PlazaP2P — Economía Circular P2P en Nostr" />
   <meta name="twitter:description" content="Mercado, comunidad y recursos Bitcoin sobre Nostr. Publicaciones abiertas, sin registro y sin intermediarios." />
   <link rel="canonical" href="https://jjstudio-dev.github.io/Plazap2p-v3/" />
-  <link rel="stylesheet" href="css/fonts.css?v=80" />
-  <link rel="stylesheet" href="css/style.css?v=80" />
+  <link rel="stylesheet" href="css/fonts.css?v=81" />
+  <link rel="stylesheet" href="css/style.css?v=81" />
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg" />
@@ -246,6 +246,11 @@
       </select>
       <select id="location-select" class="sort-select" aria-label="Filtrar por zona">
         <option value="all">📍 Todas las zonas</option>
+      </select>
+      <select id="source-select" class="sort-select" aria-label="Filtrar por origen del anuncio">
+        <option value="all">🌐 Todos los mercados</option>
+        <option value="plaza">🏛️ Solo PlazaP2P</option>
+        <option value="externos">🔗 Solo otros mercados</option>
       </select>
     </div>
 
@@ -990,7 +995,7 @@
           <span class="publish-type-desc">Wallet, app o recurso útil</span>
         </a>
       </div>
-      <p class="offers-readonly-note" style="margin-top:12px">PlazaP2P no es intermediario ni verifica anuncios: toda operación es P2P entre las partes. También puedes publicar desde tu cliente Nostr con los tags <code>#plazap2p-venta</code>, <code>#plazap2p-compra</code>, etc., o en <a href="https://plebeian.market" target="_blank" rel="noopener noreferrer">Plebeian ↗</a> / <a href="https://shopstr.store" target="_blank" rel="noopener noreferrer">Shopstr ↗</a>.</p>
+      <p class="offers-readonly-note" style="margin-top:12px">PlazaP2P no es intermediario ni verifica anuncios: toda operación es P2P entre las partes. También puedes publicar desde tu cliente Nostr con los tags <code>#plazap2p-venta</code>, <code>#plazap2p-compra</code>, etc., o en <a href="https://plebeian.market" target="_blank" rel="noopener noreferrer">Plebeian ↗</a> / <a href="https://shopstr.market" target="_blank" rel="noopener noreferrer">Shopstr ↗</a>.</p>
     </div>
 
     <h2 id="contrib-nostr" class="contribute-section-title">🛒 Mercado · 💬 Feed · 📄 Artículos · 📅 Eventos — Publicar en la red</h2>
@@ -1021,7 +1026,7 @@
             <div class="publish-client-group">
               <div class="publish-group-label">🛒 Anuncio / Mercado</div>
               <a href="https://plebeian.market" target="_blank" rel="noopener noreferrer" class="publish-client-link">Plebeian Market ↗</a>
-              <a href="https://shopstr.store" target="_blank" rel="noopener noreferrer" class="publish-client-link">Shopstr ↗</a>
+              <a href="https://shopstr.market" target="_blank" rel="noopener noreferrer" class="publish-client-link">Shopstr ↗</a>
             </div>
             <div class="publish-client-group">
               <div class="publish-group-label">💬 Post / Feed</div>
@@ -1403,7 +1408,7 @@
       <p>PlazaP2P muestra contenido público de Nostr. Todo evento reflejado procede de información publicada voluntariamente por sus autores en relays públicos o accesibles. No debes publicar datos sensibles en Nostr si no quieres que puedan ser vistos, copiados, indexados o reflejados por terceros.</p>
       <p>Nostr es una red abierta: aunque un cliente deje de mostrar un evento, otros relays, clientes o servicios podrían conservarlo o reflejarlo.</p>
       <p>Ubicación: solo se pide si pulsas «Usar mi ubicación aproximada» al crear un evento. Del resultado se publica una zona de unos 5 km, nunca tus coordenadas ni tu dirección, y no se envía a ningún otro servicio.</p>
-      <p>Mercados compatibles: el Mercado también enseña anuncios de <a href="https://mercasats.kilombino.com" target="_blank" rel="noopener noreferrer">Mercasats</a>, marcados «vía Mercasats». Los anuncios que publicas (y sus retiradas) se envían además a los relays públicos de ese mercado (relay.kilombino.com y relay.minibolt.info).</p>
+      <p>Mercados compatibles: el Mercado también enseña anuncios de <a href="https://mercasats.kilombino.com" target="_blank" rel="noopener noreferrer">Mercasats</a>, marcados «vía Mercasats». Los anuncios que publicas (y sus retiradas) se envían además a los relays públicos de ese mercado (relay.kilombino.com y relay.minibolt.info). También enseña los de <a href="https://shopstr.market" target="_blank" rel="noopener noreferrer">Shopstr</a>, marcados «vía Shopstr». Si solo quieres ver lo publicado en PlazaP2P, elige «Solo PlazaP2P» en el desplegable de origen del Mercado.</p>
       <p>Mapa: el fondo se descarga de OpenStreetMap al abrir la pestaña Mapa. La capa «Comercios BTC Map» viene apagada; si la enciendes, se pide a BTC Map la lista de comercios alrededor del centro del mapa (no tu posición). «Centrar en mi ubicación» solo mueve el mapa en tu navegador. Las comunidades locales vienen de los directorios públicos de 2140meetups.com y BTC Map.</p>
     </div>
 
@@ -1523,15 +1528,15 @@
 <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <!-- ESM module — app.js imports nostr.js and relay-pool.js -->
-<script type="module" src="js/app.js?v=80"></script>
+<script type="module" src="js/app.js?v=81"></script>
 <script type="module">
-  import { initBtcStats }      from './js/btc-stats.js?v=80';
-  import { initPriceChart }    from './js/btc-chart.js?v=80';
-  import { initConverter }     from './js/converter.js?v=80';
-  import { initMiniConverter } from './js/mini-converter.js?v=80';
-  import { initBtcMarket }     from './js/btc-market.js?v=80';
-  import { initAppShell }      from './js/app-shell.js?v=80';
-  import { initRouter }        from './js/router.js?v=80';
+  import { initBtcStats }      from './js/btc-stats.js?v=81';
+  import { initPriceChart }    from './js/btc-chart.js?v=81';
+  import { initConverter }     from './js/converter.js?v=81';
+  import { initMiniConverter } from './js/mini-converter.js?v=81';
+  import { initBtcMarket }     from './js/btc-market.js?v=81';
+  import { initAppShell }      from './js/app-shell.js?v=81';
+  import { initRouter }        from './js/router.js?v=81';
 
   initAppShell();
   initRouter();
