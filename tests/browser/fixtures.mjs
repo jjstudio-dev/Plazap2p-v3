@@ -3,6 +3,7 @@
 // que la app), así el relay simulado entrega eventos que pasan la verificación
 // real de relay-pool.js.
 
+import { readFileSync } from 'node:fs'
 import { signWith, SK1, SK2, PK1, PK2 } from '../fixtures/events.mjs'
 import { getPublicKey } from '../../js/vendor/nostr-crypto.js'
 
@@ -91,7 +92,6 @@ export function follows({ sk = SK_VISITANTE, pubkeys, created_at = now() - 100 }
 export const visitante = { localStorage: { plazap2p_pubkey: PK_VISITANTE } }
 
 /** Relays de data/config.json — el doble de WebSocket responde por cualquiera de ellos. */
-export const RELAYS = [
-  'wss://nos.lol', 'wss://relay.primal.net', 'wss://relay.damus.io', 'wss://nostr.bitcoiner.social',
-  'wss://relay.snort.social', 'wss://nostr.mom',
-]
+// Los mismos relays que data/config.json: una lista copiada aquí se desfasaba
+// (el contador «x/N relays» de la página dejaba de cuadrar con N).
+export const RELAYS = JSON.parse(readFileSync(new URL('../../data/config.json', import.meta.url), 'utf8')).relays
