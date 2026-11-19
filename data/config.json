@@ -12,7 +12,8 @@
     "wss://relay.damus.io",
     "wss://nostr.bitcoiner.social",
     "wss://relay.nostr.net",
-    "wss://nostr.mom"
+    "wss://nostr.mom",
+    "wss://offchain.pub"
   ],
   "channels": [
     { "id": "mercado",      "kinds": [30402],        "label": "Mercado",      "icon": "🛒" },
@@ -37,7 +38,7 @@
   ],
   "publish_clients": [
     { "id": "plebeian",  "name": "Plebeian Market", "url": "https://plebeian.market", "desc": "Publica anuncios NIP-99 (kind:30402)", "icon": "🛒" },
-    { "id": "shopstr",   "name": "Shopstr",          "url": "https://shopstr.store",   "desc": "Marketplace Nostr con Lightning",     "icon": "⚡" },
+    { "id": "shopstr",   "name": "Shopstr",          "url": "https://shopstr.market",   "desc": "Marketplace Nostr con Lightning",     "icon": "⚡" },
     { "id": "primal",    "name": "Primal",            "url": "https://primal.net",      "desc": "Cliente web y móvil, posts kind:1",   "icon": "🌐" },
     { "id": "amethyst",  "name": "Amethyst",          "url": "https://amethyst.social", "desc": "Android, todos los NIPs",             "icon": "💜" },
     { "id": "yakihonne", "name": "YakiHonne",         "url": "https://yakihonne.com",   "desc": "Artículos largos NIP-23 (kind:30023)","icon": "✍️" },

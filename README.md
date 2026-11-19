@@ -127,7 +127,7 @@ No publiques aquí directamente. Publica desde un cliente Nostr compatible y añ
 | Cliente | Plataforma | Tipo de evento |
 |---|---|---|
 | [Plebeian Market](https://plebeian.market) | Web | `kind:30402` (marketplace) |
-| [Shopstr](https://shopstr.store) | Web | `kind:30402` (Lightning) |
+| [Shopstr](https://shopstr.market) | Web | `kind:30402` (Lightning) |
 | [Primal](https://primal.net) | Web / iOS / Android | `kind:1` (posts) |
 | [Amethyst](https://amethyst.social) | Android | Todos los NIPs |
 | [YakiHonne](https://yakihonne.com) | Web | `kind:30023` (artículos) |
